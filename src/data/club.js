@@ -1,6 +1,3 @@
-// Single source of truth for club content. Update names, links, and copy
-// here rather than hunting through components.
-
 export const club = {
   name: 'Abhyudaya',
   fullName: 'Abhyudaya Club',
@@ -118,3 +115,4 @@ export const team = {
     { name: 'Technical Head', role: 'Core Team', note: 'Add name & photo' },
   ],
 }
+

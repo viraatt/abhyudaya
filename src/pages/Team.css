@@ -1,63 +1,85 @@
 .team-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 2rem;
 }
 
 .team-grid--faculty {
-  grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
+  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 320px));
 }
 
 .team-card {
-  text-align: center;
-  padding: 1.6rem 1rem;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
   border: 1px solid var(--line-on-light);
-  border-radius: var(--radius-md);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 .section--dark .team-card {
-  border-color: var(--line-on-dark);
+  background: var(--navy-card);
+  border: 1px solid var(--line-on-dark);
 }
 
 .team-card:hover {
-  border-color: var(--sun);
-  transform: translateY(-3px);
+  transform: translateY(-8px);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.15);
 }
 
-.team-card__avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  margin: 0 auto 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--dawn-dim);
-  color: var(--horizon);
-  font-family: var(--font-utility);
-  font-weight: 600;
-  font-size: 1.1rem;
+.team-card__image {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  display: block;
+  background: #e9ecef;
 }
 
-.section--dark .team-card__avatar {
-  background: var(--navy-card);
-  color: var(--sun);
+.team-card__content {
+  padding: 1.5rem;
 }
 
 .team-card__name {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.02rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
 }
 
 .team-card__role {
   font-family: var(--font-utility);
-  font-size: 0.78rem;
   color: var(--ink-soft);
-  margin-top: 0.3rem;
+  margin: 0 0 1rem;
+}
+
+.section--dark .team-card__name {
+  color: #fff;
 }
 
 .section--dark .team-card__role {
   color: var(--dawn-dim);
+}
+
+.team-card__linkedin {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: #0A66C2;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.team-card__linkedin:hover {
+  background: #004182;
+  transform: translateY(-2px);
+}
+
+.team-card__linkedin:disabled,
+.team-card__linkedin[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
