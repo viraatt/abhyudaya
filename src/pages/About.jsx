@@ -4,12 +4,12 @@ import './About.css'
 
 const pillars = [
   {
-    title: 'Build, don\u2019t just attend',
-    text: 'Every event is designed around making something \u2014 a poster, a pitch, a working site, a flying model \u2014 rather than sitting through a lecture.',
+    title: 'Build, don’t just attend',
+    text: 'Every event is designed around making something — a poster, a pitch, a working site, a flying model — rather than sitting through a lecture.',
   },
   {
     title: 'Open to every branch',
-    text: 'You don\u2019t need to be a CSE student to belong here. Abhyudaya runs under the Department of Basic Sciences & Humanities precisely so first-years and every discipline have a way in.',
+    text: 'You don’t need to be a CSE student to belong here. Abhyudaya runs under the Department of Basic Sciences & Humanities precisely so first-years and every discipline have a way in.',
   },
   {
     title: 'Run by students, for students',
@@ -23,35 +23,63 @@ export default function About() {
       <PageHero
         eyebrow="About the club"
         title="An idea, given room to rise."
-        lede={club.meaning}
+        lede={club.meaning || "A Science and Literary Club committed to creating a space where curiosity, creativity, and continuous learning come together."}
       />
 
+      {/* Intro Section: Who We Are & Our Purpose */}
       <section className="section">
         <div className="wrap about-body">
           <div className="about-body__col">
-            <p className="eyebrow">Our home</p>
-            <h2>{club.institute}</h2>
+            <p className="eyebrow">Who We Are</p>
+            <h2>A Space for Curiosity</h2>
             <p className="about-body__text">
-              Abhyudaya sits under the {club.department} at MPEC Kanpur. That
-              placement is deliberate: it means the club isn't tied to one
-              engineering branch, and any student on campus, from any year,
-              has a natural way to walk in.
+              Abhyudaya is a Science and Literary Club that welcomes students with diverse 
+              interests and encourages them to explore ideas, exchange perspectives, and grow 
+              through meaningful interactions. We believe that learning is not limited to 
+              classrooms; every conversation and new idea has the potential to inspire growth.
             </p>
           </div>
           <div className="about-body__col">
-            <p className="eyebrow">What we run</p>
-            <h2>Fests, workshops, competitions</h2>
+            <p className="eyebrow">Our Purpose</p>
+            <h2>Bridging Two Worlds</h2>
             <p className="about-body__text">
-              Our flagship is TechBloom, an annual technical fest that pairs
-              speaker sessions with hands-on workshops and competitions. Across
-              the year we also run smaller quizzes, design contests, pitch
-              events, and skill workshops for anyone who wants to keep
-              building between fests.
+              We strive to encourage intellectual curiosity and creative expression by bringing 
+              together the worlds of science and literary pursuits. Our focus is on building 
+              an environment where learning becomes enjoyable, inclusive, and accessible to 
+              everyone while helping students think critically and communicate effectively.
             </p>
           </div>
         </div>
       </section>
 
+      {/* Core Philosophy Section: Beliefs & Values */}
+      <section className="section section--light-gray">
+        <div className="wrap about-body">
+          <div className="about-body__col">
+            <p className="eyebrow">What We Believe</p>
+            <h2>Science & Literature</h2>
+            <p className="about-body__text">
+              Science helps us understand the world through observation, reasoning, and discovery, 
+              while literary pursuits allow us to express ideas, emotions, and experiences with 
+              creativity. Together, these disciplines inspire balanced thinking, open-mindedness, 
+              and a community that values collaboration over competition.
+            </p>
+          </div>
+          <div className="about-body__col">
+            <p className="eyebrow">Our Values</p>
+            <h2>What Guides Us</h2>
+            <ul className="about-values__list" style={{ paddingLeft: '1.2rem', margin: '1rem 0' }}>
+              <li>Curiosity and lifelong learning</li>
+              <li>Creativity and innovation</li>
+              <li>Respect for diverse ideas and viewpoints</li>
+              <li>Teamwork, collaboration, and inclusivity</li>
+              <li>Integrity and mutual responsibility</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Pillars Section */}
       <section className="section section--dark">
         <div className="wrap">
           <div className="section__head">
@@ -67,6 +95,19 @@ export default function About() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Looking Ahead Footer Note */}
+      <section className="section section--brief">
+        <div className="wrap text-center" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
+          <p className="eyebrow">Looking Ahead</p>
+          <h2>Thinking Beyond Boundaries</h2>
+          <p className="about-body__text">
+            As we continue to grow, Abhyudaya remains dedicated to fostering a culture of 
+            exploration and personal development. Every idea matters, every voice is valued, 
+            and every step toward learning is a step toward growth.
+          </p>
         </div>
       </section>
     </>
