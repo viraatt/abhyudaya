@@ -154,8 +154,8 @@ export const team = {
     {
       name: "Kuldeep Yadav",
       role: "Core Member",
-      image: "https://YOUR_KULDEEP_IMAGE_LINK",
-      linkedin: "",
+      image: "https://www.image2url.com/r2/default/images/1782929938365-5508c1c2-5daa-43eb-acaf-90f816091e8f.jpg",
+      linkedin: "https://www.linkedin.com/in/kuldeep-yadav-cse28/",
     },
   ],
 }
