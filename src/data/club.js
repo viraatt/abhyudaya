@@ -119,11 +119,11 @@ export const team = {
     },
   ],
   core: [
-    { name: 'President', role: 'Core Team', note: 'Add name & photo' },
-    { name: 'Vice President', role: 'Core Team', note: 'Add name & photo' },
-    { name: 'General Secretary', role: 'Core Team', note: 'Add name & photo' },
-    { name: 'Events Head', role: 'Core Team', note: 'Add name & photo' },
-    { name: 'Design & Media Head', role: 'Core Team', note: 'Add name & photo' },
-    { name: 'Technical Head', role: 'Core Team', note: 'Add name & photo' },
+    { name: 'N/A', role: 'President', note: 'Add name & photo' },
+    { name: 'N/A', role: 'Vice President', note: 'Add name & photo' },
+    { name: 'Unnati Pal', role: 'Secretary', note: 'Add name & photo' },
+    { name: 'Ishan Shukla', role: 'Operations Lead', note: 'Add name & photo' },
+    { name: 'Sharad Agnihotri', role: 'PR Lead', note: 'Add name & photo' },
+    { name: 'Virat Mishra', role: 'Technical Lead', note: 'Add name & photo' },
   ],
 }
