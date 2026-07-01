@@ -1,0 +1,63 @@
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.6rem;
+}
+
+.team-grid--faculty {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
+}
+
+.team-card {
+  text-align: center;
+  padding: 1.6rem 1rem;
+  border: 1px solid var(--line-on-light);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.section--dark .team-card {
+  border-color: var(--line-on-dark);
+}
+
+.team-card:hover {
+  border-color: var(--sun);
+  transform: translateY(-3px);
+}
+
+.team-card__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dawn-dim);
+  color: var(--horizon);
+  font-family: var(--font-utility);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.section--dark .team-card__avatar {
+  background: var(--navy-card);
+  color: var(--sun);
+}
+
+.team-card__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+
+.team-card__role {
+  font-family: var(--font-utility);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.3rem;
+}
+
+.section--dark .team-card__role {
+  color: var(--dawn-dim);
+}

@@ -1,0 +1,120 @@
+.footer {
+  background: var(--night);
+  color: var(--dawn-dim);
+  padding: 3.5rem 0 2rem;
+}
+
+.footer__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.footer__brand {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  max-width: 320px;
+}
+
+.footer__mark {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.footer__name {
+  font-family: var(--font-display);
+  color: var(--dawn);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.footer__tag {
+  font-family: var(--font-utility);
+  font-size: 0.76rem;
+  color: var(--dawn-dim);
+  margin-top: 0.15rem;
+}
+
+.footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4rem;
+}
+
+.footer__link {
+  font-family: var(--font-utility);
+  font-size: 0.85rem;
+  color: var(--dawn-dim);
+  transition: color 0.2s ease;
+}
+
+.footer__link:hover {
+  color: var(--sun);
+}
+
+.footer__connect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.footer__connect-label {
+  width: 100%;
+  color: var(--sun);
+  margin-bottom: 0.2rem;
+}
+
+.footer__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-utility);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--dawn-dim);
+  padding: 0.5rem 0.9rem;
+  border-radius: 100px;
+  border: 1px solid var(--line-on-dark);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.footer__pill:hover {
+  color: var(--sun);
+  border-color: var(--sun);
+}
+
+.footer__pill--email {
+  word-break: break-all;
+}
+
+.footer__horizon {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-on-dark) 20%, var(--line-on-dark) 80%, transparent);
+  margin: 2.4rem 0 1.6rem;
+}
+
+.footer__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  font-family: var(--font-utility);
+  font-size: 0.76rem;
+}
+
+.footer__meaning {
+  max-width: 560px;
+  font-style: italic;
+  color: var(--dawn-dim);
+  opacity: 0.85;
+}
+
+.footer__copyright {
+  color: var(--dawn-dim);
+  opacity: 0.7;
+}

@@ -1,0 +1,26 @@
+.notfound {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  background: var(--night);
+  color: var(--dawn);
+}
+
+.notfound__inner {
+  text-align: center;
+  padding: 5rem 0;
+}
+
+.notfound .eyebrow {
+  color: var(--sun);
+}
+
+.notfound h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  margin: 0.8rem 0 1rem;
+}
+
+.notfound__lede {
+  color: var(--dawn-dim);
+  margin-bottom: 2rem;
+}
