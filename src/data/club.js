@@ -148,8 +148,8 @@ export const team = {
     {
       name: "Tilak Rajawat",
       role: "Core Member",
-      image: "https://YOUR_TILAK_IMAGE_LINK",
-      linkedin: "",
+      image: "https://www.image2url.com/r2/default/images/1782930115820-4cc4e2d2-a208-49c7-a62b-8ce1f745fe4a.png",
+      linkedin: "https://www.linkedin.com/in/tilakraj-singh-rajawat-121y/",
     },
     {
       name: "Kuldeep Yadav",
