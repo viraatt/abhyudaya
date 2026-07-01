@@ -8,7 +8,7 @@ export default function Contact() {
       <PageHero
         eyebrow="Get in touch"
         title="Come build with us."
-        lede="Become part of MPEC's most active technical community. Learn, build, lead and grow with Abhyudaya Club."
+        lede="Become part of MPEC's most active  community. Learn, build, lead and grow with Abhyudaya Club."
       />
 
       <section className="section">
