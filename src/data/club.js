@@ -137,7 +137,7 @@ export const team = {
       name: "Virat Mishra",
       role: "Technical Lead",
       image: "https://www.image2url.com/r2/default/images/1782929494367-261bc5d9-2b40-43e0-b39e-1af42c38fada.jpg",
-      linkedin: "",
+      linkedin: "https://www.linkedin.com/in/viratmishra24/",
     },
     {
       name: "Sharad Agnihotri",
@@ -152,10 +152,20 @@ export const team = {
       linkedin: "https://www.linkedin.com/in/tilakraj-singh-rajawat-121y/",
     },
     {
-      name: "Kuldeep Yadav",
-      role: "Core Member",
-      image: "https://www.image2url.com/r2/default/images/1782929938365-5508c1c2-5daa-43eb-acaf-90f816091e8f.jpg",
-      linkedin: "https://www.linkedin.com/in/kuldeep-yadav-cse28/",
-    },
-  ],
-}
+  name: "Kuldeep Yadav",
+  role: "Core Member",
+  image: "https://www.image2url.com/r2/default/images/1782929938365-5508c1c2-5daa-43eb-acaf-90f816091e8f.jpg",
+  linkedin: "https://www.linkedin.com/in/kuldeep-yadav-cse28/",
+},
+{
+  name: "Shashwat Singh",
+  role: "Core Member",
+  image: "https://www.image2url.com/r2/default/images/1782930381718-0fea0cdd-7d48-4e79-a519-b2608d22a326.jpg",
+  linkedin: "https://www.linkedin.com/in/shashwat-singh-8a5784362/",
+},
+{
+  name: "Arpit Singh",
+  role: "Core Member",
+  image: "https://www.image2url.com/r2/default/images/1782930657556-52daa10b-e5d4-44bd-9553-b1e32dac3609.jpg",
+  linkedin: "https://www.linkedin.com/in/arpit-singh-1004a8327/",
+},
