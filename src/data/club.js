@@ -101,20 +101,61 @@ export const events = [
 export const team = {
   faculty: [
     {
-      name: 'Dr Anupama Mathur',
-      role: 'Faculty Coordinator',
-      note: 'Add name & photo',
+      name: "Dr. Anupama Mathur",
+      role: "Faculty Advisor",
+      image: "https://YOUR_FACULTY_IMAGE_LINK",
+      linkedin: "",
     },
   ],
+
   core: [
-    { name: 'N/A', role: 'President', note: 'Add name & photo' },
-    { name: 'N/A', role: 'Vice President', note: 'Add name & photo' },
-    { name: 'Unnati Pal', role: 'Secretary', note: 'Add name & photo' },
-    { name: 'Ishan Shukla', role: 'Operations Lead', note: 'Add name & photo' },
-    { name: 'Virat Mishra', role: 'Technical Lead', note: 'Add name & photo' },
-    { name: 'Sharad Agnihotri', role: 'Pr Lead', note: 'Add name & photo' },
-     { name: 'Tilak Rajawat', role: 'Core Member', note: 'Add name & photo' },
-    { name: 'Kuldeep Yadav', role: 'Core Member', note: 'Add name & photo' },
- ],
-  
+    {
+      name: "N/A",
+      role: "President",
+      image: "https://YOUR_PRESIDENT_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "N/A",
+      role: "Vice President",
+      image: "https://YOUR_VICE_PRESIDENT_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "Unnati Pal",
+      role: "General Secretary",
+      image: "https://YOUR_UNNATI_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "Ishan Shukla",
+      role: "Operations Lead",
+      image: "https://YOUR_ISHAN_IMAGE_LINK",
+      linkedin: "https://www.linkedin.com/in/YOUR-LINKEDIN-ID/",
+    },
+    {
+      name: "Virat Mishra",
+      role: "Technical Lead",
+      image: "https://YOUR_VIRAT_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "Sharad Agnihotri",
+      role: "PR Lead",
+      image: "https://YOUR_SHARAD_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "Tilak Rajawat",
+      role: "Core Member",
+      image: "https://YOUR_TILAK_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "Kuldeep Yadav",
+      role: "Core Member",
+      image: "https://YOUR_KULDEEP_IMAGE_LINK",
+      linkedin: "",
+    },
+  ],
 }
