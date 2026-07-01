@@ -31,8 +31,17 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(60% 70% at 30% 20%, rgba(238, 184, 74, 0.16), transparent 60%),
-    linear-gradient(180deg, rgba(13, 18, 36, 0.55) 0%, rgba(13, 18, 36, 0.85) 65%, var(--night) 100%);
+    radial-gradient(
+      60% 70% at 30% 20%,
+      rgba(238, 184, 74, 0.16),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(13, 18, 36, 0.55) 0%,
+      rgba(13, 18, 36, 0.85) 65%,
+      var(--night) 100%
+    );
 }
 
 /* Video is skipped below this width to keep the mobile hero fast and
@@ -64,7 +73,7 @@
 }
 
 .hero__eyebrow {
-  color: var(--sun-soft);
+  color: #fff !important;
   margin-bottom: 1.1rem;
 }
 
