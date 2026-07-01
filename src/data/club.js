@@ -31,7 +31,7 @@ export const team = {
       name: "Ishan Shukla",
       role: "Operations Lead",
       image: "",
-      linkedin: "https://linkedin.com/in/yourprofile",
+      linkedin: "https://www.linkedin.com/in/ishanshukla2/",
     },
     {
       name: "Virat Mishra",
