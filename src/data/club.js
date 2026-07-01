@@ -101,8 +101,8 @@ export const events = [
 export const team = {
   faculty: [
     {
-      name: 'Faculty Coordinator',
-      role: 'Department of Basic Sciences & Humanities',
+      name: 'Dr Anupama Mathur',
+      role: 'Faculty Coordinator',
       note: 'Add name & photo',
     },
   ],
@@ -113,5 +113,6 @@ export const team = {
     { name: 'Ishan Shukla', role: 'Operations Lead', note: 'Add name & photo' },
     { name: 'Virat Mishra', role: 'Technical Lead', note: 'Add name & photo' },
     { name: 'Sharad Agnihotri', role: 'Pr Lead', note: 'Add name & photo' },
+     { name: 'Tilak Rajawat', role: 'Core Member', note: 'Add name & photo' },
   ],
 }
