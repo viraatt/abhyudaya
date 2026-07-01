@@ -8,13 +8,15 @@ export default function Contact() {
       <PageHero
         eyebrow="Get in touch"
         title="Come build with us."
-        lede="Whether you want to join the core team, run an event, or just find out when the next fest is — this is the place to start."
+        lede="Become part of MPEC's most active technical community. Learn, build, lead and grow with Abhyudaya Club."
       />
 
       <section className="section">
         <div className="wrap contact-grid">
 
+          {/* LEFT SIDE */}
           <div className="contact-info">
+
             <div className="contact-info__block">
               <p className="eyebrow">Find us</p>
               <p className="contact-info__text">{club.institute}</p>
@@ -23,18 +25,21 @@ export default function Contact() {
 
             <div className="contact-info__block">
               <p className="eyebrow">Email</p>
+
               <a
                 href={`mailto:${socials.email}`}
                 className="contact-info__text contact-info__email"
               >
                 {socials.email}
               </a>
+
             </div>
 
             <div className="contact-info__block">
-              <p className="eyebrow">Follow along</p>
+              <p className="eyebrow">Follow Along</p>
 
               <div className="contact-info__socials">
+
                 <a
                   href={socials.instagram}
                   target="_blank"
@@ -52,26 +57,94 @@ export default function Contact() {
                 >
                   LinkedIn
                 </a>
+
               </div>
             </div>
+
           </div>
 
-          <div className="contact-form">
-            <iframe
-              src="https://docs.google.com/forms/d/e/1FAIpQLSdGOahFn3oFuG1H7vOre7YT6aNJAuGod38brtzVFNRZfmXUew/viewform?embedded=true"
-              width="100%"
-              height="900"
-              frameBorder="0"
-              marginHeight="0"
-              marginWidth="0"
-              title="Abhyudaya Club Registration Form"
+          {/* RIGHT SIDE */}
+
+          <div className="join-card">
+
+            <span className="join-badge">
+              🚀 Join Abhyudaya Club
+            </span>
+
+            <h2>Become a Member</h2>
+
+            <p>
+              Join the official Science & Literary Club of Maharana Pratap
+              Engineering College and become part of an innovative community.
+            </p>
+
+            <div className="join-features">
+
+              <div>💻 Technical Team</div>
+
+              <div>🎨 PR & Creative</div>
+
+              <div>📷 Photography</div>
+
+              <div>🎬 Video Editing</div>
+
+              <div>🎯 Operations</div>
+
+              <div>🚀 Workshops & Hackathons</div>
+
+            </div>
+
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSdGOahFn3oFuG1H7vOre7YT6aNJAuGod38brtzVFNRZfmXUew/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--solid register-btn"
             >
-              Loading...
-            </iframe>
+              Register Now →
+            </a>
+
           </div>
 
         </div>
       </section>
+
+      <section className="section">
+
+        <div className="wrap">
+
+          <div className="faq-card">
+
+            <h2>Frequently Asked Questions</h2>
+
+            <div className="faq-item">
+              <h3>Who can join?</h3>
+              <p>Any student of Maharana Pratap Engineering College can join.</p>
+            </div>
+
+            <div className="faq-item">
+              <h3>Do I need coding experience?</h3>
+              <p>No. Beginners are always welcome.</p>
+            </div>
+
+            <div className="faq-item">
+              <h3>What teams are available?</h3>
+              <p>
+                Technical, PR & Creative, Photography, Video Editing,
+                Operations and Event Management.
+              </p>
+            </div>
+
+            <div className="faq-item">
+              <h3>How will I receive updates?</h3>
+              <p>Through our WhatsApp community and Instagram page.</p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
     </>
   )
 }
