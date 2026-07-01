@@ -113,8 +113,8 @@ export const events = [
 export const team = {
   faculty: [
     {
-      name: 'Faculty Coordinator',
-      role: 'Department of Basic Sciences & Humanities',
+      name: 'DR Anupama Mathur',
+      role: 'Faculty Coordinator',
       note: 'Add name & photo',
     },
   ],
