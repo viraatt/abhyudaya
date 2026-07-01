@@ -97,6 +97,15 @@ export const events = [
     detail:
       'A guided, hands-on workshop that takes participants from a blank page to a working site, focused on skills they can keep using after the event ends.',
   },
+   {
+  slug: 'antariksh-spradha',
+  name: 'Antariksh spradha',
+  kind: 'Astronomy & Space',
+  summary: 'A 3-day astronomy and space-themed event featuring quizzes, expert talks, and star gazing.',
+  detail:
+    'Day 1 begins with a quiz hosted on Unstop to challenge participants on space and science knowledge. Day 2 features an inspiring guest lecture by a professor from IIT Kanpur, offering insights into space research and innovation. Day 3 concludes with a night star-gazing event in collaboration with the IIT Kanpur AstroClub, giving participants a hands-on experience of exploring the universe.',
+},
+
 ]
 
 // Placeholder roster — swap in real names, photos, and socials for the
