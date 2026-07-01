@@ -1,30 +1,22 @@
-import { useState } from 'react'
 import { club, socials } from '../data/club.js'
 import PageHero from '../components/PageHero.jsx'
 import './Contact.css'
 
 export default function Contact() {
-  const [sent, setSent] = useState(false)
-
-  // No backend is wired up yet. This just gives the form a working,
-  // accessible interaction — connect it to a real endpoint or form
-  // service (Formspree, Google Forms, a mail API, etc.) when ready.
-  function handleSubmit(e) {
-    e.preventDefault()
-    setSent(true)
-  }
-
   return (
     <>
       <PageHero
         eyebrow="Get in touch"
         title="Come build with us."
-        lede="Whether you want to join the core team, run an event, or just find out when the next fest is — this is the place to start."
+        lede="Become part of MPEC's most active  community. Learn, build, lead and grow with Abhyudaya Club."
       />
 
       <section className="section">
         <div className="wrap contact-grid">
+
+          {/* LEFT SIDE */}
           <div className="contact-info">
+
             <div className="contact-info__block">
               <p className="eyebrow">Find us</p>
               <p className="contact-info__text">{club.institute}</p>
@@ -33,56 +25,126 @@ export default function Contact() {
 
             <div className="contact-info__block">
               <p className="eyebrow">Email</p>
-              <a href={`mailto:${socials.email}`} className="contact-info__text contact-info__email">
+
+              <a
+                href={`mailto:${socials.email}`}
+                className="contact-info__text contact-info__email"
+              >
                 {socials.email}
               </a>
+
             </div>
 
             <div className="contact-info__block">
-              <p className="eyebrow">Follow along</p>
+              <p className="eyebrow">Follow Along</p>
+
               <div className="contact-info__socials">
-                <a href={socials.instagram} target="_blank" rel="noopener noreferrer" className="social-pill">
+
+                <a
+                  href={socials.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-pill"
+                >
                   Instagram
                 </a>
-                <a href={socials.linkedin} target="_blank" rel="noopener noreferrer" className="social-pill">
+
+                <a
+                  href={socials.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-pill"
+                >
                   LinkedIn
                 </a>
+
               </div>
             </div>
+
           </div>
 
-          <form className="contact-form" onSubmit={handleSubmit}>
-            {sent ? (
-              <div className="contact-form__success" role="status">
-                <h3>Message ready to send</h3>
-                <p>Thanks for reaching out — connect this form to an email or form service to start receiving these for real.</p>
-              </div>
-            ) : (
-              <>
-                <div className="field">
-                  <label htmlFor="name">Name</label>
-                  <input id="name" name="name" type="text" required placeholder="Your full name" />
-                </div>
-                <div className="field">
-                  <label htmlFor="email">Email</label>
-                  <input id="email" name="email" type="email" required placeholder="you@example.com" />
-                </div>
-                <div className="field">
-                  <label htmlFor="branch">Branch &amp; year</label>
-                  <input id="branch" name="branch" type="text" placeholder="e.g. B.Tech CSE, 2nd year" />
-                </div>
-                <div className="field">
-                  <label htmlFor="message">Message</label>
-                  <textarea id="message" name="message" rows="4" required placeholder="What would you like to do with the club?" />
-                </div>
-                <button type="submit" className="btn btn--solid">
-                  Send message
-                </button>
-              </>
-            )}
-          </form>
+          {/* RIGHT SIDE */}
+
+          <div className="join-card">
+
+            <span className="join-badge">
+              🚀 Join Abhyudaya Club
+            </span>
+
+            <h2>Become a Member</h2>
+
+            <p>
+              Join the official Science & Literary Club of Maharana Pratap
+              Engineering College and become part of an innovative community.
+            </p>
+
+            <div className="join-features">
+
+              <div>💻 Technical Team</div>
+
+              <div>🎨 PR & Creative</div>
+
+              <div>📷 Photography</div>
+
+              <div>🎬 Video Editing</div>
+
+              <div>🎯 Operations</div>
+
+              <div>🚀 Workshops & Hackathons</div>
+
+            </div>
+
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSdGOahFn3oFuG1H7vOre7YT6aNJAuGod38brtzVFNRZfmXUew/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--solid register-btn"
+            >
+              Register Now →
+            </a>
+
+          </div>
+
         </div>
       </section>
+
+      <section className="section">
+
+        <div className="wrap">
+
+          <div className="faq-card">
+
+            <h2>Frequently Asked Questions</h2>
+
+            <div className="faq-item">
+              <h3>Who can join?</h3>
+              <p>Any student of Maharana Pratap Engineering College can join.</p>
+            </div>
+
+            <div className="faq-item">
+              <h3>Do I need coding experience?</h3>
+              <p>No. Beginners are always welcome.</p>
+            </div>
+
+            <div className="faq-item">
+              <h3>What teams are available?</h3>
+              <p>
+                Technical, PR & Creative, Photography, Video Editing,
+                Operations and Event Management.
+              </p>
+            </div>
+
+            <div className="faq-item">
+              <h3>How will I receive updates?</h3>
+              <p>Through our WhatsApp community and Instagram page.</p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
     </>
   )
 }
