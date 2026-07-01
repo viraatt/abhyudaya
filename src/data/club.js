@@ -115,4 +115,4 @@ export const team = {
     { name: 'Technical Head', role: 'Core Team', note: 'Add name & photo' },
   ],
 }
-}
+
