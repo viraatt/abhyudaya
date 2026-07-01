@@ -9,6 +9,12 @@ function TeamCard({ person }) {
         src={person.image}
         alt={person.name}
         className="team-card__image"
+        onError={(e) => {
+          e.target.src =
+            "https://ui-avatars.com/api/?name=" +
+            encodeURIComponent(person.name) +
+            "&background=0D8ABC&color=fff&size=500"
+        }}
       />
 
       <div className="team-card__content">
@@ -16,16 +22,18 @@ function TeamCard({ person }) {
 
         <p className="team-card__role">{person.role}</p>
 
-        {person.linkedin && (
-          <a
-            href={person.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="team-card__linkedin"
-          >
-            LinkedIn
-          </a>
-        )}
+        <a
+          href={person.linkedin || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="team-card__linkedin"
+          style={{
+            pointerEvents: person.linkedin ? "auto" : "none",
+            opacity: person.linkedin ? 1 : 0.5,
+          }}
+        >
+          LinkedIn
+        </a>
       </div>
     </div>
   )
