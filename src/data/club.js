@@ -160,14 +160,14 @@ export const team = {
     {
       name: "Shashwat Singh",
       role: "Core Member",
-      image: "https://YOUR_SHASHWAT_IMAGE_LINK",
-      linkedin: "",
+      image: "https://www.image2url.com/r2/default/images/1782930381718-0fea0cdd-7d48-4e79-a519-b2608d22a326.jpg",
+      linkedin: "linkedin.com/in/shashwat-singh-8a5784362/?skipRedirect=true",
     },
     {
       name: "Arpit Singh",
       role: "Core Member",
-      image: "https://YOUR_ARPIT_IMAGE_LINK",
-      linkedin: "",
+      image: "https://www.image2url.com/r2/default/images/1782930657556-52daa10b-e5d4-44bd-9553-b1e32dac3609.jpg",
+      linkedin: "https://www.linkedin.com/in/arpit-singh-1004a8327/?skipRedirect=true",
     },
   ],
 };
