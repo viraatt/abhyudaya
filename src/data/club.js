@@ -8,7 +8,7 @@ export const club = {
   department: 'Department of Basic Sciences & Humanities',
   tagline: 'Curiosity to Creation.',
   meaning:
-    '"Abhyudaya" is a Sanskrit word meaning rise, ascent, and prosperity — a fitting name for a club built on the idea that every idea, like every flight, begins on the ground.',
+    'Abhyudaya — From Curiosity to Creation ',
 }
 
 export const socials = {
