@@ -114,5 +114,5 @@ export const team = {
     { name: 'Virat Mishra', role: 'Technical Lead', note: 'Add name & photo' },
     { name: 'Sharad Agnihotri', role: 'Pr Lead', note: 'Add name & photo' },
      { name: 'Tilak Rajawat', role: 'Core Member', note: 'Add name & photo' },
-  ],
+ ],{ name: 'Kuldeep Yadav', role: 'Core Member', note: 'Add name & photo' },
 }
