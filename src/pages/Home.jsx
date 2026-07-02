@@ -54,7 +54,7 @@ export default function Home() {
             Abhyudaya <span>rises</span> here.
           </h1>
           <p className="hero__lede">
-            The technical &amp; cultural club of MPEC Kanpur, run under the{' '}
+            The science &amp; literary club of MPEC Kanpur, run under the{' '}
             {club.department}. We build fests, workshops, and competitions for
             students who'd rather make something than just study it.
           </p>
@@ -75,7 +75,7 @@ export default function Home() {
         <div className="wrap strip__inner">
           <div className="strip__item">
             <span className="strip__num">01</span>
-            <p>Flagship annual fest — TechBloom</p>
+            <p>Flagship annual events — TechBloom ,CommuniCraft &amp; Annual Student Orientation Programme</p>
           </div>
           <div className="strip__item">
             <span className="strip__num">02</span>
