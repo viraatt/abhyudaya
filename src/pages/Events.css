@@ -44,6 +44,27 @@
   max-width: 640px;
 }
 
+/* --- clickable rows that open the sub-events modal --- */
+
+.event-row--clickable {
+  cursor: pointer;
+}
+
+.event-row__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--horizon);
+  transition: gap 0.2s ease;
+}
+
+.event-row--clickable:hover .event-row__cta {
+  gap: 0.55rem;
+}
+
 @media (max-width: 700px) {
   .event-row {
     grid-template-columns: 1fr;

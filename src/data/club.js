@@ -39,6 +39,48 @@ export const events = [
     detail:
       'Organized under the Department of Basic Sciences & Humanities, TechBloom 2.0 combined inspiring talks with a full slate of competitions and workshops, closing with a live aircraft flying session on the lawns.',
     featured: true,
+    subEvents: [
+      {
+        slug: 'quiztronix',
+        name: 'Quiztronix',
+        kind: 'Quiz',
+        summary: 'A fast-paced technical quiz that tests breadth of knowledge across science and engineering.',
+        detail:
+          'Teams race through rounds covering electronics, computing, and general technical awareness, with elimination rounds building to a high-stakes finale.',
+      },
+      {
+        slug: 'poster-verse',
+        name: 'Poster Verse',
+        kind: 'Design Competition',
+        summary: 'A poster-making competition where participants visualize a technical or social theme.',
+        detail:
+          'Entrants design and present original posters on a themed prompt, judged on concept, clarity, and visual execution.',
+      },
+      {
+        slug: 'tech-trolls',
+        name: 'Tech-Trolls',
+        kind: 'Fun Tech Challenge',
+        summary: 'A light-hearted, high-energy tech challenge built around quick thinking under pressure.',
+        detail:
+          'A rapid-round format that mixes technical trivia with on-the-spot problem solving, kept fast and fun for every skill level.',
+      },
+      {
+        slug: 'trail-blaze',
+        name: 'Trail Blaze',
+        kind: 'Treasure Hunt',
+        summary: 'A campus-wide trail hunt that turns clues and puzzles into a race across MPEC.',
+        detail:
+          'Teams follow a chain of technical and lateral-thinking clues across campus, with the fastest correct trail taking the win.',
+      },
+      {
+        slug: 'nextgen-ventures',
+        name: 'NextGen Ventures',
+        kind: 'Pitch Competition',
+        summary: 'An entrepreneurship-style pitch event for early-stage ideas and student ventures.',
+        detail:
+          'Students pitch original venture ideas to a panel, practicing the same structure and scrutiny used in real startup pitch rooms.',
+      },
+    ],
   },
   {
     slug: 'aeromodelling-workshop',
@@ -50,46 +92,6 @@ export const events = [
       'Participants built their own aircraft models from the ground up, then took them outdoors for a live flying session — the standout moment of TechBloom 2.0.',
   },
   {
-    slug: 'quiztronix',
-    name: 'Quiztronix',
-    kind: 'Quiz',
-    summary: 'A fast-paced technical quiz that tests breadth of knowledge across science and engineering.',
-    detail:
-      'Teams race through rounds covering electronics, computing, and general technical awareness, with elimination rounds building to a high-stakes finale.',
-  },
-  {
-    slug: 'poster-verse',
-    name: 'Poster Verse',
-    kind: 'Design Competition',
-    summary: 'A poster-making competition where participants visualize a technical or social theme.',
-    detail:
-      'Entrants design and present original posters on a themed prompt, judged on concept, clarity, and visual execution.',
-  },
-  {
-    slug: 'tech-trolls',
-    name: 'Tech-Trolls',
-    kind: 'Fun Tech Challenge',
-    summary: 'A light-hearted, high-energy tech challenge built around quick thinking under pressure.',
-    detail:
-      'A rapid-round format that mixes technical trivia with on-the-spot problem solving, kept fast and fun for every skill level.',
-  },
-  {
-    slug: 'trail-blaze',
-    name: 'Trail Blaze',
-    kind: 'Treasure Hunt',
-    summary: 'A campus-wide trail hunt that turns clues and puzzles into a race across MPEC.',
-    detail:
-      'Teams follow a chain of technical and lateral-thinking clues across campus, with the fastest correct trail taking the win.',
-  },
-  {
-    slug: 'nextgen-ventures',
-    name: 'NextGen Ventures',
-    kind: 'Pitch Competition',
-    summary: 'An entrepreneurship-style pitch event for early-stage ideas and student ventures.',
-    detail:
-      'Students pitch original venture ideas to a panel, practicing the same structure and scrutiny used in real startup pitch rooms.',
-  },
-  {
     slug: 'website-dev-workshop',
     name: 'Website Development Workshop',
     kind: 'Workshop',
@@ -98,7 +100,6 @@ export const events = [
       'A guided, hands-on workshop that takes participants from a blank page to a working site, focused on skills they can keep using after the event ends.',
   },
 ]
-
 // Placeholder roster — swap in real names, photos, and socials for the
 // club's current core team and faculty coordinator.
 export const team = {
