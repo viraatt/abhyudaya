@@ -101,17 +101,73 @@ export const events = [
 export const team = {
   faculty: [
     {
-      name: 'Faculty Coordinator',
-      role: 'Department of Basic Sciences & Humanities',
-      note: 'Add name & photo',
+      name: "Dr. Anupama Mathur",
+      role: "Faculty Advisor",
+      image: "https://www.image2url.com/r2/default/images/1782925455771-fcabd88a-9d76-44aa-8731-ebbb72274fd0.jpeg",
+      linkedin: "https://www.linkedin.com/in/anupama-mathur-426578263/",
     },
   ],
+
   core: [
-    { name: 'N/A', role: 'President', note: 'Add name & photo' },
-    { name: 'N/A', role: 'Vice President', note: 'Add name & photo' },
-    { name: 'Unnati Pal', role: 'Secretary', note: 'Add name & photo' },
-    { name: 'Ishan Shukla', role: 'Operations Lead', note: 'Add name & photo' },
-    { name: 'Virat Mishra', role: 'Technical Lead', note: 'Add name & photo' },
-    { name: 'Sharad Agnihotri', role: 'Pr Lead', note: 'Add name & photo' },
+    {
+      name: "N/A",
+      role: "President",
+      image: "https://YOUR_PRESIDENT_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "N/A",
+      role: "Vice President",
+      image: "https://YOUR_VICE_PRESIDENT_IMAGE_LINK",
+      linkedin: "",
+    },
+    {
+      name: "Unnati Pal",
+      role: "General Secretary",
+      image: "https://www.image2url.com/r2/default/images/1782929355993-d7bf3c74-8bfe-46f5-becf-6b09ffac5c73.jpg",
+      linkedin: "https://www.linkedin.com/in/unnatii05/",
+    },
+    {
+      name: "Ishan Shukla",
+      role: "Operations Lead",
+      image: "https://www.image2url.com/r2/default/images/1782929634972-be655ebb-8aa6-49b6-ab72-c3ccba8e0bd6.jpg",
+      linkedin: "https://www.linkedin.com/in/ishanshukla2/",
+    },
+    {
+      name: "Virat Mishra",
+      role: "Technical Lead",
+      image: "https://www.image2url.com/r2/default/images/1782929494367-261bc5d9-2b40-43e0-b39e-1af42c38fada.jpg",
+      linkedin: "https://www.linkedin.com/in/viratmishra24/",
+    },
+    {
+      name: "Sharad Agnihotri",
+      role: "PR Lead",
+      image: "https://www.image2url.com/r2/default/images/1782929756147-7db2467b-c574-4fe9-aff1-49b3af67098e.jpg",
+      linkedin: "https://www.linkedin.com/in/sharad-agnihotri-628938315/",
+    },
+    {
+      name: "Tilak Rajawat",
+      role: "Core Member",
+      image: "https://www.image2url.com/r2/default/images/1782930115820-4cc4e2d2-a208-49c7-a62b-8ce1f745fe4a.png",
+      linkedin: "https://www.linkedin.com/in/tilakraj-singh-rajawat-121y/",
+    },
+    {
+      name: "Kuldeep Yadav",
+      role: "Core Member",
+      image: "https://www.image2url.com/r2/default/images/1782929938365-5508c1c2-5daa-43eb-acaf-90f816091e8f.jpg",
+      linkedin: "https://www.linkedin.com/in/kuldeep-yadav-cse28/",
+    },
+    {
+      name: "Shashwat Singh",
+      role: "Core Member",
+      image: "https://www.image2url.com/r2/default/images/1782930381718-0fea0cdd-7d48-4e79-a519-b2608d22a326.jpg",
+      linkedin: "linkedin.com/in/shashwat-singh-8a5784362/?skipRedirect=true",
+    },
+    {
+      name: "Arpit Singh",
+      role: "Core Member",
+      image: "https://www.image2url.com/r2/default/images/1782930657556-52daa10b-e5d4-44bd-9553-b1e32dac3609.jpg",
+      linkedin: "https://www.linkedin.com/in/arpit-singh-1004a8327/?skipRedirect=true",
+    },
   ],
-}
+};
