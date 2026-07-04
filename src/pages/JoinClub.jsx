@@ -19,7 +19,7 @@ export default function JoinClub() {
           </p>
 
           <a
-            href="https://forms.gle/YOUR_GOOGLE_FORM_LINK"
+            href="https://forms.gle/Uy36JEjFCprqhhYM6"
             target="_blank"
             rel="noopener noreferrer"
             className="join-btn"
