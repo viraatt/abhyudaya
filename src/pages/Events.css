@@ -1,73 +1,132 @@
-.events-list {
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.contact-info {
   display: flex;
   flex-direction: column;
+  gap: 30px;
 }
 
-.event-row {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 2rem;
-  padding: 1.9rem 0;
-  border-top: 1px solid var(--line-on-light);
-  transition: background 0.2s ease;
+.contact-info__block {
+  background: #fff;
+  padding: 28px;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
 }
 
-.events-list .event-row:last-child {
-  border-bottom: 1px solid var(--line-on-light);
+.contact-info__text {
+  color: #475569;
+  line-height: 1.8;
 }
 
-.event-row:hover {
-  background: rgba(242, 169, 59, 0.06);
-}
-
-.event-row--featured .event-row__kind .eyebrow {
-  color: var(--sun);
-}
-
-.event-row--featured h3 {
-  color: var(--horizon);
-}
-
-.event-row__kind .eyebrow {
-  color: var(--horizon);
-}
-
-.event-row__body h3 {
-  font-size: 1.35rem;
+.contact-info__email {
+  color: #2563eb;
   font-weight: 600;
-  margin-bottom: 0.55rem;
+  text-decoration: none;
 }
 
-.event-row__body p {
-  color: var(--ink-soft);
-  line-height: 1.6;
-  max-width: 640px;
+.contact-info__email:hover {
+  text-decoration: underline;
 }
 
-/* --- clickable rows that open the sub-events modal --- */
-
-.event-row--clickable {
-  cursor: pointer;
+.contact-info__socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.event-row__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--horizon);
-  transition: gap 0.2s ease;
+.social-pill {
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 30px;
+  background: #2563eb;
+  color: white;
+  transition: .3s;
 }
 
-.event-row--clickable:hover .event-row__cta {
-  gap: 0.55rem;
+.social-pill:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
 }
 
-@media (max-width: 700px) {
-  .event-row {
+/* Right Card */
+
+.join-card {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: white;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px rgba(0,0,0,.18);
+}
+
+.join-badge {
+  display: inline-block;
+  background: rgba(255,255,255,.15);
+  padding: 8px 18px;
+  border-radius: 50px;
+  margin-bottom: 20px;
+  font-size: .9rem;
+}
+
+.join-card h2 {
+  margin-bottom: 18px;
+}
+
+.join-card p {
+  line-height: 1.8;
+  opacity: .9;
+}
+
+.register-btn {
+  margin-top: 25px;
+}
+
+/* FAQ */
+
+.faq-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 12px 35px rgba(0,0,0,.08);
+}
+
+.faq-card h2 {
+  margin-bottom: 35px;
+}
+
+.faq-item {
+  padding: 18px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-item h3 {
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.faq-item p {
+  color: #64748b;
+  line-height: 1.7;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+
+  .contact-grid {
     grid-template-columns: 1fr;
-    gap: 0.6rem;
   }
+
+  .join-card {
+    margin-top: 20px;
+  }
+
 }
