@@ -1,1 +1,241 @@
+.join-page {
+  background: #f8fafc;
+  color: #1e293b;
+}
 
+/* HERO */
+
+.join-hero {
+  padding: 110px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: white;
+}
+
+.join-tag {
+  display: inline-block;
+  background: rgba(255,255,255,.15);
+  padding: 8px 18px;
+  border-radius: 50px;
+  font-size: .85rem;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.join-hero h1 {
+  font-size: 3.2rem;
+  margin-bottom: 25px;
+  font-weight: 800;
+}
+
+.join-hero p {
+  max-width: 760px;
+  margin: auto;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  opacity: .9;
+}
+
+.join-btn {
+  display: inline-block;
+  margin-top: 40px;
+  background: #f59e0b;
+  color: #fff;
+  padding: 16px 38px;
+  border-radius: 50px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: .3s;
+  box-shadow: 0 10px 25px rgba(245,158,11,.35);
+}
+
+.join-btn:hover {
+  transform: translateY(-5px);
+  background: #d97706;
+}
+
+/* SECTION */
+
+.join-section {
+  padding: 90px 20px;
+}
+
+.join-section.light {
+  background: white;
+}
+
+.join-section h2 {
+  text-align: center;
+  font-size: 2.3rem;
+  margin-bottom: 60px;
+  color: #0f172a;
+}
+
+/* WHY JOIN */
+
+.join-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+  gap: 30px;
+}
+
+.join-card {
+  background: white;
+  padding: 35px;
+  border-radius: 20px;
+  transition: .35s;
+  box-shadow: 0 15px 40px rgba(0,0,0,.06);
+}
+
+.join-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 50px rgba(0,0,0,.12);
+}
+
+.join-card h3 {
+  margin-bottom: 15px;
+  color: #1d4ed8;
+}
+
+.join-card p {
+  color: #475569;
+  line-height: 1.7;
+}
+
+/* DOMAINS */
+
+.domain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+  gap: 30px;
+}
+
+.domain-card {
+  background: linear-gradient(145deg,#ffffff,#f3f6fb);
+  border-radius: 18px;
+  padding: 30px;
+  text-align: center;
+  transition: .35s;
+  border: 1px solid #e2e8f0;
+}
+
+.domain-card:hover {
+  transform: scale(1.05);
+  border-color: #2563eb;
+}
+
+.domain-card h3 {
+  margin-bottom: 15px;
+  color: #1e40af;
+}
+
+.domain-card p {
+  color: #475569;
+}
+
+/* PROCESS */
+
+.process {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 30px;
+}
+
+.step {
+  background: white;
+  border-radius: 20px;
+  padding: 40px 25px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0,0,0,.06);
+  transition: .3s;
+}
+
+.step:hover {
+  transform: translateY(-10px);
+}
+
+.step span {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: white;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.step h3 {
+  margin-bottom: 15px;
+}
+
+.step p {
+  color: #64748b;
+}
+
+/* CTA */
+
+.join-cta {
+  padding: 100px 20px;
+  text-align: center;
+  background: linear-gradient(135deg,#1e3a8a,#0f172a);
+  color: white;
+}
+
+.join-cta h2 {
+  font-size: 2.7rem;
+  margin-bottom: 20px;
+}
+
+.join-cta p {
+  max-width: 700px;
+  margin: auto;
+  line-height: 1.8;
+  opacity: .9;
+}
+
+/* RESPONSIVE */
+
+@media (max-width:900px){
+
+.join-hero h1{
+font-size:2.4rem;
+}
+
+.join-section h2{
+font-size:2rem;
+}
+
+}
+
+@media (max-width:600px){
+
+.join-hero{
+padding:80px 20px;
+}
+
+.join-hero h1{
+font-size:2rem;
+}
+
+.join-hero p{
+font-size:1rem;
+}
+
+.join-btn{
+padding:14px 28px;
+}
+
+.join-section{
+padding:70px 18px;
+}
+
+.join-cta h2{
+font-size:2rem;
+}
+
+}
