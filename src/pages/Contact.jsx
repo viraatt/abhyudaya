@@ -6,25 +6,29 @@ export default function Contact() {
   return (
     <>
       <PageHero
-        eyebrow="Get in touch"
-        title="Come build with us."
-        lede="Become part of MPEC's most active  community. Learn, build, lead and grow with Abhyudaya Club."
+        eyebrow="Get in Touch"
+        title="Let's Connect."
+        lede="Have a question, collaboration idea, or want to know more about Abhyudaya Club? We'd love to hear from you."
       />
 
       <section className="section">
         <div className="wrap contact-grid">
 
-          {/* LEFT SIDE */}
+          {/* Contact Information */}
+
           <div className="contact-info">
 
             <div className="contact-info__block">
-              <p className="eyebrow">Find us</p>
+              <p className="eyebrow">📍 Address</p>
+
               <p className="contact-info__text">{club.institute}</p>
+
               <p className="contact-info__text">{club.department}</p>
             </div>
 
             <div className="contact-info__block">
-              <p className="eyebrow">Email</p>
+
+              <p className="eyebrow">📧 Email</p>
 
               <a
                 href={`mailto:${socials.email}`}
@@ -36,7 +40,8 @@ export default function Contact() {
             </div>
 
             <div className="contact-info__block">
-              <p className="eyebrow">Follow Along</p>
+
+              <p className="eyebrow">🌐 Follow Us</p>
 
               <div className="contact-info__socials">
 
@@ -59,53 +64,38 @@ export default function Contact() {
                 </a>
 
               </div>
+
             </div>
 
           </div>
 
-          {/* RIGHT SIDE */}
+          {/* Collaboration Card */}
 
           <div className="join-card">
 
             <span className="join-badge">
-              🚀 Join Abhyudaya Club
+              🤝 Collaborate With Us
             </span>
 
-            <h2>Become a Member</h2>
+            <h2>Partner With Abhyudaya</h2>
 
             <p>
-              Join the official Science & Literary Club of Maharana Pratap
-              Engineering College and become part of an innovative community.
+              We welcome collaborations from students, faculty,
+              startups, organizations, alumni and industry experts
+              for workshops, events and innovation initiatives.
             </p>
 
-            <div className="join-features">
-
-              <div>💻 Technical Team</div>
-
-              <div>🎨 PR & Creative</div>
-
-              <div>📷 Photography</div>
-
-              <div>🎬 Video Editing</div>
-
-              <div>🎯 Operations</div>
-
-              <div>🚀 Workshops & Hackathons</div>
-
-            </div>
-
             <a
-              href="https://docs.google.com/forms/d/e/1FAIpQLSdGOahFn3oFuG1H7vOre7YT6aNJAuGod38brtzVFNRZfmXUew/viewform"
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`mailto:${socials.email}`}
               className="btn btn--solid register-btn"
             >
-              Register Now →
+              Email Us →
             </a>
 
           </div>
 
         </div>
+
       </section>
 
       <section className="section">
@@ -117,26 +107,23 @@ export default function Contact() {
             <h2>Frequently Asked Questions</h2>
 
             <div className="faq-item">
-              <h3>Who can join?</h3>
-              <p>Any student of Maharana Pratap Engineering College can join.</p>
+              <h3>How can I contact the club?</h3>
+              <p>Email us anytime or reach out through our Instagram or LinkedIn pages.</p>
             </div>
 
             <div className="faq-item">
-              <h3>Do I need coding experience?</h3>
-              <p>No. Beginners are always welcome.</p>
+              <h3>Can I collaborate with Abhyudaya Club?</h3>
+              <p>Yes. We welcome collaborations, sponsorships, guest lectures and workshops.</p>
             </div>
 
             <div className="faq-item">
-              <h3>What teams are available?</h3>
-              <p>
-                Technical, PR & Creative, Photography, Video Editing,
-                Operations and Event Management.
-              </p>
+              <h3>Where are your events conducted?</h3>
+              <p>Most events are organized at Maharana Pratap Engineering College, Kanpur.</p>
             </div>
 
             <div className="faq-item">
-              <h3>How will I receive updates?</h3>
-              <p>Through our WhatsApp community and Instagram page.</p>
+              <h3>How quickly do you reply?</h3>
+              <p>We usually respond within 24–48 hours.</p>
             </div>
 
           </div>
