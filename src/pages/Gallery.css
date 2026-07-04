@@ -1,3 +1,5 @@
+/* ── Existing styles (unchanged) ───────────────────────────── */
+
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -53,3 +55,154 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Overlay backdrop ──────────────────────────────────────── */
+
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+
+/* ── Overlay modal ─────────────────────────────────────────── */
+
+.overlay-modal {
+  position: fixed;
+  inset: 5%;
+  max-width: 1000px;
+  max-height: 85vh;
+  margin: auto;
+  z-index: 101;
+  border-radius: 2rem;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: black;
+}
+
+/* ── Overlay image ─────────────────────────────────────────── */
+
+.overlay-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ── Nav buttons (prev / next) ─────────────────────────────── */
+
+.overlay-nav-btn {
+  position: absolute;
+  z-index: 110;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.overlay-nav-btn--prev { left: 1rem; }
+.overlay-nav-btn--next { right: 1rem; }
+
+/* ── Photo counter ─────────────────────────────────────────── */
+
+.overlay-counter {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  color: white;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+/* ── Bottom gradient (no pointer events) ───────────────────── */
+
+.overlay-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, black 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ── Caption block ─────────────────────────────────────────── */
+
+.overlay-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem;
+  pointer-events: none;
+}
+
+.overlay-caption__title {
+  color: white;
+  font-weight: 800;
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  margin: 0;
+}
+
+.overlay-caption__kind {
+  color: rgb(16, 185, 129);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ── Close button ──────────────────────────────────────────── */
+
+.overlay-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: white;
+  border: none;
+  color: black;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 110;
+}
+
+/* ── Gallery section + wrap ────────────────────────────────── */
+
+.gallery-section {
+  padding: 4rem 1.5rem;
+}
+
+.gallery-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Cards grid ────────────────────────────────────────────── */
+
+.gallery-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 3rem;
+}
+
+/* ── Card wrapper (focus blur effect) ─────────────────────── */
+
+.gallery-card-wrapper {
+  transition: all 0.5s ease;
+}
+
+.gallery-card-wrapper--blurred {
+  filter: blur(8px) opacity(0.3);
+}
+

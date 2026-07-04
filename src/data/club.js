@@ -81,7 +81,7 @@ export const events = [
   },
   {
     slug: 'aeromodelling-workshop',
-    name: 'Aeromodelling & RC Aircraft Design Workshop',
+    name: 'Aeromodelling & RC Aircraft Design ',
     kind: 'Workshop',
     summary:
       'A hands-on session on designing and building RC aircraft, ending with a live flying demonstration.',
@@ -95,7 +95,32 @@ export const events = [
     summary: 'A practical, build-along session covering the fundamentals of building a website.',
     detail:
       'A guided, hands-on workshop that takes participants from a blank page to a working site, focused on skills they can keep using after the event ends.',
+  },{
+  slug: 'antariksh spradha',
+  name: 'Antariksh spradha',
+  kind: 'Astronomy Festival',
+  summary: 'A 3-day space event with quiz, lecture, and star gazing.',
+  detail:
+    'Day 1 begins with a quiz hosted on Unstop to challenge participants on space and science knowledge. Day 2 features an inspiring guest lecture by a professor from IIT Kanpur, offering insights into space research and innovation. Day 3 concludes with a night star-gazing event in collaboration with the IIT Kanpur AstroClub, giving participants a hands-on experience of exploring the universe.',
+    photo: 'assets/logo-512.png',
+    photos: [
+      'assets/antariksh_spardha/20251011_30624PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_30625PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_30907PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_30954PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_32908PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_35510PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_35554PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_40651PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_40834PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_41133PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_41216PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_41254PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_41406PMByGPSMapCamera.jpg.jpeg',
+      'assets/antariksh_spardha/20251011_41410PMByGPSMapCamera.jpg.jpeg',
+    ],
   },
+
 ]
 // Placeholder roster — swap in real names, photos, and socials for the
 // club's current core team and faculty coordinator.
