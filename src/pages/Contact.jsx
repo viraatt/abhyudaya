@@ -135,12 +135,12 @@ export default function Contact() {
               startups, organizations, alumni and industry experts
               for workshops, events and innovation initiatives.
             </p>
-            <a
-              href={`mailto:${abhyudayaclubmpec@gmail.com}`}
-              className="btn btn--solid register-btn"
+           <a
+             href={`mailto:${socials.email}`}
+                className="btn btn--solid register-btn"
             >
-              Email Us →
-            </a>
+             Email Us →
+              </a>
           </div>
         </div>
       </section>
