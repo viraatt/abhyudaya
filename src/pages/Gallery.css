@@ -196,6 +196,20 @@
   gap: 3rem;
 }
 
+@media (max-width: 900px) {
+  .gallery-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .gallery-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+}
+
 /* ── Card wrapper (focus blur effect) ─────────────────────── */
 
 .gallery-card-wrapper {
@@ -205,4 +219,27 @@
 .gallery-card-wrapper--blurred {
   filter: blur(8px) opacity(0.3);
 }
+
+/* ── Locked image box ──────────────────────────────────────────
+ * This is the fix. A hard 200px tall container that every cover
+ * image must fill. object-fit:cover crops to fit — portrait,
+ * landscape, square — all look identical. Card stays h-auto so
+ * title and label size the card; only the image is locked.
+ * ─────────────────────────────────────────────────────────── */
+
+.gallery-card-img-box {
+  position: relative;
+  width: 100%;
+  height: 200px;        /* ← single number to change if needed */
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.gallery-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;    /* crops to fill, never stretches */
+  display: block;
+}
+
 

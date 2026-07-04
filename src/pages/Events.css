@@ -1,73 +1,198 @@
-.events-list {
+/* =========================
+   EVENTS PAGE
+========================= */
+
+.featured-event {
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  border-radius: 28px;
+  color: white;
+  overflow: hidden;
+  margin-bottom: 60px;
+  cursor: pointer;
+  transition: .35s ease;
+  box-shadow: 0 20px 45px rgba(15,23,42,.18);
+}
+
+.featured-event:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 60px rgba(15,23,42,.28);
+}
+
+.featured-content {
+  padding: 60px;
+}
+
+.featured-badge {
+  display: inline-block;
+  background: rgba(255,255,255,.18);
+  color: #facc15;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 700;
+  margin-bottom: 22px;
+}
+
+.featured-content h2 {
+  font-size: 3rem;
+  margin-bottom: 18px;
+  color: white;
+}
+
+.featured-content p {
+  max-width: 760px;
+  color: rgba(255,255,255,.9);
+  line-height: 1.9;
+  font-size: 1.08rem;
+}
+
+.featured-stats {
+  display: flex;
+  gap: 35px;
+  margin: 40px 0;
+  flex-wrap: wrap;
+}
+
+.featured-stats div {
+  background: rgba(255,255,255,.12);
+  padding: 18px 22px;
+  border-radius: 16px;
+  min-width: 150px;
+}
+
+.featured-stats strong {
+  display: block;
+  font-size: 1.3rem;
+  color: white;
+}
+
+.featured-stats span {
+  color: rgba(255,255,255,.75);
+  font-size: .9rem;
+}
+
+.featured-btn {
+  border: none;
+  background: #fbbf24;
+  color: #111827;
+  padding: 16px 32px;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .3s;
+}
+
+.featured-btn:hover {
+  background: white;
+  transform: translateY(-2px);
+}
+
+/* =========================
+   EVENT GRID
+========================= */
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px,1fr));
+  gap: 32px;
+}
+
+.event-card {
+  background: white;
+  padding: 34px;
+  border-radius: 22px;
+  border: 1px solid #ece8dd;
+  box-shadow: 0 15px 35px rgba(0,0,0,.06);
+  transition: .35s;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
 }
 
-.event-row {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 2rem;
-  padding: 1.9rem 0;
-  border-top: 1px solid var(--line-on-light);
-  transition: background 0.2s ease;
+.event-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 45px rgba(0,0,0,.12);
 }
 
-.events-list .event-row:last-child {
-  border-bottom: 1px solid var(--line-on-light);
+.event-type {
+  display: inline-block;
+  align-self: flex-start;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
 }
 
-.event-row:hover {
-  background: rgba(242, 169, 59, 0.06);
+.event-card h3 {
+  font-size: 2rem;
+  color: #0f172a;
+  margin-bottom: 16px;
 }
 
-.event-row--featured .event-row__kind .eyebrow {
-  color: var(--sun);
+.event-card p {
+  color: #64748b;
+  line-height: 1.8;
+  flex: 1;
 }
 
-.event-row--featured h3 {
-  color: var(--horizon);
+.event-link {
+  margin-top: 26px;
+  color: #2563eb;
+  font-weight: 700;
+  transition: .3s;
 }
 
-.event-row__kind .eyebrow {
-  color: var(--horizon);
+.event-card:hover .event-link {
+  letter-spacing: .5px;
 }
 
-.event-row__body h3 {
-  font-size: 1.35rem;
-  font-weight: 600;
-  margin-bottom: 0.55rem;
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width:900px){
+
+.featured-content{
+padding:40px;
 }
 
-.event-row__body p {
-  color: var(--ink-soft);
-  line-height: 1.6;
-  max-width: 640px;
+.featured-content h2{
+font-size:2.3rem;
 }
 
-/* --- clickable rows that open the sub-events modal --- */
-
-.event-row--clickable {
-  cursor: pointer;
+.events-grid{
+grid-template-columns:1fr;
 }
 
-.event-row__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--horizon);
-  transition: gap 0.2s ease;
 }
 
-.event-row--clickable:hover .event-row__cta {
-  gap: 0.55rem;
+@media (max-width:600px){
+
+.featured-content{
+padding:28px;
 }
 
-@media (max-width: 700px) {
-  .event-row {
-    grid-template-columns: 1fr;
-    gap: 0.6rem;
-  }
+.featured-content h2{
+font-size:1.9rem;
+}
+
+.featured-stats{
+flex-direction:column;
+gap:15px;
+}
+
+.event-card{
+padding:24px;
+}
+
+.event-card h3{
+font-size:1.5rem;
+}
+
 }

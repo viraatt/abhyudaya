@@ -1,0 +1,264 @@
+/* ==========================
+   JOIN CLUB PAGE
+========================== */
+
+.join-page{
+  background:#f8fafc;
+  color:#1f2937;
+}
+
+/* HERO */
+
+.join-hero{
+  background:linear-gradient(135deg,#0f172a,#1e3a8a);
+  color:#fff;
+  text-align:center;
+  padding:120px 20px;
+}
+
+.join-tag{
+  display:inline-block;
+  background:rgba(255,255,255,.15);
+  padding:8px 18px;
+  border-radius:40px;
+  font-size:.9rem;
+  letter-spacing:1px;
+  margin-bottom:20px;
+}
+
+.join-hero h1{
+  font-size:3.2rem;
+  margin-bottom:20px;
+  font-weight:800;
+}
+
+.join-hero p{
+  max-width:750px;
+  margin:auto;
+  font-size:1.15rem;
+  line-height:1.8;
+  opacity:.9;
+}
+
+.join-btn{
+  display:inline-block;
+  margin-top:35px;
+  padding:16px 38px;
+  background:#f59e0b;
+  color:white;
+  text-decoration:none;
+  border-radius:50px;
+  font-weight:700;
+  transition:.3s;
+}
+
+.join-btn:hover{
+  background:#d97706;
+  transform:translateY(-4px);
+}
+
+/* COMMON */
+
+.join-section{
+  padding:90px 20px;
+}
+
+.join-section.light{
+  background:white;
+}
+
+.join-section h2{
+  text-align:center;
+  font-size:2.4rem;
+  margin-bottom:60px;
+  color:#0f172a;
+}
+
+/* WHY JOIN */
+
+.join-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:30px;
+}
+
+.join-card{
+  background:white;
+  padding:35px;
+  border-radius:18px;
+  box-shadow:0 15px 35px rgba(0,0,0,.08);
+  transition:.35s;
+}
+
+.join-card:hover{
+  transform:translateY(-10px);
+}
+
+.join-card h3{
+  color:#2563eb;
+  margin-bottom:15px;
+}
+
+.join-card p{
+  color:#64748b;
+  line-height:1.7;
+}
+
+/* DOMAINS */
+
+.domain-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:30px;
+}
+
+.domain-card{
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding:30px;
+  text-align:center;
+  transition:.3s;
+}
+
+.domain-card:hover{
+  transform:scale(1.04);
+  border-color:#2563eb;
+}
+
+.domain-card h3{
+  color:#1d4ed8;
+  margin-bottom:15px;
+}
+
+.domain-card p{
+  color:#64748b;
+}
+
+/* PROCESS */
+
+.process{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:30px;
+}
+
+.step{
+  background:white;
+  border-radius:18px;
+  padding:35px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+.step span{
+  width:60px;
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#2563eb;
+  color:white;
+  border-radius:50%;
+  margin:0 auto 20px;
+  font-size:1.3rem;
+  font-weight:bold;
+}
+
+.step h3{
+  margin-bottom:15px;
+}
+
+.step p{
+  color:#64748b;
+}
+
+/* FAQ */
+
+.faq-item{
+  background:white;
+  margin-bottom:25px;
+  padding:28px;
+  border-left:5px solid #2563eb;
+  border-radius:12px;
+  box-shadow:0 10px 25px rgba(0,0,0,.06);
+}
+
+.faq-item h3{
+  margin-bottom:12px;
+  color:#0f172a;
+}
+
+.faq-item p{
+  color:#64748b;
+  line-height:1.7;
+}
+
+/* CTA */
+
+.join-cta{
+  background:linear-gradient(135deg,#1e3a8a,#0f172a);
+  color:white;
+  text-align:center;
+  padding:100px 20px;
+}
+
+.join-cta h2{
+  font-size:2.6rem;
+  margin-bottom:20px;
+}
+
+.join-cta p{
+  max-width:700px;
+  margin:auto;
+  line-height:1.8;
+  opacity:.9;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:992px){
+
+.join-hero h1{
+font-size:2.6rem;
+}
+
+.join-section h2{
+font-size:2rem;
+}
+
+}
+
+@media(max-width:768px){
+
+.join-hero{
+padding:90px 20px;
+}
+
+.join-hero h1{
+font-size:2.2rem;
+}
+
+.join-hero p{
+font-size:1rem;
+}
+
+.join-btn{
+padding:14px 30px;
+}
+
+.join-section{
+padding:70px 20px;
+}
+
+.join-grid,
+.domain-grid,
+.process{
+grid-template-columns:1fr;
+}
+
+.join-cta h2{
+font-size:2rem;
+}
+
+}

@@ -1,177 +1,202 @@
 .contact-grid {
   display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
-  gap: 3rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
   align-items: start;
 }
-
-/* LEFT SIDE */
-
 .contact-info {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 30px;
 }
-
 .contact-info__block {
-  background: white;
-  padding: 24px;
+  background: #fff;
+  padding: 28px;
   border-radius: 18px;
-  box-shadow: 0 12px 30px rgba(0,0,0,.06);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  transition: transform .3s ease, box-shadow .3s ease;
 }
-
+.contact-info__block:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+}
 .contact-info__text {
-  font-size: 1rem;
-  line-height: 1.7;
-  margin-top: .4rem;
+  color: #475569;
+  line-height: 1.8;
 }
-
 .contact-info__email {
-  display: inline-block;
-  transition: .3s;
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
 }
-
 .contact-info__email:hover {
-  color: var(--horizon);
+  text-decoration: underline;
 }
-
 .contact-info__socials {
   display: flex;
-  gap: .8rem;
-  margin-top: 1rem;
+  flex-wrap: wrap;
+  gap: 12px;
 }
-
 .social-pill {
-  font-family: var(--font-utility);
-  font-size: .85rem;
-  font-weight: 600;
-  padding: .6rem 1.2rem;
-  border-radius: 100px;
-  border: 1.5px solid var(--line-on-light);
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 30px;
+  background: #2563eb;
+  color: white;
   transition: .3s;
 }
-
 .social-pill:hover {
-  background: var(--sun);
-  color: white;
-  border-color: var(--sun);
+  background: #1d4ed8;
+  transform: translateY(-2px);
 }
 
-/* RIGHT CARD */
-
-.join-card{
-  background:#fff;
-  border-radius:22px;
-  padding:42px;
-  box-shadow:0 20px 45px rgba(0,0,0,.08);
-  transition:.35s;
+/* Map */
+.contact-map {
+  padding: 0;
+  overflow: hidden;
+  line-height: 0;
+}
+.contact-map__frame {
+  width: 100%;
+  height: 220px;
+  border: 0;
+  display: block;
+  filter: grayscale(15%) contrast(1.02);
+  transition: filter .3s ease;
+}
+.contact-map:hover .contact-map__frame {
+  filter: grayscale(0%);
 }
 
-.join-card:hover{
-  transform:translateY(-6px);
+/* Right Card */
+.join-card {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a) !important;
+  color: #fff !important;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px rgba(0,0,0,.18);
+  transition: transform .35s ease, box-shadow .35s ease;
 }
-
-.join-badge{
-  display:inline-block;
-  background:#FFF4D6;
-  color:#B45309;
-  padding:8px 18px;
-  border-radius:50px;
-  font-weight:600;
-  margin-bottom:20px;
+.join-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 26px 55px rgba(0,0,0,.24);
 }
-
-.join-card h2{
-  font-size:2rem;
-  margin-bottom:18px;
+.join-card .join-badge {
+  display: inline-block;
+  background: rgba(255,255,255,.15) !important;
+  color: #fff !important;
+  padding: 8px 18px;
+  border-radius: 50px;
+  margin-bottom: 20px;
+  font-size: .9rem;
 }
-
-.join-card p{
-  color:#666;
-  line-height:1.8;
-  margin-bottom:28px;
+.join-card h2 {
+  color: #fff !important;
+  margin-bottom: 18px;
 }
-
-.join-features{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:14px;
-  margin-bottom:35px;
+.join-card p {
+  color: rgba(255,255,255,.9) !important;
+  line-height: 1.8;
+  opacity: 1;
 }
-
-.join-features div{
-  background:#F9FAFB;
-  padding:16px;
-  border-radius:14px;
-  font-weight:600;
-  transition:.3s;
+.register-btn {
+  margin-top: 25px;
+  transition: transform .25s ease;
 }
-
-.join-features div:hover{
-  background:#FFF4D6;
-  transform:translateY(-3px);
-}
-
-.register-btn{
-  display:block;
-  width:100%;
-  text-align:center;
-  padding:18px;
-  border-radius:14px;
-  font-size:1rem;
-  font-weight:700;
+.register-btn:hover {
+  transform: translateX(3px);
 }
 
 /* FAQ */
-
-.faq-card{
-  background:white;
-  border-radius:22px;
-  padding:40px;
-  margin-top:40px;
-  box-shadow:0 20px 45px rgba(0,0,0,.08);
+.faq-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 12px 35px rgba(0,0,0,.08);
+}
+.faq-card h2 {
+  margin-bottom: 35px;
+}
+.faq-item {
+  padding: 18px 0;
+  border-bottom: 1px solid #e5e7eb;
+  transition: padding-left .25s ease;
+}
+.faq-item:hover {
+  padding-left: 6px;
+}
+.faq-item:last-child {
+  border-bottom: none;
+}
+.faq-item h3 {
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+.faq-item p {
+  color: #64748b;
+  line-height: 1.7;
 }
 
-.faq-card h2{
-  margin-bottom:30px;
+/* Scroll-reveal (used by the useReveal hook in Contact.jsx) */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.contact-info .reveal:nth-child(1) { transition-delay: 0s; }
+.contact-info .reveal:nth-child(2) { transition-delay: .08s; }
+.contact-info .reveal:nth-child(3) { transition-delay: .16s; }
+.contact-info .reveal:nth-child(4) { transition-delay: .24s; }
+.faq-card .reveal:nth-child(2) { transition-delay: 0s; }
+.faq-card .reveal:nth-child(3) { transition-delay: .08s; }
+.faq-card .reveal:nth-child(4) { transition-delay: .16s; }
+.faq-card .reveal:nth-child(5) { transition-delay: .24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .contact-info__block,
+  .join-card,
+  .social-pill,
+  .contact-map__frame,
+  .register-btn,
+  .faq-item {
+    transition: none;
+  }
 }
 
-.faq-item{
-  padding:18px 0;
-  border-bottom:1px solid #ECECEC;
+/* Responsive */
+@media (max-width: 900px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+  .join-card {
+    margin-top: 20px;
+  }
 }
 
-.faq-item:last-child{
-  border-bottom:none;
-}
-
-.faq-item h3{
-  margin-bottom:8px;
-}
-
-.faq-item p{
-  color:#666;
-  line-height:1.7;
-}
-
-/* MOBILE */
-
-@media(max-width:900px){
-
-.contact-grid{
-grid-template-columns:1fr;
-}
-
-.join-features{
-grid-template-columns:1fr;
-}
-
-.join-card{
-padding:30px;
-}
-
-.faq-card{
-padding:30px;
-}
-
+@media (max-width: 640px) {
+  .contact-info__block,
+  .join-card,
+  .faq-card {
+    padding: 24px;
+    border-radius: 16px;
+  }
+  .contact-map__frame {
+    height: 180px;
+  }
+  .contact-info__socials {
+    gap: 10px;
+  }
+  .social-pill {
+    padding: 8px 14px;
+    font-size: .9rem;
+  }
 }

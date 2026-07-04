@@ -12,20 +12,27 @@ export default function Header() {
     const onScroll = () => setScrolled(window.scrollY > 8)
     onScroll()
     window.addEventListener('scroll', onScroll)
+
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close the mobile menu on any route change via link click.
   const closeMenu = () => setOpen(false)
 
   return (
     <header className={`header ${scrolled ? 'header--scrolled' : ''}`}>
       <div className="wrap header__inner">
         <NavLink to="/" className="brand" onClick={closeMenu}>
-          <img src={logo} alt="Abhyudaya Club logo" className="brand__mark" />
+          <img
+            src={logo}
+            alt="Abhyudaya Club logo"
+            className="brand__mark"
+          />
+
           <span className="brand__text">
             Abhyudaya
-            <span className="brand__sub">Club &middot; MPEC Kanpur</span>
+            <span className="brand__sub">
+              Club &middot; MPEC Kanpur
+            </span>
           </span>
         </NavLink>
 
@@ -41,19 +48,30 @@ export default function Header() {
           <span />
         </button>
 
-        <nav id="primary-nav" className={`nav ${open ? 'nav--open' : ''}`}>
+        <nav
+          id="primary-nav"
+          className={`nav ${open ? 'nav--open' : ''}`}
+        >
           {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               end={link.to === '/'}
-              className={({ isActive }) => `nav__link ${isActive ? 'nav__link--active' : ''}`}
+              className={({ isActive }) =>
+                `nav__link ${isActive ? 'nav__link--active' : ''}`
+              }
               onClick={closeMenu}
             >
               {link.label}
             </NavLink>
           ))}
-          <NavLink to="/contact" className="nav__cta" onClick={closeMenu}>
+
+          {/* Join Club Button */}
+          <NavLink
+            to="/join"
+            className="nav__cta"
+            onClick={closeMenu}
+          >
             Join the Club
           </NavLink>
         </nav>

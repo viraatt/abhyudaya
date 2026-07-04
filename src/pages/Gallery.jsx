@@ -137,6 +137,7 @@ export default function Gallery() {
               >
                 <CardContainer className="inter-var w-full">
                   <CardBody className="bg-zinc-900/50 relative group/card border-white/[0.08] w-full h-auto rounded-[2.5rem] p-8 border flex flex-col items-start justify-between">
+
                     <CardItem
                       translateZ="100"
                       className="text-2xl font-bold text-white mb-6"
@@ -145,10 +146,15 @@ export default function Gallery() {
                     </CardItem>
 
                     <CardItem translateZ="50" className="w-full mb-8">
-                      <div className="relative">
+                      {/*
+                       * Fixed 200px locked box — objectFit:cover crops
+                       * any image to fill it exactly. No overflow, no
+                       * size difference between cards.
+                       */}
+                      <div className="gallery-card-img-box">
                         <img
                           src={card.src}
-                          className="h-64 w-full object-cover rounded-2xl group-hover/card:shadow-emerald-500/20 shadow-xl cursor-pointer"
+                          className="rounded-2xl group-hover/card:shadow-emerald-500/20 shadow-xl cursor-pointer gallery-card-img"
                           alt={card.title}
                           onClick={() => setSelected(card)}
                         />
@@ -166,6 +172,7 @@ export default function Gallery() {
                     >
                       {card.kind}
                     </CardItem>
+
                   </CardBody>
                 </CardContainer>
               </div>

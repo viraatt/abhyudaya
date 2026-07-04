@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { events } from '../data/club.js'
 import PageHero from '../components/PageHero.jsx'
 import EventModal from '../components/EventModal.jsx'
@@ -7,56 +7,95 @@ import './Events.css'
 export default function Events() {
   const [activeEvent, setActiveEvent] = useState(null)
 
+  const featured = events.find((event) => event.featured)
+  const otherEvents = events.filter((event) => !event.featured)
+
   return (
     <>
       <PageHero
-        eyebrow="What we run"
-        title="Fests, quizzes, workshops, and everything between."
-        lede="From TechBloom 2.0's flagship weekend to smaller workshops through the year, here's what Abhyudaya has put on — and what's coming back."
+        eyebrow="What We Run"
+        title="Fests, Workshops & Experiences"
+        lede="Discover Abhyudaya Club's flagship fest, technical workshops, competitions and community events."
       />
 
       <section className="section">
         <div className="wrap">
-          <div className="events-list">
-            {events.map((ev) => {
-              const hasSubEvents = ev.subEvents && ev.subEvents.length > 0
 
-              return (
-                <article
-                  key={ev.slug}
-                  className={`event-row ${ev.featured ? 'event-row--featured' : ''} ${hasSubEvents ? 'event-row--clickable' : ''}`}
-                  onClick={hasSubEvents ? () => setActiveEvent(ev) : undefined}
-                >
-                  <div className="event-row__kind">
-                    <span className="eyebrow">{ev.kind}</span>
-                  </div>
-                  <div className="event-row__body">
-                    <h3>{ev.name}</h3>
-                    <p>{ev.detail}</p>
+          {featured && (
+            <div
+              className="featured-event"
+              onClick={() => setActiveEvent(featured)}
+            >
+              <div className="featured-content">
 
-                    {hasSubEvents && (
-                      <span className="event-row__cta">
-                        See {ev.subEvents.length} events inside
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path
-                            d="M5 3L9 7L5 11"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </span>
-                    )}
+                <span className="featured-badge">
+                  ⭐ Flagship Event
+                </span>
+
+                <h2>{featured.name}</h2>
+
+                <p>{featured.detail}</p>
+
+                <div className="featured-stats">
+                  <div>
+                    <strong>{featured.subEvents?.length || 0}</strong>
+                    <span>Competitions</span>
                   </div>
-                </article>
-              )
-            })}
+
+                  <div>
+                    <strong>Workshops</strong>
+                    <span>Hands-on Learning</span>
+                  </div>
+
+                  <div>
+                    <strong>Live</strong>
+                    <span>Activities</span>
+                  </div>
+                </div>
+
+                <button className="featured-btn">
+                  Explore Events →
+                </button>
+
+              </div>
+            </div>
+          )}
+
+          <div className="events-grid">
+
+            {otherEvents.map((event) => (
+
+              <div
+                key={event.slug}
+                className="event-card"
+                onClick={() => setActiveEvent(event)}
+              >
+
+                <span className="event-type">
+                  {event.kind}
+                </span>
+
+                <h3>{event.name}</h3>
+
+                <p>{event.summary}</p>
+
+                <span className="event-link">
+                  View Details →
+                </span>
+
+              </div>
+
+            ))}
+
           </div>
+
         </div>
       </section>
 
-      <EventModal event={activeEvent} onClose={() => setActiveEvent(null)} />
+      <EventModal
+        event={activeEvent}
+        onClose={() => setActiveEvent(null)}
+      />
     </>
   )
 }
