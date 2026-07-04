@@ -136,7 +136,7 @@ export default function Contact() {
               for workshops, events and innovation initiatives.
             </p>
             <a
-              href={`mailto:${socials.email}`}
+              href={`mailto:${abhyudayaclubmpec@gmail.com}`}
               className="btn btn--solid register-btn"
             >
               Email Us →
