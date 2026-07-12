@@ -75,7 +75,7 @@ jobs:
       uses: treosh/lighthouse-ci-action@v10
       with:
         urls: http://localhost:8080
-        uploadArtifacts: true
+        uploadArtifacts: false
         temporaryPublicStorage: true
         artifactUploadDir: './lhr'
-        artifactName: lighthouse_results
+        artifactName: lighthouseresults
