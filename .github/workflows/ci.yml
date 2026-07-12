@@ -78,4 +78,4 @@ jobs:
         uploadArtifacts: true
         temporaryPublicStorage: true
         artifactUploadDir: './lhr'
-        artifactName: lighthouse_results 
+        artifactName: lighthouse_results
