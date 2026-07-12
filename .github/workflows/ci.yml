@@ -77,3 +77,4 @@ jobs:
         urls: http://localhost:8080
         uploadArtifacts: true
         temporaryPublicStorage: true
+        artifactUploadDir: './lhr'  # Specify output directory
