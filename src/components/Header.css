@@ -175,3 +175,16 @@
     margin-top: 0.5rem;
   }
 }
+.nav__admin {
+  margin-left: 10px;
+  background: #1e3a8a;
+  color: #fff;
+  border: 2px solid #1e3a8a;
+  transition: all 0.3s ease;
+}
+
+.nav__admin:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}

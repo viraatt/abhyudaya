@@ -74,6 +74,15 @@ export default function Header() {
           >
             Join the Club
           </NavLink>
+
+          {/* Admin Login Button */}
+          <NavLink
+            to="/admin/login"
+            className="nav__cta nav__admin"
+            onClick={closeMenu}
+          >
+            Admin Login
+          </NavLink>
         </nav>
       </div>
     </header>
