@@ -1,0 +1,143 @@
+/* ===========================
+   PREMIUM ADMIN LOGIN
+=========================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.admin-login {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background:
+    radial-gradient(circle at top left,#2b1b55 0%,transparent 35%),
+    radial-gradient(circle at bottom right,#113366 0%,transparent 40%),
+    #09090b;
+  overflow: hidden;
+  position: relative;
+  padding: 20px;
+}
+
+.admin-login::before{
+  content:"";
+  position:absolute;
+  width:500px;
+  height:500px;
+  background:#FFD54A22;
+  filter:blur(120px);
+  top:-150px;
+  right:-120px;
+}
+
+.admin-login::after{
+  content:"";
+  position:absolute;
+  width:450px;
+  height:450px;
+  background:#2563EB22;
+  filter:blur(120px);
+  bottom:-120px;
+  left:-120px;
+}
+
+.login-card{
+  position:relative;
+  z-index:2;
+  width:100%;
+  max-width:430px;
+  padding:42px;
+  border-radius:24px;
+  backdrop-filter:blur(24px);
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:
+      0 25px 60px rgba(0,0,0,.45);
+}
+
+.login-logo{
+  width:74px;
+  height:74px;
+  margin:auto;
+  border-radius:18px;
+  background:linear-gradient(135deg,#FFD54A,#ff9800);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:#111;
+  font-size:28px;
+  font-weight:bold;
+  margin-bottom:24px;
+}
+
+.login-title{
+  color:#fff;
+  text-align:center;
+  font-size:2rem;
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.login-subtitle{
+  color:#9ca3af;
+  text-align:center;
+  margin-bottom:35px;
+  font-size:.95rem;
+}
+
+.form-group{
+  margin-bottom:20px;
+}
+
+.form-group label{
+  display:block;
+  color:#d4d4d8;
+  margin-bottom:8px;
+  font-size:.9rem;
+}
+
+.form-group input{
+  width:100%;
+  height:52px;
+  border-radius:14px;
+  border:1px solid #3f3f46;
+  background:#18181b;
+  color:white;
+  padding:0 16px;
+  font-size:15px;
+  transition:.3s;
+}
+
+.form-group input:focus{
+  outline:none;
+  border-color:#FFD54A;
+  box-shadow:0 0 0 3px rgba(255,213,74,.15);
+}
+
+.login-btn{
+  width:100%;
+  height:54px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(90deg,#FFD54A,#F59E0B);
+  color:#111;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.login-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 15px 35px rgba(245,158,11,.35);
+}
+
+.login-footer{
+  text-align:center;
+  color:#71717a;
+  margin-top:28px;
+  font-size:.85rem;
+}
