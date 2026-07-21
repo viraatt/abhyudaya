@@ -141,3 +141,23 @@
   margin-top:28px;
   font-size:.85rem;
 }
+/* ===== LOGIN INPUT FIX ===== */
+
+.form-group input,
+.form-group input:focus,
+.form-group input:active {
+  background: #18181b !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #FFD54A !important;
+  border: 1px solid #3f3f46 !important;
+}
+
+.form-group input::placeholder {
+  color: #9ca3af !important;
+  opacity: 1;
+}
+
+.form-group label {
+  color: #ffffff !important;
+}
