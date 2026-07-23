@@ -1,198 +1,210 @@
-/* =========================
+/* ===========================
    EVENTS PAGE
-========================= */
+=========================== */
 
-.featured-event {
-  background: linear-gradient(135deg, #0f172a, #1d4ed8);
-  border-radius: 28px;
-  color: white;
-  overflow: hidden;
-  margin-bottom: 60px;
-  cursor: pointer;
-  transition: .35s ease;
-  box-shadow: 0 20px 45px rgba(15,23,42,.18);
+.events-page {
+  background: #f8fafc;
+  min-height: 100vh;
 }
 
-.featured-event:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 30px 60px rgba(15,23,42,.28);
+.events-header {
+  text-align: center;
+  padding: 90px 20px 70px;
 }
 
-.featured-content {
-  padding: 60px;
+.events-header h1 {
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  color: #0f172a;
+  margin-bottom: 15px;
+  font-weight: 800;
 }
 
-.featured-badge {
-  display: inline-block;
-  background: rgba(255,255,255,.18);
-  color: #facc15;
-  padding: 8px 18px;
-  border-radius: 999px;
-  font-size: .85rem;
-  font-weight: 700;
-  margin-bottom: 22px;
-}
-
-.featured-content h2 {
-  font-size: 3rem;
-  margin-bottom: 18px;
-  color: white;
-}
-
-.featured-content p {
+.events-header p {
   max-width: 760px;
-  color: rgba(255,255,255,.9);
-  line-height: 1.9;
+  margin: auto;
+  color: #64748b;
   font-size: 1.08rem;
+  line-height: 1.8;
 }
 
-.featured-stats {
-  display: flex;
-  gap: 35px;
-  margin: 40px 0;
-  flex-wrap: wrap;
+.events-list {
+  width: min(1300px, 92%);
+  margin: auto;
+  padding-bottom: 100px;
 }
 
-.featured-stats div {
-  background: rgba(255,255,255,.12);
-  padding: 18px 22px;
-  border-radius: 16px;
-  min-width: 150px;
-}
+/* ===========================
+   SHOWCASE SECTION
+=========================== */
 
-.featured-stats strong {
-  display: block;
-  font-size: 1.3rem;
-  color: white;
-}
-
-.featured-stats span {
-  color: rgba(255,255,255,.75);
-  font-size: .9rem;
-}
-
-.featured-btn {
-  border: none;
-  background: #fbbf24;
-  color: #111827;
-  padding: 16px 32px;
-  border-radius: 50px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: .3s;
-}
-
-.featured-btn:hover {
-  background: white;
-  transform: translateY(-2px);
-}
-
-/* =========================
-   EVENT GRID
-========================= */
-
-.events-grid {
+.event-showcase {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px,1fr));
-  gap: 32px;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 70px;
+  align-items: center;
+  margin: 90px 0;
 }
 
-.event-card {
-  background: white;
-  padding: 34px;
-  border-radius: 22px;
-  border: 1px solid #ece8dd;
-  box-shadow: 0 15px 35px rgba(0,0,0,.06);
-  transition: .35s;
-  cursor: pointer;
+.event-showcase.reverse {
+  grid-template-columns: 1fr 1.15fr;
+}
+
+.event-showcase.reverse .event-showcase-image {
+  order: 2;
+}
+
+.event-showcase.reverse .event-showcase-content {
+  order: 1;
+}
+
+/* ===========================
+   IMAGE
+=========================== */
+
+.event-showcase-image {
+  overflow: hidden;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .15);
+}
+
+.event-showcase-image img {
+  width: 100%;
+  height: 470px;
+  object-fit: cover;
+  display: block;
+  transition: .6s;
+}
+
+.event-showcase:hover img {
+  transform: scale(1.05);
+}
+
+/* ===========================
+   CONTENT
+=========================== */
+
+.event-category {
+  display: inline-block;
+  background: #dbeafe;
+  color: #2563eb;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.event-showcase-content h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  color: #0f172a;
+  margin-bottom: 14px;
+  line-height: 1.1;
+}
+
+.event-tagline {
+  color: #2563eb;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.event-description {
+  color: #475569;
+  line-height: 1.9;
+  font-size: 1.05rem;
+  margin-bottom: 35px;
+}
+
+/* ===========================
+   STATS
+=========================== */
+
+.event-metrics {
+  display: flex;
+  gap: 45px;
+  margin-bottom: 35px;
+}
+
+.event-metrics div {
   display: flex;
   flex-direction: column;
 }
 
-.event-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 25px 45px rgba(0,0,0,.12);
-}
-
-.event-type {
-  display: inline-block;
-  align-self: flex-start;
-  background: #eff6ff;
-  color: #2563eb;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: .82rem;
-  font-weight: 700;
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  margin-bottom: 18px;
-}
-
-.event-card h3 {
+.event-metrics strong {
   font-size: 2rem;
   color: #0f172a;
-  margin-bottom: 16px;
 }
 
-.event-card p {
+.event-metrics span {
   color: #64748b;
-  line-height: 1.8;
-  flex: 1;
+  font-size: .95rem;
 }
 
-.event-link {
-  margin-top: 26px;
-  color: #2563eb;
+/* ===========================
+   BUTTON
+=========================== */
+
+.event-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  background: #2563eb;
+  color: white;
+  padding: 14px 32px;
+  border-radius: 999px;
   font-weight: 700;
   transition: .3s;
 }
 
-.event-card:hover .event-link {
-  letter-spacing: .5px;
+.event-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-3px);
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+/* ===========================
+   MOBILE
+=========================== */
 
-@media (max-width:900px){
+@media (max-width: 992px) {
 
-.featured-content{
-padding:40px;
+  .event-showcase,
+  .event-showcase.reverse {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .event-showcase.reverse .event-showcase-image,
+  .event-showcase.reverse .event-showcase-content {
+    order: unset;
+  }
+
+  .event-showcase-image img {
+    height: 320px;
+  }
+
+  .event-metrics {
+    flex-wrap: wrap;
+    gap: 25px;
+  }
+
 }
 
-.featured-content h2{
-font-size:2.3rem;
-}
+@media (max-width: 640px) {
 
-.events-grid{
-grid-template-columns:1fr;
-}
+  .events-header {
+    padding: 70px 20px 50px;
+  }
 
-}
+  .event-showcase {
+    margin: 60px 0;
+  }
 
-@media (max-width:600px){
+  .event-showcase-content h2 {
+    font-size: 2rem;
+  }
 
-.featured-content{
-padding:28px;
-}
-
-.featured-content h2{
-font-size:1.9rem;
-}
-
-.featured-stats{
-flex-direction:column;
-gap:15px;
-}
-
-.event-card{
-padding:24px;
-}
-
-.event-card h3{
-font-size:1.5rem;
-}
+  .event-button {
+    width: 100%;
+  }
 
 }
