@@ -1,0 +1,120 @@
+.add-blog-page {
+  padding: 30px;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+.add-blog-card {
+  max-width: 1000px;
+  margin: auto;
+  background: #fff;
+  padding: 35px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.add-blog-card h1 {
+  margin: 0;
+  font-size: 32px;
+  color: #1E3A8A;
+}
+
+.add-blog-card p {
+  margin: 8px 0 30px;
+  color: #666;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 22px;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #dcdcdc;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: 0.3s;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1E3A8A;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.save-btn {
+  background: #1E3A8A;
+  color: white;
+  border: none;
+  padding: 15px 28px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.save-btn:hover {
+  background: #153075;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .add-blog-card {
+    padding: 20px;
+  }
+}
+.image-preview {
+  width: 100%;
+  max-height: 350px;
+  object-fit: cover;
+  margin-top: 15px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+/* ===== Override Login Styles ===== */
+
+.add-blog-card .form-group input,
+.add-blog-card .form-group textarea,
+.add-blog-card .form-group select {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #2563eb !important;
+}
+
+.add-blog-card .form-group input::placeholder,
+.add-blog-card .form-group textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+.add-blog-card .form-group label {
+  color: #374151 !important;
+}

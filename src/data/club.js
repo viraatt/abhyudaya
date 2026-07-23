@@ -19,25 +19,24 @@ export const navLinks = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
   { label: "Events", to: "/events" },
+  { label: "Blog", to: "/blog" },
   { label: "Team", to: "/team" },
   { label: "Gallery", to: "/gallery" },
   { label: "Contact", to: "/contact" },
 ];
-
 // Events drawn from the club's public activity, including the TechBloom 2.0
-// fest lineup. Descriptions are written to match each event's name and
-// format — replace with exact rules/dates as the club finalizes them.
+// fest lineup.
 export const events = [
   {
     slug: "techbloom-2",
     name: "TechBloom 2.0",
     kind: "Flagship Fest",
     summary:
-      "The club\u2019s flagship annual technical fest, bringing speaker sessions, competitions, and hands-on workshops together under one roof.",
+      "The club's flagship annual technical fest, bringing speaker sessions, competitions, and hands-on workshops together under one roof.",
     detail:
-      "Organized under the Department of Basic Sciences & Humanities, TechBloom 2.0 combined inspiring talks with a full slate of competitions and workshops, closing with a live aircraft flying session on the lawns.",
-      photo:'assets/9ae3f21a-b6bf-4115-8c6b-a44b01f95bf9.jpg',
-      photos:[],
+      "Organized under the Department of Basic Sciences & Humanities, TechBloom 2.0 combined inspiring talks with competitions, workshops, and a live aircraft flying session.",
+    photo: "assets/9ae3f21a-b6bf-4115-8c6b-a44b01f95bf9.jpg",
+    photos: [],
     featured: true,
     subEvents: [
       {
@@ -45,85 +44,85 @@ export const events = [
         name: "Quiztronix",
         kind: "Quiz",
         summary:
-          "A fast-paced technical quiz that tests breadth of knowledge across science and engineering.",
+          "A fast-paced technical quiz that tests knowledge across science and engineering.",
         detail:
-          "Teams race through rounds covering electronics, computing, and general technical awareness, with elimination rounds building to a high-stakes finale.",
+          "Teams compete through multiple elimination rounds covering programming, electronics, aptitude, and general technical awareness.",
       },
       {
         slug: "poster-verse",
         name: "Poster Verse",
         kind: "Design Competition",
         summary:
-          "A poster-making competition where participants visualize a technical or social theme.",
+          "A creative poster-making competition based on technical and social themes.",
         detail:
-          "Entrants design and present original posters on a themed prompt, judged on concept, clarity, and visual execution.",
+          "Participants design and present original posters judged on creativity, relevance, and presentation.",
       },
       {
         slug: "tech-trolls",
         name: "Tech-Trolls",
         kind: "Fun Tech Challenge",
         summary:
-          "A light-hearted, high-energy tech challenge built around quick thinking under pressure.",
+          "A rapid-fire technical challenge mixed with fun activities.",
         detail:
-          "A rapid-round format that mixes technical trivia with on-the-spot problem solving, kept fast and fun for every skill level.",
+          "An exciting event combining technical questions with entertaining surprise rounds.",
       },
       {
         slug: "trail-blaze",
         name: "Trail Blaze",
         kind: "Treasure Hunt",
         summary:
-          "A campus-wide trail hunt that turns clues and puzzles into a race across MPEC.",
+          "A campus-wide treasure hunt based on clues and technical puzzles.",
         detail:
-          "Teams follow a chain of technical and lateral-thinking clues across campus, with the fastest correct trail taking the win.",
+          "Participants solve clues spread across the campus to reach the final destination before competing teams.",
       },
       {
         slug: "nextgen-ventures",
         name: "NextGen Ventures",
-        kind: "Pitch Competition",
+        kind: "Startup Pitch",
         summary:
-          "An entrepreneurship-style pitch event for early-stage ideas and student ventures.",
+          "An entrepreneurship competition where students present startup ideas.",
         detail:
-          "Students pitch original venture ideas to a panel, practicing the same structure and scrutiny used in real startup pitch rooms.",
+          "Teams pitch innovative business ideas before a panel of judges and receive expert feedback.",
       },
     ],
   },
+
   {
     slug: "aeromodelling-workshop",
-    name: "Aeromodelling & RC Aircraft Design ",
+    name: "Aeromodelling & RC Aircraft Design",
     kind: "Workshop",
     summary:
-      "A hands-on session on designing and building RC aircraft, ending with a live flying demonstration.",
+      "A practical workshop on RC aircraft designing and flying.",
     detail:
-      "Participants built their own aircraft models from the ground up, then took them outdoors for a live flying session — the standout moment of TechBloom 2.0.",
-      photo:'assets/AM3COVER.jpg',
-      photos:[  ]
+      "Participants learned aircraft design fundamentals and experienced a live RC aircraft flying session.",
+    photo: "assets/AM3COVER.jpg",
+    photos: [],
   },
+
   {
     slug: "website-dev-workshop",
     name: "Website Development Workshop",
     kind: "Workshop",
     summary:
-      "A practical, build-along session covering the fundamentals of building a website.",
+      "A beginner-friendly workshop on creating responsive websites.",
     detail:
-      "A guided, hands-on workshop that takes participants from a blank page to a working site, focused on skills they can keep using after the event ends.",
-      photo:'assets/WD4COVER.jpg',
-      photos:[]
+      "Students built a complete website using modern web technologies through hands-on sessions.",
+    photo: "assets/WD4COVER.jpg",
+    photos: [],
   },
+
   {
-    slug: "antariksh spradha",
-    name: "Antariksh spradha",
+    slug: "antariksh-spradha",
+    name: "Antariksh Spradha",
     kind: "Astronomy Festival",
-    summary: "A 3-day space event with quiz, lecture, and star gazing.",
+    summary:
+      "A three-day astronomy and space science festival.",
     detail:
-      "Day 1 begins with a quiz hosted on Unstop to challenge participants on space and science knowledge. Day 2 features an inspiring guest lecture by a professor from IIT Kanpur, offering insights into space research and innovation. Day 3 concludes with a night star-gazing event in collaboration with the IIT Kanpur AstroClub, giving participants a hands-on experience of exploring the universe.",
+      "Day 1: Space Quiz on Unstop. Day 2: Expert lecture by IIT Kanpur. Day 3: Night sky observation with IIT Kanpur Astro Club.",
     photo: "assets/cover2.jpg",
-    photos: [
-     
-    ],
+    photos: [],
   },
 ];
-// Placeholder roster — swap in real names, photos, and socials for the
-// club's current core team and faculty coordinator.
 export const team = {
   faculty: [
     {
@@ -197,7 +196,8 @@ export const team = {
       role: "Core Member",
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
-      linkedin: "linkedin.com/in/shashwat-singh-8a5784362/?skipRedirect=true",
+      linkedin:
+        "https://www.linkedin.com/in/shashwat-singh-8a5784362/",
     },
     {
       name: "Arpit Singh",
@@ -205,7 +205,7 @@ export const team = {
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
       linkedin:
-        "https://www.linkedin.com/in/arpit-singh-1004a8327/?skipRedirect=true",
+        "https://www.linkedin.com/in/arpit-singh-1004a8327/",
     },
   ],
 };

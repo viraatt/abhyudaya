@@ -1,14 +1,25 @@
-import { useState } from 'react'
-import { events } from '../data/club.js'
-import PageHero from '../components/PageHero.jsx'
-import EventModal from '../components/EventModal.jsx'
-import './Events.css'
+import { useEffect, useState } from "react";
+import { getEvents } from "../Firebase/eventService";
+import PageHero from "../components/PageHero.jsx";
+import EventModal from "../components/EventModal.jsx";
+import "./Events.css";
 
 export default function Events() {
-  const [activeEvent, setActiveEvent] = useState(null)
+  const [activeEvent, setActiveEvent] = useState(null);
+  const [events, setEvents] = useState([]);
 
-  const featured = events.find((event) => event.featured)
-  const otherEvents = events.filter((event) => !event.featured)
+  useEffect(() => {
+    async function loadEvents() {
+      try {
+        const data = await getEvents();
+        setEvents(data);
+      } catch (error) {
+        console.error("Failed to load events:", error);
+      }
+    }
+
+    loadEvents();
+  }, []);
 
   return (
     <>
@@ -21,71 +32,51 @@ export default function Events() {
       <section className="section">
         <div className="wrap">
 
-          {featured && (
-            <div
-              className="featured-event"
-              onClick={() => setActiveEvent(featured)}
-            >
-              <div className="featured-content">
-
-                <span className="featured-badge">
-                  ⭐ Flagship Event
-                </span>
-
-                <h2>{featured.name}</h2>
-
-                <p>{featured.detail}</p>
-
-                <div className="featured-stats">
-                  <div>
-                    <strong>{featured.subEvents?.length || 0}</strong>
-                    <span>Competitions</span>
-                  </div>
-
-                  <div>
-                    <strong>Workshops</strong>
-                    <span>Hands-on Learning</span>
-                  </div>
-
-                  <div>
-                    <strong>Live</strong>
-                    <span>Activities</span>
-                  </div>
-                </div>
-
-                <button className="featured-btn">
-                  Explore Events →
-                </button>
-
-              </div>
-            </div>
-          )}
-
           <div className="events-grid">
 
-            {otherEvents.map((event) => (
+            {events.length === 0 ? (
+              <h2 style={{ textAlign: "center" }}>
+                No Events Available
+              </h2>
+            ) : (
+              events.map((event) => (
+                <div
+                  key={event.id}
+                  className="event-card"
+                  onClick={() => setActiveEvent(event)}
+                >
+                  {event.banner && (
+                    <img
+                      src={event.banner}
+                      alt={event.title}
+                      className="event-banner"
+                    />
+                  )}
 
-              <div
-                key={event.slug}
-                className="event-card"
-                onClick={() => setActiveEvent(event)}
-              >
+                  <div className="event-content">
 
-                <span className="event-type">
-                  {event.kind}
-                </span>
+                    <span className="event-type">
+                      📅 Event
+                    </span>
 
-                <h3>{event.name}</h3>
+                    <h3>{event.title}</h3>
 
-                <p>{event.summary}</p>
+                    <p>{event.description}</p>
 
-                <span className="event-link">
-                  View Details →
-                </span>
+                    <span className="event-link">
+                      📅 {event.date}
+                    </span>
 
-              </div>
+                    <br />
 
-            ))}
+                    <span className="event-link">
+                      📍 {event.location}
+                    </span>
+
+                  </div>
+                </div>
+              ))
+            )}
 
           </div>
 
@@ -97,5 +88,5 @@ export default function Events() {
         onClose={() => setActiveEvent(null)}
       />
     </>
-  )
+  );
 }

@@ -118,3 +118,36 @@
     border-radius: 14px;
   }
 }
+/* ==========================
+   FIRESTORE EVENT MODAL
+========================== */
+
+.event-modal-image {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 14px;
+  margin-bottom: 22px;
+  display: block;
+  box-shadow: 0 10px 25px rgba(0,0,0,.18);
+}
+
+.event-modal__header h2{
+  color:#111827;
+}
+
+.event-modal__header strong{
+  color:#111827;
+}
+
+@media (max-width:768px){
+
+  .event-modal{
+    padding:20px;
+  }
+
+  .event-modal-image{
+    height:200px;
+  }
+
+}

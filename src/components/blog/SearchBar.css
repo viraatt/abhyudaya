@@ -1,0 +1,31 @@
+.blog-search {
+  width: 100%;
+  max-width: 700px;
+  margin: 40px auto;
+  position: relative;
+}
+
+.blog-search input {
+  width: 100%;
+  padding: 18px 60px 18px 20px;
+  border: none;
+  border-radius: 50px;
+  background: #fff;
+  font-size: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  transition: .3s;
+}
+
+.blog-search input:focus {
+  outline: none;
+  box-shadow: 0 15px 35px rgba(30,58,138,.18);
+}
+
+.search-icon {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  color: #1E3A8A;
+}

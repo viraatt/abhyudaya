@@ -1,0 +1,88 @@
+.blogs-page {
+  padding: 30px;
+}
+
+.blogs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.blogs-header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.blogs-header p {
+  color: #666;
+  margin-top: 6px;
+}
+
+.add-blog-btn {
+  background: #1E3A8A;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.table-wrapper {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,.08);
+}
+
+.blogs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.blogs-table th {
+  background: #f7f7f7;
+  padding: 18px;
+  text-align: left;
+}
+
+.blogs-table td {
+  padding: 18px;
+  border-top: 1px solid #eee;
+}
+
+.status {
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.published {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.edit-btn,
+.delete-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.edit-btn {
+  background: #2563eb;
+  color: white;
+}
+
+.delete-btn {
+  background: #dc2626;
+  color: white;
+}

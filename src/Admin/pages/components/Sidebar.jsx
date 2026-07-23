@@ -6,6 +6,7 @@ export default function Sidebar() {
   const menu = [
     { name: "Dashboard", path: "/admin/dashboard", icon: "📊" },
     { name: "Events", path: "/admin/events", icon: "📅" },
+    { name: "Blogs", path: "/admin/blogs", icon: "📝" },
     { name: "Team", path: "/admin/team", icon: "👥" },
     { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
     { name: "Contact", path: "/admin/contact", icon: "📩" },
