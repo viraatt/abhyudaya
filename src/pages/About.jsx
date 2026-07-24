@@ -29,13 +29,13 @@ export default function About() {
         lede="Abhyudaya is the Science & Literary Club of Maharana Pratap Engineering College (MPEC), Kanpur, dedicated to fostering curiosity, creativity, innovation, and lifelong learning."
       />
 
-      {/* Intro Section: Who We Are & Our Purpose */}
+      {/* Intro Section: */}
       <section className="section">
         <div className="wrap about-body">
           <div className="about-body__col">
-            <p className="eyebrow">Who We Are</p>
+            <p className="eyebrow"></p>
             <h2>A Space for Curiosity</h2>
-            <p className="eyebrow">Who We Are</p>
+            <p className="eyebrow"></p>
             <h2>{club.institute}</h2>
             <p className="about-body__text">
               Abhyudaya is a Science and Literary Club that welcomes students with diverse 
