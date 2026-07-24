@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
-import { auth } from "../../Firebase/firebase";
+import { auth, db } from "../../Firebase/firebase";
 import "./style/login.css";
 
 export default function Login() {
@@ -16,13 +17,36 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    setError("");
     setLoading(true);
+    setError("");
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      navigate("/admin/dashboard");
+      const user = userCredential.user;
+
+      // Read role from Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+
+      if (!userDoc.exists()) {
+        setError("User record not found.");
+        return;
+      }
+
+      const role = userDoc.data().role;
+
+      if (role === "superadmin") {
+        navigate("/admin/dashboard", { replace: true });
+      } else if (role === "admin") {
+        navigate("/admin/blogs", { replace: true });
+      } else {
+        setError("You don't have permission to access this panel.");
+      }
+
     } catch (err) {
       switch (err.code) {
         case "auth/invalid-credential":
@@ -41,12 +65,16 @@ export default function Login() {
           setError("Invalid email address.");
           break;
 
+        case "auth/too-many-requests":
+          setError("Too many attempts. Please try again later.");
+          break;
+
         default:
           setError(err.message);
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -75,6 +103,7 @@ export default function Login() {
               placeholder="admin@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               required
             />
           </div>
@@ -87,6 +116,7 @@ export default function Login() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               required
             />
           </div>

@@ -1,120 +1,978 @@
-.add-blog-page {
-  padding: 30px;
-  background: #f5f7fb;
-  min-height: 100vh;
+/* =====================================================
+   ABHYUDAYA BLOG EDITOR
+   PART 1
+   Theme • Layout • Header • Editor
+===================================================== */
+
+:root{
+
+    --primary:#2563eb;
+    --primary-dark:#1d4ed8;
+
+    --accent:#ff6b00;
+    --accent-dark:#ea580c;
+
+    --bg:#f5f7fb;
+    --card:#ffffff;
+
+    --text:#111827;
+    --muted:#6b7280;
+
+    --border:#e5e7eb;
+
+    --shadow:
+    0 15px 40px rgba(15,23,42,.08);
+
+    --radius:20px;
+
 }
 
-.add-blog-card {
-  max-width: 1000px;
-  margin: auto;
-  background: #fff;
-  padding: 35px;
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+*{
+    box-sizing:border-box;
 }
 
-.add-blog-card h1 {
-  margin: 0;
-  font-size: 32px;
-  color: #1E3A8A;
+/* =========================
+   PAGE
+========================= */
+
+.create-post{
+
+    width:100%;
+    min-height:100%;
+
 }
 
-.add-blog-card p {
-  margin: 8px 0 30px;
-  color: #666;
+/* =========================
+   HEADER
+========================= */
+
+.create-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:25px;
+
+    margin-bottom:30px;
+
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 22px;
+.header-left h1{
+
+    margin:0;
+
+    font-size:36px;
+
+    font-weight:800;
+
+    color:var(--text);
+
 }
 
-.form-group label {
-  font-weight: 600;
-  margin-bottom: 8px;
+.header-left p{
+
+    margin-top:8px;
+
+    color:var(--muted);
+
+    font-size:15px;
+
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid #dcdcdc;
-  border-radius: 10px;
-  font-size: 15px;
-  transition: 0.3s;
-  font-family: inherit;
+/* =========================
+   BUTTONS
+========================= */
+
+.header-buttons{
+
+    display:flex;
+
+    gap:15px;
+
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #1E3A8A;
-  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+.header-buttons button{
+
+    border:none;
+
+    border-radius:14px;
+
+    padding:14px 24px;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    font-weight:700;
+
+    transition:.25s;
+
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+.draft-btn{
+
+    background:#6b7280;
+
+    color:white;
+
 }
 
-.form-group textarea {
-  resize: vertical;
+.preview-btn{
+
+    background:var(--primary);
+
+    color:white;
+
 }
 
-.save-btn {
-  background: #1E3A8A;
-  color: white;
-  border: none;
-  padding: 15px 28px;
-  border-radius: 10px;
-  font-size: 16px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: 0.3s;
+.publish-btn{
+
+    background:var(--accent);
+
+    color:white;
+
 }
 
-.save-btn:hover {
-  background: #153075;
+.header-buttons button:hover{
+
+    transform:translateY(-3px);
+
+    box-shadow:0 12px 25px rgba(0,0,0,.15);
+
 }
 
-@media (max-width: 768px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
+/* =========================
+   GRID
+========================= */
 
-  .add-blog-card {
-    padding: 20px;
-  }
-}
-.image-preview {
-  width: 100%;
-  max-height: 350px;
-  object-fit: cover;
-  margin-top: 15px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-}
-/* ===== Override Login Styles ===== */
+.editor-layout{
 
-.add-blog-card .form-group input,
-.add-blog-card .form-group textarea,
-.add-blog-card .form-group select {
-  background: #ffffff !important;
-  color: #111827 !important;
-  border: 1px solid #d1d5db !important;
-  -webkit-text-fill-color: #111827 !important;
-  caret-color: #2563eb !important;
+    display:grid;
+
+    grid-template-columns:
+    minmax(0,1fr)
+    360px;
+
+    gap:30px;
+
+    align-items:start;
+
 }
 
-.add-blog-card .form-group input::placeholder,
-.add-blog-card .form-group textarea::placeholder {
-  color: #9ca3af !important;
+/* =========================
+   EDITOR
+========================= */
+
+.editor-section{
+
+    background:var(--card);
+
+    border-radius:22px;
+
+    padding:35px;
+
+    box-shadow:var(--shadow);
+
+    width:100%;
+
+    min-width:0;
+
 }
 
-.add-blog-card .form-group label {
-  color: #374151 !important;
+/* =========================
+   TITLE
+========================= */
+
+.title-input{
+
+    width:100%;
+
+    border:none;
+
+    outline:none;
+
+    background:transparent;
+
+    font-size:46px;
+
+    font-weight:800;
+
+    color:var(--text);
+
+    padding-bottom:20px;
+
+    margin-bottom:25px;
+
+    border-bottom:2px solid var(--border);
+
+}
+
+.title-input::placeholder{
+
+    color:#c2c7d0;
+
+}
+
+/* =========================
+   EDITOR AREA
+========================= */
+
+.editor-area{
+
+    margin-top:24px;
+
+}
+
+.content-box{
+
+    width:100%;
+
+    min-height:720px;
+
+    resize:vertical;
+
+    border:none;
+
+    outline:none;
+
+    font-size:18px;
+
+    line-height:1.9;
+
+    color:#374151;
+
+}
+
+/* =========================
+   RIGHT SIDEBAR
+========================= */
+
+.blog-sidebar{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:24px;
+
+    position:sticky;
+
+    top:105px;
+
+    align-self:start;
+
+}
+/* =====================================================
+   PART 2
+   TOOLBAR • CARDS • FORMS • UPLOAD
+===================================================== */
+
+/* =========================
+   TOOLBAR
+========================= */
+
+.toolbar{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:16px;
+
+    background:#f8fafc;
+
+    border:1px solid var(--border);
+
+    border-radius:16px;
+
+    margin-bottom:24px;
+
+}
+
+.toolbar button{
+
+    width:42px;
+
+    height:42px;
+
+    border:none;
+
+    background:white;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:15px;
+
+    transition:.25s;
+
+    box-shadow:0 3px 8px rgba(15,23,42,.05);
+
+}
+
+.toolbar button:hover{
+
+    background:var(--accent);
+
+    color:white;
+
+    transform:translateY(-2px);
+
+}
+
+.toolbar button.active{
+
+    background:var(--primary);
+
+    color:white;
+
+}
+
+.divider{
+
+    width:1px;
+
+    height:28px;
+
+    background:#d1d5db;
+
+    margin:0 6px;
+
+}
+
+/* =========================
+   CARD
+========================= */
+
+.card{
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:22px;
+
+    box-shadow:var(--shadow);
+
+    border:1px solid #eef2f7;
+
+}
+
+.card h3{
+
+    font-size:17px;
+
+    font-weight:700;
+
+    color:var(--text);
+
+    margin-bottom:16px;
+
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+.card input,
+
+.card select,
+
+.card textarea{
+
+    width:100%;
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    padding:14px 16px;
+
+    font-size:15px;
+
+    background:white;
+
+    outline:none;
+
+    transition:.25s;
+
+}
+
+.card textarea{
+
+    resize:vertical;
+
+    min-height:120px;
+
+}
+
+.card input:focus,
+
+.card select:focus,
+
+.card textarea:focus{
+
+    border-color:var(--primary);
+
+    box-shadow:
+    0 0 0 4px rgba(37,99,235,.12);
+
+}
+
+/* =========================
+   LABELS
+========================= */
+
+.card label{
+
+    display:block;
+
+    margin-bottom:8px;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    color:var(--muted);
+
+}
+
+/* =========================
+   FEATURE IMAGE
+========================= */
+
+.upload-box{
+
+    border:2px dashed #d6dbe4;
+
+    border-radius:18px;
+
+    background:#fbfcfe;
+
+    padding:42px 20px;
+
+    text-align:center;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.upload-box:hover{
+
+    border-color:var(--accent);
+
+    background:#fff7f1;
+
+}
+
+.upload-box span{
+
+    display:block;
+
+    font-size:56px;
+
+    margin-bottom:16px;
+
+}
+
+.upload-box p{
+
+    font-size:16px;
+
+    font-weight:600;
+
+    color:var(--text);
+
+}
+
+.upload-box small{
+
+    display:block;
+
+    margin-top:8px;
+
+    color:var(--muted);
+
+}
+
+/* =========================
+   IMAGE PREVIEW
+========================= */
+
+.image-preview{
+
+    margin-top:18px;
+
+}
+
+.image-preview img{
+
+    width:100%;
+
+    border-radius:14px;
+
+    object-fit:cover;
+
+    max-height:220px;
+
+    box-shadow:var(--shadow);
+
+}
+
+/* =========================
+   SEO BOX
+========================= */
+
+.seo-score{
+
+    margin-top:12px;
+
+    padding:12px 14px;
+
+    border-radius:12px;
+
+    background:#ecfdf5;
+
+    color:#15803d;
+
+    font-size:14px;
+
+    font-weight:600;
+
+}
+
+/* =========================
+   STATUS BADGE
+========================= */
+
+.status-pill{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    font-size:13px;
+
+    font-weight:700;
+
+    background:#eff6ff;
+
+    color:var(--primary);
+
+}
+
+/* =========================
+   CARD HOVER
+========================= */
+
+.card{
+
+    transition:.25s;
+
+}
+
+.card:hover{
+
+    transform:translateY(-3px);
+
+}
+/* =====================================================
+   PART 3
+   TIPTAP • RESPONSIVE • SCROLLBAR • ANIMATIONS
+===================================================== */
+
+/* =========================
+   TIPTAP EDITOR
+========================= */
+
+.ProseMirror{
+
+    min-height:700px;
+
+    outline:none;
+
+    border:none;
+
+    font-size:18px;
+
+    line-height:1.9;
+
+    color:#374151;
+
+    padding:8px 2px;
+
+}
+
+.ProseMirror:focus{
+
+    outline:none;
+
+}
+
+.ProseMirror p{
+
+    margin:16px 0;
+
+}
+
+.ProseMirror h1{
+
+    font-size:40px;
+
+    font-weight:800;
+
+    margin:30px 0 18px;
+
+    color:#111827;
+
+}
+
+.ProseMirror h2{
+
+    font-size:32px;
+
+    font-weight:700;
+
+    margin:28px 0 16px;
+
+    color:#111827;
+
+}
+
+.ProseMirror h3{
+
+    font-size:26px;
+
+    font-weight:700;
+
+    margin:24px 0 14px;
+
+    color:#111827;
+
+}
+
+.ProseMirror ul{
+
+    padding-left:28px;
+
+    margin:18px 0;
+
+}
+
+.ProseMirror ol{
+
+    padding-left:28px;
+
+    margin:18px 0;
+
+}
+
+.ProseMirror li{
+
+    margin:8px 0;
+
+}
+
+.ProseMirror blockquote{
+
+    border-left:5px solid var(--accent);
+
+    background:#fff7f1;
+
+    padding:18px 22px;
+
+    margin:24px 0;
+
+    font-style:italic;
+
+    border-radius:0 14px 14px 0;
+
+}
+
+.ProseMirror code{
+
+    background:#eef2f7;
+
+    padding:3px 8px;
+
+    border-radius:6px;
+
+    font-size:15px;
+
+    font-family:Consolas, monospace;
+
+}
+
+.ProseMirror pre{
+
+    background:#111827;
+
+    color:#fff;
+
+    padding:22px;
+
+    border-radius:14px;
+
+    overflow:auto;
+
+    margin:24px 0;
+
+}
+
+.ProseMirror pre code{
+
+    background:none;
+
+    color:inherit;
+
+    padding:0;
+
+}
+
+.ProseMirror img{
+
+    width:100%;
+
+    border-radius:16px;
+
+    margin:28px 0;
+
+}
+
+.ProseMirror table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    margin:28px 0;
+
+}
+
+.ProseMirror th{
+
+    background:#f3f4f6;
+
+    border:1px solid #d1d5db;
+
+    padding:14px;
+
+    text-align:left;
+
+    font-weight:700;
+
+}
+
+.ProseMirror td{
+
+    border:1px solid #e5e7eb;
+
+    padding:14px;
+
+}
+
+/* =========================
+   PLACEHOLDER
+========================= */
+
+.ProseMirror p.is-editor-empty:first-child::before{
+
+    content:attr(data-placeholder);
+
+    color:#9ca3af;
+
+    float:left;
+
+    pointer-events:none;
+
+    height:0;
+
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+    height:8px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#cbd5e1;
+
+    border-radius:999px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#94a3b8;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#f8fafc;
+
+}
+
+/* =========================
+   ANIMATION
+========================= */
+
+.card,
+.editor-section,
+.toolbar{
+
+    animation:fadeUp .45s ease;
+
+}
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(12px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width:1200px){
+
+    .editor-layout{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .blog-sidebar{
+
+        position:static;
+
+        order:-1;
+
+    }
+
+}
+
+@media (max-width:768px){
+
+    .create-header{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:20px;
+
+    }
+
+    .header-buttons{
+
+        width:100%;
+
+        flex-wrap:wrap;
+
+    }
+
+    .header-buttons button{
+
+        flex:1;
+
+        min-width:150px;
+
+    }
+
+    .editor-section{
+
+        padding:24px;
+
+    }
+
+    .title-input{
+
+        font-size:34px;
+
+    }
+
+    .toolbar{
+
+        gap:8px;
+
+    }
+
+    .toolbar button{
+
+        width:38px;
+
+        height:38px;
+
+    }
+
+    .ProseMirror{
+
+        min-height:500px;
+
+        font-size:16px;
+
+    }
+
+}
+
+@media (max-width:500px){
+
+    .header-buttons{
+
+        flex-direction:column;
+
+    }
+
+    .header-buttons button{
+
+        width:100%;
+
+    }
+
 }

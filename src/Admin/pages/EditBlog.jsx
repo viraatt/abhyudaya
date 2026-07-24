@@ -1,6 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+
+import {
+  doc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
+
+import { db } from "../../Firebase/firebase";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
@@ -11,10 +22,15 @@ import "./AddBlog.css";
 import Toolbar from "../../components/blog/Toolbar";
 import EditorCanvas from "../../components/blog/EditorCanvas";
 
-import { publishBlog } from "./services/blogService";
 import { uploadImage } from "./services/imageUpload";
-import Image from "@tiptap/extension-image";
-function AddBlog() {
+
+function EditBlog() {
+
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Club News");
   const [tags, setTags] = useState("");
@@ -22,7 +38,6 @@ function AddBlog() {
   const [seo, setSeo] = useState("");
   const [publishDate, setPublishDate] = useState("");
   const [status, setStatus] = useState("Draft");
-
   const [featuredImage, setFeaturedImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -30,95 +45,127 @@ function AddBlog() {
     extensions: [
       StarterKit,
       // Enables inline images inserted via the toolbar's Insert Image button.
-      // Images become part of the saved HTML content, not a separate field.
+      // Images are stored as part of the HTML content, not as separate fields.
       Image.configure({
         HTMLAttributes: {
           class: "editor-inline-image",
         },
       }),
     ],
-    content: `
-      <h2>Welcome to Abhyudaya Blog Editor</h2>
-      <p>Start writing your article here...</p>
-    `,
+    content: "",
   });
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-
-    if (!file) {
-      return;
+  useEffect(() => {
+    if (editor) {
+      loadBlog();
     }
+  }, [editor]);
+
+  const loadBlog = async () => {
 
     try {
+
+      const ref = doc(db, "blogs", id);
+
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        alert("Blog not found.");
+        navigate("/admin/blogs");
+        return;
+      }
+
+      const blog = snap.data();
+
+      setTitle(blog.title || "");
+      setCategory(blog.category || "Club News");
+      setTags((blog.tags || []).join(", "));
+      setSlug(blog.slug || "");
+      setSeo(blog.seo || "");
+      setPublishDate(blog.publishDate || "");
+      setStatus(blog.status || "Draft");
+      setFeaturedImage(blog.featuredImage || "");
+
+      editor.commands.setContent(blog.content || "");
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert("Failed to load blog.");
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  const handleImageUpload = async (e) => {
+
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    try {
+
       setUploadingImage(true);
 
-      const imageUrl = await uploadImage(file);
+      const url = await uploadImage(file);
 
-      setFeaturedImage(imageUrl);
-    } catch (err) {
-      console.error(err);
+      if (!url) {
+        alert("Image upload failed. Please try again.");
+        return;
+      }
 
-      alert("❌ Failed to upload image.");
+      setFeaturedImage(url);
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert("Image upload failed. Please try again.");
+
     } finally {
+
       setUploadingImage(false);
 
       e.target.value = "";
+
     }
+
   };
 
   const removeImage = () => {
     setFeaturedImage("");
   };
 
-  const resetForm = () => {
-    setTitle("");
-    setCategory("Club News");
-    setTags("");
-    setSlug("");
-    setSeo("");
-    setPublishDate("");
-    setStatus("Draft");
-    setFeaturedImage("");
+  const handleUpdate = async () => {
 
-    if (editor) {
-      editor.commands.clearContent();
-    }
-  };
-
-  const handlePublish = async () => {
-    if (!editor) {
-      alert("Editor is loading...");
-      return;
-    }
+    if (!editor) return;
 
     if (!title.trim()) {
       alert("Please enter blog title.");
       return;
     }
 
-    if (!featuredImage) {
-      alert("Please upload a featured image.");
-      return;
-    }
-
     try {
-      const blog = {
+
+      await updateDoc(doc(db, "blogs", id), {
+
         title: title.trim(),
 
         category,
 
-        featuredImage,
-
         tags: tags
           .split(",")
-          .map((tag) => tag.trim())
+          .map(tag => tag.trim())
           .filter(Boolean),
 
         slug:
           slug.trim() ||
           title
-            .trim()
             .toLowerCase()
             .replace(/\s+/g, "-")
             .replace(/[^a-z0-9-]/g, ""),
@@ -129,33 +176,52 @@ function AddBlog() {
 
         status,
 
-        author: "Admin",
+        featuredImage,
 
         excerpt: editor
           .getText()
-          .trim()
           .substring(0, 180),
 
         content: editor.getHTML(),
-      };
 
-      const blogId = await publishBlog(blog);
+      });
 
-      console.log(blogId);
+      alert("✅ Blog Updated Successfully");
 
-      alert("✅ Blog Published Successfully");
+      navigate("/admin/blogs");
 
-      resetForm();
+    } catch (error) {
 
-    } catch (err) {
-      console.error(err);
+      console.error(error);
 
-      alert("❌ Failed to publish blog.");
+      alert("Failed to update blog.");
+
     }
+
   };
 
+  if (loading) {
+    return (
+      <div className="dashboard-layout">
+        <Sidebar />
+
+        <div className="dashboard-main">
+          <Topbar />
+
+          <div className="dashboard-content">
+
+            <div className="empty">
+              <h2>Loading Blog...</h2>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="dashboard-layout">
+        <div className="dashboard-layout">
 
       <Sidebar />
 
@@ -170,10 +236,9 @@ function AddBlog() {
             <div className="create-header">
 
               <div className="header-left">
-                <h1>Create Blog</h1>
+                <h1>Edit Blog</h1>
                 <p>
-                  Write and publish blogs for
-                  Abhyudaya Club.
+                  Update your existing blog and save the changes.
                 </p>
               </div>
 
@@ -181,21 +246,16 @@ function AddBlog() {
 
                 <button
                   className="draft-btn"
+                  onClick={() => navigate("/admin/blogs")}
                 >
-                  💾 Save Draft
-                </button>
-
-                <button
-                  className="preview-btn"
-                >
-                  👁 Preview
+                  ← Back
                 </button>
 
                 <button
                   className="publish-btn"
-                  onClick={handlePublish}
+                  onClick={handleUpdate}
                 >
-                  🚀 Publish
+                  💾 Update Blog
                 </button>
 
               </div>
@@ -211,9 +271,7 @@ function AddBlog() {
                   className="title-input"
                   placeholder="Enter Blog Title..."
                   value={title}
-                  onChange={(e) =>
-                    setTitle(e.target.value)
-                  }
+                  onChange={(e) => setTitle(e.target.value)}
                 />
 
                 <Toolbar editor={editor} />
@@ -224,43 +282,44 @@ function AddBlog() {
 
               </section>
 
-             <aside className="blog-sidebar">
+              <aside className="blog-sidebar">
 
                 <div className="card">
+
                   <h3>Featured Image</h3>
 
-                  {uploadingImage ? (
-                    <p>Uploading...</p>
-                  ) : featuredImage ? (
-                    <div className="featured-image-preview">
+                  {featuredImage && (
+
+                    <div className="image-preview">
+
                       <img
                         src={featuredImage}
                         alt="Featured"
-                        style={{
-                          width: "100%",
-                          borderRadius: "8px",
-                          marginBottom: "10px",
-                        }}
+                        style={{ width: "100%", borderRadius: "8px", marginBottom: "8px" }}
                       />
 
                       <button
+                        type="button"
                         className="draft-btn"
                         onClick={removeImage}
+                        style={{ marginBottom: "8px" }}
                       >
                         ❌ Remove Image
                       </button>
+
                     </div>
-                  ) : (
-                    <label className="upload-btn" style={{ cursor: "pointer" }}>
-                      📤 Upload Image
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        style={{ display: "none" }}
-                      />
-                    </label>
+
                   )}
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                  />
+
+                  {uploadingImage && <p>Uploading image...</p>}
+
                 </div>
 
                 <div className="card">
@@ -277,9 +336,11 @@ function AddBlog() {
                     <option>Events</option>
                     <option>Achievement</option>
                   </select>
+
                 </div>
 
                 <div className="card">
+
                   <h3>Tags</h3>
 
                   <input
@@ -288,9 +349,11 @@ function AddBlog() {
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
                   />
+
                 </div>
 
                 <div className="card">
+
                   <h3>URL Slug</h3>
 
                   <input
@@ -299,9 +362,11 @@ function AddBlog() {
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
                   />
+
                 </div>
 
                 <div className="card">
+
                   <h3>SEO Description</h3>
 
                   <textarea
@@ -310,9 +375,11 @@ function AddBlog() {
                     value={seo}
                     onChange={(e) => setSeo(e.target.value)}
                   />
+
                 </div>
 
                 <div className="card">
+
                   <h3>Publish Date</h3>
 
                   <input
@@ -322,9 +389,11 @@ function AddBlog() {
                       setPublishDate(e.target.value)
                     }
                   />
+
                 </div>
 
                 <div className="card">
+
                   <h3>Author</h3>
 
                   <input
@@ -332,9 +401,11 @@ function AddBlog() {
                     value="Admin"
                     readOnly
                   />
+
                 </div>
 
                 <div className="card">
+
                   <h3>Status</h3>
 
                   <select
@@ -345,6 +416,7 @@ function AddBlog() {
                     <option>Published</option>
                     <option>Scheduled</option>
                   </select>
+
                 </div>
 
               </aside>
@@ -361,4 +433,4 @@ function AddBlog() {
   );
 }
 
-export default AddBlog;
+export default EditBlog;

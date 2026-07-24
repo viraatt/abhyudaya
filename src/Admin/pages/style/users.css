@@ -1,0 +1,220 @@
+/* ===========================
+   USERS PAGE
+=========================== */
+
+.users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.users-header h2 {
+  font-size: 28px;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.users-header p {
+  color: #64748b;
+  font-size: 15px;
+}
+
+.add-user-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: .25s;
+}
+
+.add-user-btn:hover {
+  background: #1d4ed8;
+}
+
+/* ===========================
+TABLE
+=========================== */
+
+.users-table {
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.05);
+}
+
+.users-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table thead {
+  background: #f8fafc;
+}
+
+.users-table th {
+  text-align: left;
+  padding: 18px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.users-table td {
+  padding: 18px;
+  border-top: 1px solid #edf2f7;
+}
+
+.users-table tr:hover {
+  background: #fafafa;
+}
+
+.users-table button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.users-table button:hover {
+  background: #1d4ed8;
+}
+
+/* ===========================
+STATUS
+=========================== */
+
+.status {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status.inactive {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ===========================
+MODAL
+=========================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 999;
+}
+
+.modal {
+  width: 450px;
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  animation: popup .25s ease;
+}
+
+@keyframes popup {
+
+  from {
+    transform: scale(.92);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+}
+
+.modal h2 {
+  margin-bottom: 20px;
+  color: #1e293b;
+}
+
+.modal input,
+.modal select {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #dbe2ea;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  font-size: 15px;
+  outline: none;
+}
+
+.modal input:focus,
+.modal select:focus {
+  border-color: #2563eb;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cancel {
+  background: #e2e8f0;
+  color: #334155;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.save {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.save:hover {
+  background: #1d4ed8;
+}
+
+.cancel:hover {
+  background: #cbd5e1;
+}
+
+/* ===========================
+RESPONSIVE
+=========================== */
+
+@media (max-width: 768px) {
+
+  .users-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .users-table {
+    overflow-x: auto;
+  }
+
+  .modal {
+    width: 92%;
+  }
+
+}

@@ -13,8 +13,12 @@ export default function FeaturedPost({ blog }) {
   return (
     <section className="featured-post">
       <img
-        src={blog.image}
+        src={
+          blog.featuredImage ||
+          "https://placehold.co/1200x700?text=No+Image"
+        }
         alt={blog.title}
+        loading="lazy"
       />
 
       <div className="featured-overlay"></div>
@@ -35,17 +39,17 @@ export default function FeaturedPost({ blog }) {
         <div className="featured-meta">
           <span>
             <FiUser />
-            {blog.author}
+            {blog.author || "Admin"}
           </span>
 
           <span>
             <FiCalendar />
-            {blog.date}
+            {blog.date || "Recently"}
           </span>
 
           <span>
             <FiClock />
-            {blog.readTime}
+            {blog.readTime || "5 min read"}
           </span>
         </div>
 

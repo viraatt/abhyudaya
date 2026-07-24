@@ -1,0 +1,48 @@
+.toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    background:#fff;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+.toolbar button{
+    border:none;
+    background:#f5f5f5;
+    padding:10px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:.3s;
+    font-size:14px;
+}
+
+.toolbar button:hover{
+    background:#ff6b00;
+    color:#fff;
+}
+
+.divider{
+    width:1px;
+    height:26px;
+    background:#ddd;
+    margin:0 6px;
+}
+/* Add this to your existing Toolbar.css */
+
+.toolbar button.uploading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toolbar .spin {
+  animation: toolbar-spin 0.8s linear infinite;
+}
+
+@keyframes toolbar-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

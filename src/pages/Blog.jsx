@@ -30,28 +30,34 @@ const Blog = () => {
     try {
       setLoading(true);
 
+      // Fetch only published blogs
       const q = query(
         collection(db, "blogs"),
-        where("status", "==", "published")
+        where("status", "==", "Published")
       );
 
       const snapshot = await getDocs(q);
 
-      const blogList = snapshot.docs.map((doc) => {
-        const data = doc.data();
+      const blogList = snapshot.docs
+        .map((doc) => {
+          const data = doc.data();
 
-        return {
-          id: doc.id,
-          ...data,
-          date: data.createdAt?.toDate
-            ? data.createdAt.toDate().toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-              })
-            : "Recently",
-        };
-      });
+          return {
+            id: doc.id,
+            ...data,
+            date: data.createdAt?.toDate
+              ? data.createdAt.toDate().toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "Recently",
+          };
+        })
+        .filter(
+          (blog) =>
+            (blog.status || "").toLowerCase() === "published"
+        );
 
       blogList.sort((a, b) => {
         const aTime = a.createdAt?.seconds || 0;
@@ -70,7 +76,6 @@ const Blog = () => {
 
   const featuredBlog = useMemo(() => {
     const featured = blogs.find((blog) => blog.featured);
-
     return featured || blogs[0];
   }, [blogs]);
 
@@ -118,16 +123,13 @@ const Blog = () => {
           <h1>Abhyudaya Blog</h1>
 
           <p>
-            Events, Workshops, Achievements &
-            Stories
+            Events, Workshops, Achievements & Stories
           </p>
         </div>
 
         <SearchBar
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
+          onChange={(e) => setSearch(e.target.value)}
         />
 
         <CategoryFilter
@@ -136,9 +138,7 @@ const Blog = () => {
         />
 
         {featuredBlog && (
-          <FeaturedPost
-            blog={featuredBlog}
-          />
+          <FeaturedPost blog={featuredBlog} />
         )}
 
         <div className="blog-grid">
@@ -154,8 +154,7 @@ const Blog = () => {
               <h2>No Blogs Found</h2>
 
               <p>
-                No published blogs are
-                available.
+                No published blogs are available.
               </p>
             </div>
           )}

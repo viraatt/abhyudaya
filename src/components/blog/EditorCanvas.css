@@ -1,0 +1,29 @@
+.editor-wrapper{
+    min-height:600px;
+    padding:20px;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    background:#fff;
+}
+
+.ProseMirror{
+    min-height:560px;
+    outline:none;
+    font-size:18px;
+    line-height:1.8;
+    color:#374151;
+}
+
+.ProseMirror h1{
+    font-size:42px;
+    margin:20px 0;
+}
+
+.ProseMirror h2{
+    font-size:32px;
+    margin:18px 0;
+}
+
+.ProseMirror p{
+    margin:12px 0;
+}

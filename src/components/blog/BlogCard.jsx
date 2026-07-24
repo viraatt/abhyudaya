@@ -12,10 +12,17 @@ export default function BlogCard({ blog }) {
   return (
     <article className="blog-card">
       <div className="blog-card-image">
-        <img src={blog.image} alt={blog.title} />
+        <img
+          src={
+            blog.featuredImage ||
+            "https://placehold.co/600x400?text=No+Image"
+          }
+          alt={blog.title}
+          loading="lazy"
+        />
 
         <span className="blog-category">
-          {blog.category}
+          {blog.category || "General"}
         </span>
       </div>
 
@@ -31,17 +38,17 @@ export default function BlogCard({ blog }) {
         <div className="blog-meta">
           <span>
             <FiUser />
-            {blog.author}
+            {blog.author || "Admin"}
           </span>
 
           <span>
             <FiCalendar />
-            {blog.date}
+            {blog.date || "Recently"}
           </span>
 
           <span>
             <FiClock />
-            {blog.readTime}
+            {blog.readTime || "5 min read"}
           </span>
         </div>
 

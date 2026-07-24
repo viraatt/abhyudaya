@@ -1,4 +1,7 @@
 import { Link } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+import Topbar from "./components/Topbar";
+import "./style/admin.css";
 import "./blogs.css";
 
 export default function Blogs() {
@@ -22,70 +25,81 @@ export default function Blogs() {
   ];
 
   return (
-    <div className="blogs-page">
-      <div className="blogs-header">
-        <div>
-          <h1>Blog Manager</h1>
-          <p>Manage blog posts for the Abhyudaya website.</p>
+    <div className="dashboard-layout">
+      <Sidebar />
+
+      <div className="dashboard-main">
+        <Topbar />
+
+        <div className="dashboard-content">
+          <div className="blogs-page">
+            <div className="blogs-header">
+              <div>
+                <h1>Blog Manager</h1>
+                <p>Manage blog posts for the Abhyudaya website.</p>
+              </div>
+
+              <Link
+                to="/admin/blogs/add"
+                className="add-blog-btn"
+              >
+                + Add Blog
+              </Link>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="blogs-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Author</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th width="180">Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {blogs.map((blog) => (
+                    <tr key={blog.id}>
+                      <td>{blog.title}</td>
+
+                      <td>{blog.category}</td>
+
+                      <td>{blog.author}</td>
+
+                      <td>
+                        <span
+                          className={
+                            blog.status === "Published"
+                              ? "status published"
+                              : "status draft"
+                          }
+                        >
+                          {blog.status}
+                        </span>
+                      </td>
+
+                      <td>{blog.date}</td>
+
+                      <td>
+                        <button className="edit-btn">
+                          Edit
+                        </button>
+
+                        <button className="delete-btn">
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
         </div>
-
-        <Link
-          to="/admin/blogs/add"
-          className="add-blog-btn"
-        >
-          + Add Blog
-        </Link>
-      </div>
-
-      <div className="table-wrapper">
-        <table className="blogs-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Author</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th width="180">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {blogs.map((blog) => (
-              <tr key={blog.id}>
-                <td>{blog.title}</td>
-
-                <td>{blog.category}</td>
-
-                <td>{blog.author}</td>
-
-                <td>
-                  <span
-                    className={
-                      blog.status === "Published"
-                        ? "status published"
-                        : "status draft"
-                    }
-                  >
-                    {blog.status}
-                  </span>
-                </td>
-
-                <td>{blog.date}</td>
-
-                <td>
-                  <button className="edit-btn">
-                    Edit
-                  </button>
-
-                  <button className="delete-btn">
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );

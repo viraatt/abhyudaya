@@ -1,0 +1,179 @@
+.blog-manager {
+    width: 100%;
+    animation: fadeIn .35s ease;
+}
+
+.blog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.blog-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 6px;
+}
+
+.blog-header p {
+    color: #6b7280;
+    font-size: 15px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.refresh-btn {
+    background: #ffffff;
+    color: #2563eb;
+    border: 2px solid #2563eb;
+    padding: 11px 22px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: .3s;
+}
+
+.refresh-btn:hover {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.new-blog-btn {
+    background: #2563eb;
+    color: #ffffff;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: .3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.new-blog-btn:hover {
+    background: #1d4ed8;
+}
+
+.blog-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(0,0,0,.08);
+}
+
+.blog-table thead {
+    background: #2563eb;
+}
+
+.blog-table thead th {
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 18px;
+    text-align: left;
+}
+
+.blog-table tbody td {
+    padding: 18px;
+    border-bottom: 1px solid #ececec;
+    color: #374151;
+    vertical-align: middle;
+}
+
+.blog-table tbody tr {
+    transition: .25s;
+}
+
+.blog-table tbody tr:hover {
+    background: #f8f9fb;
+}
+
+.status {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status.published {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status.draft {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status.scheduled {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.empty {
+    background: #ffffff;
+    padding: 70px;
+    border-radius: 16px;
+    text-align: center;
+    color: #6b7280;
+    box-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+
+.empty h2 {
+    margin-bottom: 10px;
+    color: #1f2937;
+}
+
+.empty p {
+    font-size: 15px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width:900px) {
+
+    .blog-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .refresh-btn,
+    .new-blog-btn {
+        flex: 1;
+        text-align: center;
+    }
+
+    .blog-table {
+        display: block;
+        overflow-x: auto;
+    }
+}

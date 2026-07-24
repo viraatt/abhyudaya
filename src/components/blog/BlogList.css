@@ -1,0 +1,110 @@
+.blog-page {
+    padding: 30px;
+    background: #f5f7fb;
+    min-height: 100vh;
+}
+
+.blog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.blog-header h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.blog-header p {
+    color: gray;
+    margin-top: 5px;
+}
+
+.new-post-btn {
+    background: #ff6b00;
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.new-post-btn:hover {
+    background: #e65c00;
+}
+
+.blog-filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.blog-filters input,
+.blog-filters select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    width: 250px;
+}
+
+.blog-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.blog-table th {
+    background: #1d3557;
+    color: white;
+    padding: 15px;
+    text-align: left;
+}
+
+.blog-table td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.blog-table img {
+    width: 90px;
+    border-radius: 6px;
+}
+
+.status {
+    padding: 6px 12px;
+    border-radius: 30px;
+    color: white;
+    font-size: 13px;
+}
+
+.published {
+    background: #28a745;
+}
+
+.draft {
+    background: #ffc107;
+    color: black;
+}
+
+.edit-btn,
+.delete-btn {
+    border: none;
+    padding: 8px 15px;
+    margin-right: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.edit-btn {
+    background: #0d6efd;
+    color: white;
+}
+
+.delete-btn {
+    background: crimson;
+    color: white;
+}
