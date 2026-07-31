@@ -6,7 +6,7 @@ import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 
 import "./style/admin.css";
-import "./AddBlog.css";
+import "./addBlog.css";
 
 import Toolbar from "../../components/blog/Toolbar";
 import EditorCanvas from "../../components/blog/EditorCanvas";
