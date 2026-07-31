@@ -1,77 +1,80 @@
-import { club } from '../data/club.js'
-import PageHero from '../components/PageHero.jsx'
-import './About.css'
+import { club } from "../data/club.js";
+import PageHero from "../components/PageHero.jsx";
+import "./About.css";
 
 const pillars = [
   {
-    title: 'Build, don’t just attend',
-    text: 'Every event is designed around making something — a poster, a pitch, a working site, a flying model — rather than sitting through a lecture.',
+    title: "Build, Don't Just Attend",
+    text: "Every event is designed around creating something meaningful—whether it's a website, a research idea, a poster, a business pitch, or an innovative solution. We believe learning happens best through hands-on experiences.",
   },
   {
-    title: 'Open to every branch',
-    text: 'You don\u2019t need to be a CSE student to belong here. Abhyudaya runs under the Department of Basic Sciences & Humanities precisely so first-years and every discipline have a way in.',
+    title: "Open to Every Branch",
+    text: "Abhyudaya welcomes students from every discipline. Operating under the Department of Basic Sciences & Humanities, the club provides opportunities for every student to explore, collaborate, and grow together.",
   },
   {
-    title: 'Our Values',
-    text: 'Curiosity, Creativity, Innovation, Leadership, Teamwork, Inclusivity, Integrity, Responsibility, and Respect for Diverse Perspectives guide everything we do.',
+    title: "Our Values",
+    text: "Curiosity, Creativity, Innovation, Leadership, Teamwork, Inclusivity, Integrity, Responsibility, and Respect for Diverse Perspectives guide everything we do.",
   },
-]
+];
 
 export default function About() {
   return (
     <>
       <PageHero
-        eyebrow="About the club"
-        title="An idea, given room to rise."
-        lede={club.meaning || "A Science and Literary Club committed to creating a space where curiosity, creativity, and continuous learning come together."}
         eyebrow="About Abhyudaya"
         title="Empowering Innovation, Creativity & Leadership"
-        lede="Abhyudaya is the Science & Literary Club of Maharana Pratap Engineering College (MPEC), Kanpur, dedicated to fostering curiosity, creativity, innovation, and lifelong learning."
+        lede={
+          club.meaning ||
+          "Abhyudaya is the Science & Literary Club of Maharana Pratap Engineering College (MPEC), Kanpur, dedicated to fostering curiosity, creativity, innovation, and lifelong learning."
+        }
       />
 
-      {/* Intro Section: */}
+      {/* About Section */}
       <section className="section">
         <div className="wrap about-body">
           <div className="about-body__col">
-            <p className="eyebrow"></p>
-            <h2>A Space for Curiosity</h2>
-            <p className="eyebrow"></p>
+            <p className="eyebrow">Who We Are</p>
             <h2>{club.institute}</h2>
+
             <p className="about-body__text">
-              Abhyudaya is a Science and Literary Club that welcomes students with diverse 
-              interests and encourages them to explore ideas, exchange perspectives, and grow 
-              through meaningful interactions. We believe that learning is not limited to 
-              classrooms; every conversation and new idea has the potential to inspire growth.
-              Abhyudaya operates under the {club.department} and serves as a
-              platform where students from all branches can explore science,
-              technology, literature, and creativity. We encourage innovation,
-              leadership, collaboration, and continuous learning by creating an
-              environment where every student has the opportunity to grow beyond
-              academics.
+              Abhyudaya is the Science & Literary Club of {club.institute},
+              operating under the {club.department}. The club provides a
+              platform where students from every branch can explore science,
+              technology, literature, innovation, and creativity beyond the
+              classroom.
+            </p>
+
+            <p className="about-body__text">
+              We believe learning is not limited to textbooks. Every
+              conversation, project, workshop, and competition becomes an
+              opportunity to discover new ideas, build practical skills, and
+              develop confidence.
             </p>
           </div>
 
           <div className="about-body__col">
-            <p className="eyebrow">Our Purpose</p>
-            <h2>Bridging Two Worlds</h2>
             <p className="eyebrow">What We Do</p>
             <h2>Learning Beyond Classrooms</h2>
+
             <p className="about-body__text">
-              We strive to encourage intellectual curiosity and creative expression by bringing 
-              together the worlds of science and literary pursuits. Our focus is on building 
-              an environment where learning becomes enjoyable, inclusive, and accessible to 
-              everyone while helping students think critically and communicate effectively.
               Throughout the academic year, Abhyudaya organizes technical
               festivals, coding competitions, workshops, guest lectures,
               business pitch competitions, poster presentations, quizzes,
-              astronomy sessions, innovation challenges, and literary events.
-              Every activity is designed to help students develop practical
-              skills, confidence, teamwork, and real-world experience.
+              astronomy sessions, innovation challenges, literary events, and
+              collaborative learning activities.
+            </p>
+
+            <p className="about-body__text">
+              Every initiative is designed to help students strengthen their
+              technical knowledge, communication, leadership, teamwork,
+              creativity, and problem-solving skills while preparing them for
+              real-world challenges.
             </p>
           </div>
         </div>
       </section>
 
+      {/* Community */}
       <section className="section">
         <div className="wrap">
           <div className="section__head">
@@ -80,44 +83,51 @@ export default function About() {
           </div>
 
           <p className="about-body__text">
-            We believe education extends far beyond the classroom. Whether you
-            are passionate about science, technology, literature, design,
-            public speaking, innovation, or simply eager to learn something
-            new, Abhyudaya welcomes you. Every member is encouraged to ask
-            questions, share ideas, collaborate with others, and contribute to
-            building a vibrant learning community where every voice is valued.
+            Whether your interests lie in science, technology, literature,
+            public speaking, design, entrepreneurship, research, or innovation,
+            Abhyudaya welcomes you. Every member is encouraged to ask questions,
+            share ideas, collaborate with peers, and contribute to a vibrant
+            learning community where every voice matters.
           </p>
         </div>
       </section>
 
-      {/* Core Philosophy Section: Beliefs & Values */}
+      {/* Philosophy */}
       <section className="section section--light-gray">
         <div className="wrap about-body">
           <div className="about-body__col">
             <p className="eyebrow">What We Believe</p>
-            <h2>Science & Literature</h2>
+            <h2>Science Meets Creativity</h2>
+
             <p className="about-body__text">
-              Science helps us understand the world through observation, reasoning, and discovery, 
-              while literary pursuits allow us to express ideas, emotions, and experiences with 
-              creativity. Together, these disciplines inspire balanced thinking, open-mindedness, 
-              and a community that values collaboration over competition.
+              Science teaches us to question, observe, and innovate, while
+              literature helps us communicate ideas, emotions, and experiences.
+              Together, they inspire balanced thinking, creativity, empathy,
+              and collaboration—qualities that shape responsible future
+              leaders.
             </p>
           </div>
+
           <div className="about-body__col">
-            <p className="eyebrow">Our Values</p>
+            <p className="eyebrow">Our Core Values</p>
             <h2>What Guides Us</h2>
-            <ul className="about-values__list" style={{ paddingLeft: '1.2rem', margin: '1rem 0' }}>
-              <li>Curiosity and lifelong learning</li>
-              <li>Creativity and innovation</li>
-              <li>Respect for diverse ideas and viewpoints</li>
-              <li>Teamwork, collaboration, and inclusivity</li>
-              <li>Integrity and mutual responsibility</li>
+
+            <ul
+              className="about-values__list"
+              style={{ paddingLeft: "1.25rem", marginTop: "1rem" }}
+            >
+              <li>Curiosity & Lifelong Learning</li>
+              <li>Creativity & Innovation</li>
+              <li>Leadership & Responsibility</li>
+              <li>Teamwork & Collaboration</li>
+              <li>Inclusivity & Mutual Respect</li>
+              <li>Integrity & Professional Ethics</li>
             </ul>
           </div>
         </div>
       </section>
 
-      {/* Pillars Section */}
+      {/* Mission Vision */}
       <section className="section section--dark">
         <div className="wrap">
           <div className="section__head">
@@ -129,7 +139,7 @@ export default function About() {
             {pillars.map((pillar, index) => (
               <div className="pillar" key={pillar.title}>
                 <span className="pillar__index">
-                  {String(index + 1).padStart(2, '0')}
+                  {String(index + 1).padStart(2, "0")}
                 </span>
 
                 <h3>{pillar.title}</h3>
@@ -140,18 +150,28 @@ export default function About() {
         </div>
       </section>
 
-      {/* Looking Ahead Footer Note */}
+      {/* Future */}
       <section className="section section--brief">
-        <div className="wrap text-center" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
+        <div
+          className="wrap text-center"
+          style={{
+            textAlign: "center",
+            maxWidth: "750px",
+            margin: "0 auto",
+          }}
+        >
           <p className="eyebrow">Looking Ahead</p>
-          <h2>Thinking Beyond Boundaries</h2>
+          <h2>Building Tomorrow Together</h2>
+
           <p className="about-body__text">
-            As we continue to grow, Abhyudaya remains dedicated to fostering a culture of 
-            exploration and personal development. Every idea matters, every voice is valued, 
-            and every step toward learning is a step toward growth.
+            As Abhyudaya continues to grow, our commitment remains unchanged—to
+            inspire curiosity, encourage innovation, nurture leadership, and
+            create opportunities where every student can learn, contribute, and
+            make a meaningful impact. Together, we strive to build a community
+            that empowers ideas and transforms potential into achievement.
           </p>
         </div>
       </section>
     </>
-  )
+  );
 }
