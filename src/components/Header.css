@@ -188,3 +188,9 @@
   border-color: #2563eb;
   color: #fff;
 }
+.nav__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

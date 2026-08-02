@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
@@ -28,7 +29,19 @@ import EditBlog from "./Admin/pages/EditBlog.jsx";
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 
+import NProgress from "nprogress";
+import "nprogress/nprogress.css";
+
+NProgress.configure({ showSpinner: false, speed: 200 });
+
 export default function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    NProgress.start();
+    NProgress.done();
+  }, [location.pathname]);
+
   return (
     <>
       <ScrollToTop />
@@ -37,12 +50,8 @@ export default function App() {
 
         {/* ================= ADMIN ================= */}
 
-        <Route
-          path="/admin/login"
-          element={<Login />}
-        />
+        <Route path="/admin/login" element={<Login />} />
 
-        {/* Super Admin Only */}
         <Route
           path="/admin/dashboard"
           element={
@@ -52,7 +61,6 @@ export default function App() {
           }
         />
 
-        {/* Super Admin Only */}
         <Route
           path="/admin/events"
           element={
@@ -62,7 +70,6 @@ export default function App() {
           }
         />
 
-        {/* Super Admin Only */}
         <Route
           path="/admin/users"
           element={
@@ -72,7 +79,6 @@ export default function App() {
           }
         />
 
-        {/* Admin + Super Admin */}
         <Route
           path="/admin/blogs"
           element={
@@ -82,7 +88,6 @@ export default function App() {
           }
         />
 
-        {/* Admin + Super Admin */}
         <Route
           path="/admin/blogs/add"
           element={
@@ -92,7 +97,6 @@ export default function App() {
           }
         />
 
-        {/* Admin + Super Admin */}
         <Route
           path="/admin/blogs/edit/:id"
           element={
@@ -105,62 +109,17 @@ export default function App() {
         {/* ================= PUBLIC WEBSITE ================= */}
 
         <Route element={<Layout />}>
-
-          <Route
-            path="/"
-            element={<Home />}
-          />
-
-          <Route
-            path="/about"
-            element={<About />}
-          />
-
-          <Route
-            path="/events"
-            element={<Events />}
-          />
-
-          <Route
-            path="/events/:slug"
-            element={<EventDetails />}
-          />
-
-          <Route
-            path="/team"
-            element={<Team />}
-          />
-
-          <Route
-            path="/gallery"
-            element={<Gallery />}
-          />
-
-          <Route
-            path="/blog"
-            element={<Blog />}
-          />
-
-          <Route
-            path="/blog/:id"
-            element={<BlogDetails />}
-          />
-
-          <Route
-            path="/contact"
-            element={<Contact />}
-          />
-
-          <Route
-            path="/join"
-            element={<JoinClub />}
-          />
-
-          <Route
-            path="*"
-            element={<NotFound />}
-          />
-
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:slug" element={<EventDetails />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogDetails />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/join" element={<JoinClub />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
 
       </Routes>
