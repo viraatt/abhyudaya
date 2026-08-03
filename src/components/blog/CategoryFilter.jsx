@@ -1,27 +1,27 @@
 import "./CategoryFilter.css";
 
+const categories = [
+  "All",
+  "Events",
+  "Technology",
+  "Science",
+  "Literature",
+  "Achievements",
+];
+
 export default function CategoryFilter({
   activeCategory,
   onCategoryChange,
 }) {
-  const categories = [
-    "All",
-    "Events",
-    "Technology",
-    "Science",
-    "Literature",
-    "Achievements",
-  ];
-
   return (
-    <div className="blog-categories">
+    <div className="category-wrapper">
       {categories.map((category) => (
         <button
           key={category}
-          className={`blog-category-btn ${
+          onClick={() => onCategoryChange(category)}
+          className={`category-pill ${
             activeCategory === category ? "active" : ""
           }`}
-          onClick={() => onCategoryChange(category)}
         >
           {category}
         </button>

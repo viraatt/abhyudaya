@@ -1,5 +1,6 @@
 import "./FeaturedPost.css";
 import { Link } from "react-router-dom";
+
 import {
   FiCalendar,
   FiClock,
@@ -12,35 +13,41 @@ export default function FeaturedPost({ blog }) {
 
   return (
     <section className="featured-post">
-      <img
-  src={
-    blog.featuredImage
-      ? blog.featuredImage.replace(
-          "/upload/",
-          "/upload/c_fill,w_1600,h_700,q_auto,f_auto/"
-        )
-      : "https://placehold.co/1600x700?text=No+Image"
-  }
-  alt={blog.title}
-  loading="lazy"
-/>
 
-      <div className="featured-overlay"></div>
+      <div className="featured-image">
+
+        <img
+          src={
+            blog.featuredImage
+              ? blog.featuredImage.replace(
+                  "/upload/",
+                  "/upload/c_fill,w_1600,h_850,q_auto,f_auto/"
+                )
+              : "https://placehold.co/1600x850?text=No+Image"
+          }
+          alt={blog.title}
+        />
+
+        <div className="featured-overlay"></div>
+
+      </div>
 
       <div className="featured-content">
-        <span className="featured-badge">
-          ⭐ Featured Story
+
+        <span className="featured-category">
+          {blog.category || "Featured"}
         </span>
 
-        <h1 className="featured-title">
+        <h1>
           {blog.title}
         </h1>
 
-        <p className="featured-description">
+        <p>
           {blog.excerpt}
         </p>
 
         <div className="featured-meta">
+
           <span>
             <FiUser />
             {blog.author || "Admin"}
@@ -55,16 +62,19 @@ export default function FeaturedPost({ blog }) {
             <FiClock />
             {blog.readTime || "5 min read"}
           </span>
+
         </div>
 
         <Link
           to={`/blog/${blog.id}`}
           className="featured-btn"
         >
-          Read Article
+          Read Full Article
           <FiArrowRight />
         </Link>
+
       </div>
+
     </section>
   );
 }

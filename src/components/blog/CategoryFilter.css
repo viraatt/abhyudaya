@@ -1,27 +1,31 @@
-/* ==========================================
-   CATEGORY FILTER
-========================================== */
+/* ---------- CATEGORY FILTER ---------- */
 
-.blog-categories{
+.category-wrapper{
     display:flex;
     justify-content:center;
     align-items:center;
+    gap:14px;
+
     flex-wrap:wrap;
-    gap:16px;
-    margin:45px 0 65px;
+
+    margin:40px auto 70px;
+
+    padding:0 20px;
 }
 
-.blog-category-btn{
+.category-pill{
 
-    padding:13px 24px;
+    border:none;
 
-    border:1px solid #dbe4f0;
+    outline:none;
 
-    border-radius:999px;
+    background:white;
 
-    background:#ffffff;
+    color:#334155;
 
-    color:#475569;
+    padding:14px 28px;
+
+    border-radius:50px;
 
     font-size:15px;
 
@@ -29,60 +33,53 @@
 
     cursor:pointer;
 
-    transition:all .3s ease;
+    transition:.35s;
 
     box-shadow:
-        0 6px 18px rgba(15,23,42,.05);
+    0 8px 25px rgba(15,23,42,.08);
 
 }
 
-.blog-category-btn:hover{
+.category-pill:hover{
 
-    background:#2563eb;
+transform:translateY(-4px);
 
-    color:#fff;
+background:#10213b;
 
-    border-color:#2563eb;
+color:white;
 
-    transform:translateY(-3px);
-
-    box-shadow:
-        0 15px 35px rgba(37,99,235,.20);
+box-shadow:
+0 18px 35px rgba(16,33,59,.18);
 
 }
 
-.blog-category-btn.active{
+.category-pill.active{
 
-    background:linear-gradient(
-        135deg,
-        #2563eb,
-        #1d4ed8
-    );
+background:linear-gradient(
+135deg,
+#f7c948,
+#e5a900);
 
-    color:#fff;
+color:white;
 
-    border-color:transparent;
-
-    box-shadow:
-        0 15px 35px rgba(37,99,235,.28);
+box-shadow:
+0 18px 35px rgba(247,201,72,.35);
 
 }
 
 @media(max-width:768px){
 
-.blog-categories{
+.category-wrapper{
 
-    gap:10px;
-
-    margin:35px 0 50px;
+gap:10px;
 
 }
 
-.blog-category-btn{
+.category-pill{
 
-    padding:10px 18px;
+padding:12px 18px;
 
-    font-size:14px;
+font-size:14px;
 
 }
 
