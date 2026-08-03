@@ -13,13 +13,17 @@ export default function FeaturedPost({ blog }) {
   return (
     <section className="featured-post">
       <img
-        src={
-          blog.featuredImage ||
-          "https://placehold.co/1200x700?text=No+Image"
-        }
-        alt={blog.title}
-        loading="lazy"
-      />
+  src={
+    blog.featuredImage
+      ? blog.featuredImage.replace(
+          "/upload/",
+          "/upload/c_fill,w_1600,h_700,q_auto,f_auto/"
+        )
+      : "https://placehold.co/1600x700?text=No+Image"
+  }
+  alt={blog.title}
+  loading="lazy"
+/>
 
       <div className="featured-overlay"></div>
 
