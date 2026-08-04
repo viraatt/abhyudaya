@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { events } from "../data/club.js";
 import PageHero from "../components/PageHero.jsx";
 import { CardContainer, CardBody, CardItem } from "../components/ui/3d-card";
+import { getGalleryItems } from "../Admin/pages/services/galleryService.js";
 import "./Gallery.css";
 
 const PLACEHOLDER = (seed) =>
@@ -16,6 +17,9 @@ const imageModules = import.meta.glob(
 
 function getImagePath(imagePath) {
   if (!imagePath) return PLACEHOLDER(0);
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
   const modulePath = `../${imagePath}`;
   return imageModules[modulePath]?.default || imagePath;
 }
@@ -90,8 +94,24 @@ function ExpandedOverlay({ selected, onClose }) {
 export default function Gallery() {
   const [selected, setSelected] = useState(null);
   const [hovered, setHovered] = useState(null);
+  const [dbItems, setDbItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const cards = events.map((ev, i) => {
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await getGalleryItems();
+        setDbItems(data);
+      } catch (err) {
+        console.error("Error loading gallery photos from Firestore:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const staticCards = events.map((ev, i) => {
     let coverSrc;
     if (ev.photo && ev.photo.trim()) {
       coverSrc = getImagePath(ev.photo);
@@ -113,6 +133,15 @@ export default function Gallery() {
       photos: photoList,
     };
   });
+
+  const dbCards = dbItems.map((item) => ({
+    title: item.title,
+    kind: item.category || "Event",
+    src: getImagePath(item.imageUrl),
+    photos: [getImagePath(item.imageUrl)],
+  }));
+
+  const cards = dbCards.length > 0 ? [...dbCards, ...staticCards] : staticCards;
 
   return (
     <div className="bg-black min-h-screen">
@@ -159,11 +188,6 @@ export default function Gallery() {
                     </CardItem>
 
                     <CardItem translateZ="50" className="w-full mb-8">
-                      {/*
-                       * Fixed 200px locked box — objectFit:cover crops
-                       * any image to fill it exactly. No overflow, no
-                       * size difference between cards.
-                       */}
                       <div className="gallery-card-img-box">
                         <img
                           src={card.src}

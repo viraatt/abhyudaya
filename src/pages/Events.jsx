@@ -1,10 +1,40 @@
+import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import PageHero from "../components/PageHero.jsx";
 import EventCard from "../components/EventCard.jsx";
 import eventCategories from "../data/eventCategories";
+import { getEvents } from "../Firebase/eventService.js";
 import "./Events.css";
 
 export default function Events() {
+  const [dbEvents, setDbEvents] = useState([]);
+
+  useEffect(() => {
+    async function loadDbEvents() {
+      try {
+        const data = await getEvents();
+        setDbEvents(data);
+      } catch (err) {
+        console.error("Error loading events from Firestore:", err);
+      }
+    }
+    loadDbEvents();
+  }, []);
+
+  const formattedDbEvents = dbEvents.map((ev) => ({
+    id: ev.id,
+    name: ev.title,
+    title: ev.title,
+    description: ev.description,
+    date: ev.date,
+    location: ev.location,
+    photo: ev.banner,
+    image: ev.banner,
+    kind: "Special Event",
+  }));
+
+  const allEvents = [...formattedDbEvents, ...eventCategories];
+
   return (
     <>
       <Helmet>
@@ -29,7 +59,7 @@ export default function Events() {
       <section className="section">
         <div className="wrap">
           <div className="events-grid">
-            {eventCategories.map((event) => (
+            {allEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={event}

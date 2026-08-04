@@ -1,31 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
-
-import {
-  doc,
-  getDoc,
-  updateDoc,
-} from "firebase/firestore";
-
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import RichEditor from "../components/editor/RichEditor";
 
 import "./style/admin.css";
 import "./addBlog.css";
-
-import Toolbar from "../../components/blog/Toolbar";
-import EditorCanvas from "../../components/blog/EditorCanvas";
-
 import { uploadImage } from "./services/imageUpload";
 
 function EditBlog() {
-
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -41,32 +27,18 @@ function EditBlog() {
   const [featuredImage, setFeaturedImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      // Enables inline images inserted via the toolbar's Insert Image button.
-      // Images are stored as part of the HTML content, not as separate fields.
-      Image.configure({
-        HTMLAttributes: {
-          class: "editor-inline-image",
-        },
-      }),
-    ],
-    content: "",
-  });
+  // Tiptap JSON content state
+  const [contentJson, setContentJson] = useState(null);
+  const [contentExcerpt, setContentExcerpt] = useState("");
 
   useEffect(() => {
-    if (editor) {
-      loadBlog();
-    }
-  }, [editor]);
+    loadBlog();
+  }, [id]);
 
   const loadBlog = async () => {
-
     try {
-
+      setLoading(true);
       const ref = doc(db, "blogs", id);
-
       const snap = await getDoc(ref);
 
       if (!snap.exists()) {
@@ -85,56 +57,40 @@ function EditBlog() {
       setPublishDate(blog.publishDate || "");
       setStatus(blog.status || "Draft");
       setFeaturedImage(blog.featuredImage || "");
-
-      editor.commands.setContent(blog.content || "");
-
+      setContentJson(blog.content || null);
+      if (blog.excerpt) setContentExcerpt(blog.excerpt);
     } catch (error) {
-
       console.error(error);
-
       alert("Failed to load blog.");
-
     } finally {
-
       setLoading(false);
-
     }
+  };
 
+  const handleEditorChange = (json, html, text) => {
+    setContentJson(json);
+    setContentExcerpt(text || "");
   };
 
   const handleImageUpload = async (e) => {
-
-    const file = e.target.files[0];
-
+    const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-
       setUploadingImage(true);
-
       const url = await uploadImage(file);
-
       if (!url) {
-        alert("Image upload failed. Please try again.");
+        alert("Image upload failed.");
         return;
       }
-
       setFeaturedImage(url);
-
     } catch (error) {
-
       console.error(error);
-
-      alert("Image upload failed. Please try again.");
-
+      alert("Image upload failed.");
     } finally {
-
       setUploadingImage(false);
-
       e.target.value = "";
-
     }
-
   };
 
   const removeImage = () => {
@@ -142,78 +98,51 @@ function EditBlog() {
   };
 
   const handleUpdate = async () => {
-
-    if (!editor) return;
-
     if (!title.trim()) {
       alert("Please enter blog title.");
       return;
     }
 
     try {
-
       await updateDoc(doc(db, "blogs", id), {
-
         title: title.trim(),
-
         category,
-
         tags: tags
           .split(",")
-          .map(tag => tag.trim())
+          .map((tag) => tag.trim())
           .filter(Boolean),
-
         slug:
           slug.trim() ||
           title
             .toLowerCase()
             .replace(/\s+/g, "-")
             .replace(/[^a-z0-9-]/g, ""),
-
         seo,
-
         publishDate,
-
         status,
-
         featuredImage,
-
-        excerpt: editor
-          .getText()
-          .substring(0, 180),
-
-        content: editor.getHTML(),
-
+        excerpt: contentExcerpt.trim().substring(0, 180),
+        content: contentJson, // Stored strictly as Tiptap JSON
       });
 
       alert("✅ Blog Updated Successfully");
-
       navigate("/admin/blogs");
-
     } catch (error) {
-
       console.error(error);
-
       alert("Failed to update blog.");
-
     }
-
   };
 
   if (loading) {
     return (
       <div className="dashboard-layout">
         <Sidebar />
-
         <div className="dashboard-main">
           <Topbar />
-
           <div className="dashboard-content">
-
             <div className="empty">
               <h2>Loading Blog...</h2>
             </div>
-
           </div>
         </div>
       </div>
@@ -221,29 +150,21 @@ function EditBlog() {
   }
 
   return (
-        <div className="dashboard-layout">
-
+    <div className="dashboard-layout">
       <Sidebar />
 
       <div className="dashboard-main">
-
         <Topbar />
 
         <div className="dashboard-content">
-
           <div className="create-post">
-
             <div className="create-header">
-
               <div className="header-left">
                 <h1>Edit Blog</h1>
-                <p>
-                  Update your existing blog and save the changes.
-                </p>
+                <p>Update your existing blog and save the changes.</p>
               </div>
 
               <div className="header-buttons">
-
                 <button
                   className="draft-btn"
                   onClick={() => navigate("/admin/blogs")}
@@ -251,21 +172,14 @@ function EditBlog() {
                   ← Back
                 </button>
 
-                <button
-                  className="publish-btn"
-                  onClick={handleUpdate}
-                >
+                <button className="publish-btn" onClick={handleUpdate}>
                   💾 Update Blog
                 </button>
-
               </div>
-
             </div>
 
             <div className="editor-layout">
-
               <section className="editor-section">
-
                 <input
                   type="text"
                   className="title-input"
@@ -274,28 +188,27 @@ function EditBlog() {
                   onChange={(e) => setTitle(e.target.value)}
                 />
 
-                <Toolbar editor={editor} />
-
-                <div className="editor-area">
-                  <EditorCanvas editor={editor} />
-                </div>
-
+                <RichEditor
+                  value={contentJson}
+                  onChange={handleEditorChange}
+                  placeholder="Write your story here..."
+                />
               </section>
 
               <aside className="blog-sidebar">
-
                 <div className="card">
-
                   <h3>Featured Image</h3>
 
                   {featuredImage && (
-
                     <div className="image-preview">
-
                       <img
                         src={featuredImage}
                         alt="Featured"
-                        style={{ width: "100%", borderRadius: "8px", marginBottom: "8px" }}
+                        style={{
+                          width: "100%",
+                          borderRadius: "8px",
+                          marginBottom: "8px",
+                        }}
                       />
 
                       <button
@@ -306,9 +219,7 @@ function EditBlog() {
                       >
                         ❌ Remove Image
                       </button>
-
                     </div>
-
                   )}
 
                   <input
@@ -319,11 +230,9 @@ function EditBlog() {
                   />
 
                   {uploadingImage && <p>Uploading image...</p>}
-
                 </div>
 
                 <div className="card">
-
                   <h3>Category</h3>
 
                   <select
@@ -336,11 +245,9 @@ function EditBlog() {
                     <option>Events</option>
                     <option>Achievement</option>
                   </select>
-
                 </div>
 
                 <div className="card">
-
                   <h3>Tags</h3>
 
                   <input
@@ -349,11 +256,9 @@ function EditBlog() {
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
                   />
-
                 </div>
 
                 <div className="card">
-
                   <h3>URL Slug</h3>
 
                   <input
@@ -362,11 +267,9 @@ function EditBlog() {
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
                   />
-
                 </div>
 
                 <div className="card">
-
                   <h3>SEO Description</h3>
 
                   <textarea
@@ -375,37 +278,25 @@ function EditBlog() {
                     value={seo}
                     onChange={(e) => setSeo(e.target.value)}
                   />
-
                 </div>
 
                 <div className="card">
-
                   <h3>Publish Date</h3>
 
                   <input
                     type="date"
                     value={publishDate}
-                    onChange={(e) =>
-                      setPublishDate(e.target.value)
-                    }
+                    onChange={(e) => setPublishDate(e.target.value)}
                   />
-
                 </div>
 
                 <div className="card">
-
                   <h3>Author</h3>
 
-                  <input
-                    type="text"
-                    value="Admin"
-                    readOnly
-                  />
-
+                  <input type="text" value="Admin" readOnly />
                 </div>
 
                 <div className="card">
-
                   <h3>Status</h3>
 
                   <select
@@ -416,19 +307,12 @@ function EditBlog() {
                     <option>Published</option>
                     <option>Scheduled</option>
                   </select>
-
                 </div>
-
               </aside>
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }
