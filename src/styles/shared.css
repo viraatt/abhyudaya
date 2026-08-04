@@ -85,3 +85,44 @@
 .eyebrow {
   color: var(--horizon);
 }
+/* Add to shared.css */
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+/* Custom NProgress loading bar color */
+#nprogress .bar {
+  background: #EEB84A !important;
+}
+
+/* Custom color for the subtle glowing tail/peg at the leading edge */
+#nprogress .peg {
+  box-shadow: 0 0 10px #EEB84A, 0 0 5px #EEB84A !important;
+}
+/* Add to shared.css */
+img {
+  /* Prevents blank layout boxes while assets load */
+  background-color: rgba(255, 255, 255, 0.05); 
+  transition: opacity 0.3s ease-in-out;
+}
+/* Replace #0a0a0a with your site's actual dark background color */
+/* Skeleton Base Styles */
+.skeleton {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}

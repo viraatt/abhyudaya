@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
@@ -28,118 +28,98 @@ const EditBlog    = lazy(() => import("./Admin/pages/EditBlog.jsx"));
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 
-// Minimal loading fallback — invisible to avoid layout shift
-function PageLoader() {
-  return (
-    <div
-      role="status"
-      aria-label="Loading page"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "60vh",
-        color: "var(--color-text-muted, #888)",
-        fontSize: "0.9rem",
-      }}
-    >
-      Loading…
-    </div>
-  );
-}
+import NProgress from "nprogress";
+import "nprogress/nprogress.css";
+
+NProgress.configure({ showSpinner: false, speed: 200 });
 
 export default function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    NProgress.start();
+    NProgress.done();
+  }, [location.pathname]);
+
   return (
     <>
       <ScrollToTop />
 
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
+      <Routes>
 
-          {/* ================= ADMIN ================= */}
+        {/* ================= ADMIN ================= */}
 
-          <Route
-            path="/admin/login"
-            element={<Login />}
-          />
+        <Route path="/admin/login" element={<Login />} />
 
-          {/* Super Admin Only */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["superadmin"]}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Super Admin Only */}
-          <Route
-            path="/admin/events"
-            element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
-                <AdminEvents />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin/events"
+          element={
+            <ProtectedRoute allowedRoles={["superadmin"]}>
+              <AdminEvents />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Super Admin Only */}
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
-                <Users />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={["superadmin"]}>
+              <Users />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Admin + Super Admin */}
-          <Route
-            path="/admin/blogs"
-            element={
-              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
-                <BlogManager />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin/blogs"
+          element={
+            <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+              <BlogManager />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Admin + Super Admin */}
-          <Route
-            path="/admin/blogs/add"
-            element={
-              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
-                <AddBlog />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin/blogs/add"
+          element={
+            <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+              <AddBlog />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Admin + Super Admin */}
-          <Route
-            path="/admin/blogs/edit/:id"
-            element={
-              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
-                <EditBlog />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/admin/blogs/edit/:id"
+          element={
+            <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+              <EditBlog />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* ================= PUBLIC WEBSITE ================= */}
+        {/* ================= PUBLIC WEBSITE ================= */}
 
-          <Route element={<Layout />}>
-
-            <Route path="/"          element={<Home />} />
-            <Route path="/about"     element={<About />} />
-            <Route path="/events"    element={<Events />} />
-            <Route path="/events/:slug" element={<EventDetails />} />
-            <Route path="/team"      element={<Team />} />
-            <Route path="/gallery"   element={<Gallery />} />
-            <Route path="/blog"      element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogDetails />} />
-            <Route path="/contact"   element={<Contact />} />
-            <Route path="/join"      element={<JoinClub />} />
-            <Route path="*"          element={<NotFound />} />
-
-          </Route>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:slug" element={<EventDetails />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogDetails />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/join" element={<JoinClub />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
 
         </Routes>
       </Suspense>
