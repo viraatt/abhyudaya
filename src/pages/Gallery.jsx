@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Helmet } from "react-helmet-async";
 import { events } from "../data/club.js";
 import PageHero from "../components/PageHero.jsx";
 import { CardContainer, CardBody, CardItem } from "../components/ui/3d-card";
@@ -115,6 +116,18 @@ export default function Gallery() {
 
   return (
     <div className="bg-black min-h-screen">
+      <Helmet>
+        <title>Gallery | Abhyudaya Club — Event Photos & Moments from MPEC Kanpur</title>
+        <meta name="description" content="Browse the Abhyudaya Club photo gallery — interactive 3D memories from TechBloom, CommuniCraft, workshops, and other events at MPEC Kanpur." />
+        <link rel="canonical" href="https://abhyudayaclub.in/gallery" />
+        <meta property="og:title" content="Gallery | Abhyudaya Club — MPEC Kanpur" />
+        <meta property="og:description" content="Interactive 3D photo gallery of Abhyudaya Club events at Maharana Pratap Engineering College, Kanpur." />
+        <meta property="og:url" content="https://abhyudayaclub.in/gallery" />
+        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:title" content="Gallery | Abhyudaya Club — MPEC Kanpur" />
+        <meta name="twitter:description" content="Interactive 3D photo gallery from Abhyudaya Club events at MPEC Kanpur." />
+        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+      </Helmet>
       <PageHero
         eyebrow="Moments"
         title="A look inside the club."

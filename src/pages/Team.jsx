@@ -1,4 +1,5 @@
 import { team } from '../data/club.js'
+import { Helmet } from 'react-helmet-async'
 import PageHero from '../components/PageHero.jsx'
 import './Team.css'
 
@@ -42,6 +43,18 @@ function TeamCard({ person }) {
 export default function Team() {
   return (
     <>
+      <Helmet>
+        <title>Our Team | Abhyudaya Club — Faculty & Student Leaders at MPEC Kanpur</title>
+        <meta name="description" content="Meet the Abhyudaya Club team — dedicated faculty advisors and passionate student leaders who organize events, promote innovation, and drive student growth at MPEC Kanpur." />
+        <link rel="canonical" href="https://abhyudayaclub.in/team" />
+        <meta property="og:title" content="Our Team | Abhyudaya Club" />
+        <meta property="og:description" content="Meet the faculty advisors and student leaders of Abhyudaya Club at MPEC Kanpur." />
+        <meta property="og:url" content="https://abhyudayaclub.in/team" />
+        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:title" content="Our Team | Abhyudaya Club" />
+        <meta name="twitter:description" content="Meet the faculty advisors and student leaders of Abhyudaya Club at MPEC Kanpur." />
+        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+      </Helmet>
       <PageHero
         eyebrow="Meet Our Team"
         title="The People Behind Abhyudaya"

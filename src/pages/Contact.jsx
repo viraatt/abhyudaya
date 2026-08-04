@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { club, socials } from '../data/club.js'
 import PageHero from '../components/PageHero.jsx'
 import './Contact.css'
@@ -35,6 +36,18 @@ export default function Contact() {
 
   return (
     <>
+      <Helmet>
+        <title>Contact Us | Abhyudaya Club — Get in Touch, MPEC Kanpur</title>
+        <meta name="description" content="Contact Abhyudaya Club at MPEC Kanpur. Reach out for collaborations, sponsorships, queries, or to learn more about joining the club." />
+        <link rel="canonical" href="https://abhyudayaclub.in/contact" />
+        <meta property="og:title" content="Contact Abhyudaya Club | MPEC Kanpur" />
+        <meta property="og:description" content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries." />
+        <meta property="og:url" content="https://abhyudayaclub.in/contact" />
+        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:title" content="Contact Abhyudaya Club | MPEC Kanpur" />
+        <meta name="twitter:description" content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries." />
+        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+      </Helmet>
       <PageHero
         eyebrow="Get in Touch"
         title="Let's Connect."
