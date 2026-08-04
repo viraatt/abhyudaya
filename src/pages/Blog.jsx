@@ -45,20 +45,17 @@ const Blog = () => {
             id: doc.id,
             ...data,
             date: data.createdAt?.toDate
-              ? data.createdAt
-                  .toDate()
-                  .toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                  })
+              ? data.createdAt.toDate().toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })
               : "Recently",
           };
         })
         .filter(
           (blog) =>
-            (blog.status || "").toLowerCase() ===
-            "published"
+            (blog.status || "").toLowerCase() === "published"
         );
 
       blogList.sort((a, b) => {
@@ -106,13 +103,25 @@ const Blog = () => {
   return (
     <div className="blog-page">
 
-      <div className="blog-header">
-        <h1>Our Blogs</h1>
-        <p>
-          Explore articles, events, achievements,
-          technology and more from Abhyudaya Club.
+      {/* ---------- HERO ---------- */}
+
+      <section className="blog-header">
+
+        <div className="blog-badge">
+          ✨ ABHYUDAYA CLUB
+        </div>
+
+        <h1 className="blog-title">
+          Explore Our <span>Stories</span>
+        </h1>
+
+        <p className="blog-subtitle">
+          Discover inspiring articles, technical insights,
+          workshops, competitions, achievements and exciting
+          moments from the Abhyudaya Club community.
         </p>
-      </div>
+
+      </section>
 
       <SearchBar
         value={search}
