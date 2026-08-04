@@ -52,10 +52,10 @@ export default function BlogCard({ blog }) {
           </span>
         </div>
 
-        <Link
-          to={`/blog/${blog.id}`}
-          className="blog-read-btn"
-        >
+       <Link
+  to={`/blog/${blog.slug}`}
+  className="blog-read-btn"
+>
           Read Article
           <FiArrowRight />
         </Link>

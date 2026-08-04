@@ -65,10 +65,10 @@ export default function FeaturedPost({ blog }) {
 
         </div>
 
-        <Link
-          to={`/blog/${blog.id}`}
-          className="featured-btn"
-        >
+       <Link
+  to={`/blog/${blog.slug}`}
+  className="featured-btn"
+>
           Read Full Article
           <FiArrowRight />
         </Link>

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { club } from "../data/club.js";
+import { Helmet } from "react-helmet-async";
 import PageHero from "../components/PageHero.jsx";
 import "./About.css";
 
@@ -24,6 +25,18 @@ const slideFromRight = {
 export default function About() {
   return (
     <>
+      <Helmet>
+        <title>About Us | Abhyudaya Club — Science & Literary Club of MPEC Kanpur</title>
+        <meta name="description" content="Learn about Abhyudaya Club — the Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur, our mission, values, and community." />
+        <link rel="canonical" href="https://abhyudayaclub.in/about" />
+        <meta property="og:title" content="About Abhyudaya Club | MPEC Kanpur" />
+        <meta property="og:description" content="Empowering innovation, creativity and leadership at MPEC Kanpur since our founding." />
+        <meta property="og:url" content="https://abhyudayaclub.in/about" />
+        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:title" content="About Abhyudaya Club | MPEC Kanpur" />
+        <meta name="twitter:description" content="Empowering innovation, creativity and leadership at MPEC Kanpur." />
+        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+      </Helmet>
       <PageHero
         eyebrow="About Abhyudaya"
         title="Empowering Innovation, Creativity & Leadership"

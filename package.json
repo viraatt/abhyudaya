@@ -1,13 +1,14 @@
 {
   "name": "abhyudaya-club-website",
-  "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/generate-sitemap.js",
     "build": "vite build",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 50",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "generate-sitemap": "node scripts/generate-sitemap.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -16,6 +17,8 @@
     "@tiptap/starter-kit": "^3.28.0",
     "v": "^12.17.0",
     "firebase-admin": "^14.2.0",
+    "dotenv": "^17.4.2",
+    "firebase": "^12.16.0",
     "framer-motion": "^12.43.0",
     "nprogress": "^0.2.0",
     "react": "^18.3.1",
