@@ -2,3 +2,13 @@ node_modules
 dist
 .DS_Store
 *.log
+
+# Firebase service account — NEVER commit these
+firebase-service-account.json
+firebase-service-account.json.json
+*-service-account*.json
+
+# Environment secrets
+.env
+.env.local
+.env.*.local

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { club, events } from '../data/club.js'
 import logo from '../assets/logo-512.png'
 import './Home.css'
@@ -24,6 +25,18 @@ export default function Home() {
 
   return (
     <>
+      <Helmet>
+        <title>Abhyudaya Club | Science & Literary Club of MPEC Kanpur</title>
+        <meta name="description" content="Abhyudaya Club is the official Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur. Explore our events, workshops, and student initiatives." />
+        <link rel="canonical" href="https://abhyudayaclub.in/" />
+        <meta property="og:title" content="Abhyudaya Club | Science & Literary Club of MPEC Kanpur" />
+        <meta property="og:description" content="Abhyudaya Club — fostering curiosity, creativity, innovation and leadership at MPEC Kanpur." />
+        <meta property="og:url" content="https://abhyudayaclub.in/" />
+        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:title" content="Abhyudaya Club | Science & Literary Club of MPEC Kanpur" />
+        <meta name="twitter:description" content="Abhyudaya Club — fostering curiosity, creativity, innovation and leadership at MPEC Kanpur." />
+        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+      </Helmet>
       <section className="hero">
         {/* Background video. Drop your file at public/videos/hero-bg.mp4
             (and optionally a .webm copy) — see README for details.
