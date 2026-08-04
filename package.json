@@ -14,7 +14,7 @@
     "@tiptap/extension-image": "^3.28.0",
     "@tiptap/react": "^3.28.0",
     "@tiptap/starter-kit": "^3.28.0",
-    "firebase": "^12.17.0",
+    "v": "^12.17.0",
     "firebase-admin": "^14.2.0",
     "framer-motion": "^12.43.0",
     "nprogress": "^0.2.0",
