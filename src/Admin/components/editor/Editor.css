@@ -1,4 +1,4 @@
-﻿/* ================================================================
+/* ================================================================
    RICH EDITOR — Professional Blogger-style CMS Editor
    src/Admin/components/editor/Editor.css
 ================================================================ */
@@ -31,6 +31,46 @@
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+/* --- Upload Progress Overlay in Toolbar --- */
+.upload-progress-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.upload-progress-track {
+  flex: 1;
+  height: 6px;
+  background: #dbeafe;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: #2563eb;
+  transition: width 0.2s ease;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #93c5fd;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* --- Toolbar Groups --- */
@@ -187,6 +227,7 @@
   padding: 36px 44px;
   min-height: 580px;
   cursor: text;
+  position: relative;
 }
 
 /* --- ProseMirror base --- */
@@ -202,7 +243,7 @@
   margin-top: 0.6em;
 }
 
-/* --- Placeholder (via @tiptap/extension-placeholder) --- */
+/* --- Placeholder --- */
 .ProseMirror p.is-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
@@ -326,7 +367,7 @@
   color: #1d4ed8;
 }
 
-/* --- Images (future uploads) --- */
+/* --- Images & Alignments --- */
 .ProseMirror img {
   max-width: 100%;
   height: auto;
@@ -334,11 +375,76 @@
   margin: 1rem 0;
   display: block;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: outline 0.15s ease, transform 0.15s ease;
 }
 
 .ProseMirror img.ProseMirror-selectednode {
   outline: 3px solid #2563eb;
+  outline-offset: 2px;
   border-radius: 12px;
+}
+
+/* Alignments */
+.ProseMirror img[data-align="left"],
+.ProseMirror img.align-left {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.ProseMirror img[data-align="center"],
+.ProseMirror img.align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ProseMirror img[data-align="right"],
+.ProseMirror img.align-right {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* --- Image Controls Floating Action Bar --- */
+.image-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  margin-bottom: 12px;
+  animation: linkDialogIn 0.15s ease;
+}
+
+.image-control-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.image-control-btn:hover {
+  background: #334155;
+  color: #fff;
+}
+
+.image-control-btn.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.image-control-btn.danger:hover {
+  background: #ef4444;
+  color: #fff;
 }
 
 /* --- Responsive --- */
@@ -355,14 +461,6 @@
 
   .ProseMirror {
     font-size: 16px;
-  }
-
-  .ProseMirror h1 {
-    font-size: 1.8rem;
-  }
-
-  .ProseMirror h2 {
-    font-size: 1.5rem;
   }
 
   .link-dialog {
