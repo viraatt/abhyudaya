@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
 import {
   collection,
   getDocs,
@@ -9,18 +8,30 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
-
+import {
+  FaEdit,
+  FaTrash,
+  FaPlus,
+  FaSync,
+  FaSearch,
+  FaPaperPlane,
+  FaUndo,
+} from "react-icons/fa";
 import { db } from "../../Firebase/firebase";
-
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import { useToast } from "../components/Toast";
+import { updateBlogStatusService } from "./services/blogService";
 
 import "./style/admin.css";
 import "./BlogManager.css";
 
 function BlogManager() {
+  const toast = useToast();
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchBlogs();
@@ -28,24 +39,19 @@ function BlogManager() {
 
   const fetchBlogs = async () => {
     setLoading(true);
-
     try {
-      const q = query(
-        collection(db, "blogs"),
-        orderBy("createdAt", "desc")
-      );
-
+      const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
 
-      const data = snapshot.docs.map((document) => ({
-        id: document.id,
-        ...document.data(),
+      const data = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
       }));
 
       setBlogs(data);
     } catch (error) {
       console.error("Failed to fetch blogs:", error);
-      alert("Unable to load blogs.");
+      toast.error("Unable to load blogs.");
     } finally {
       setLoading(false);
     }
@@ -53,40 +59,65 @@ function BlogManager() {
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this blog?"
+      "Are you sure you want to delete this blog post?"
     );
-
     if (!confirmDelete) return;
 
     try {
       await deleteDoc(doc(db, "blogs", id));
-
-      setBlogs((prevBlogs) =>
-        prevBlogs.filter((blog) => blog.id !== id)
-      );
-
-      alert("Blog deleted successfully.");
+      setBlogs((prev) => prev.filter((blog) => blog.id !== id));
+      toast.success("Blog post deleted successfully.");
     } catch (error) {
       console.error("Delete Error:", error);
-      alert("Failed to delete blog.");
+      toast.error("Failed to delete blog.");
+    }
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await updateBlogStatusService(id, newStatus);
+      setBlogs((prev) =>
+        prev.map((blog) => (blog.id === id ? { ...blog, status: newStatus } : blog))
+      );
+
+      if (newStatus === "Published") {
+        toast.success("🚀 Blog published!");
+      } else if (newStatus === "Draft") {
+        toast.info("Blog moved to Drafts.");
+      } else {
+        toast.info(`Blog status updated to ${newStatus}.`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to update blog status.");
     }
   };
 
   const formatDate = (timestamp) => {
     if (!timestamp?.seconds) return "-";
-
-    return new Date(timestamp.seconds * 1000).toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    return new Date(timestamp.seconds * 1000).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
+  // Filtering Logic
+  const filteredBlogs = blogs.filter((blog) => {
+    const matchesStatus =
+      statusFilter === "All" ||
+      (blog.status || "Draft").toLowerCase() === statusFilter.toLowerCase();
+    const matchesSearch =
+      !searchQuery.trim() ||
+      (blog.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (blog.slug || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (blog.category || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesStatus && matchesSearch;
+  });
+
   return (
-        <div className="dashboard-layout">
+    <div className="dashboard-layout">
       <Sidebar />
 
       <div className="dashboard-main">
@@ -94,112 +125,169 @@ function BlogManager() {
 
         <div className="dashboard-content">
           <div className="blog-manager">
-
+            {/* Header */}
             <div className="blog-header">
               <div>
                 <h1>Blog Manager</h1>
-
                 <p>
-                  Total Blogs : <strong>{blogs.length}</strong>
+                  Total Posts: <strong>{blogs.length}</strong> | Showing:{" "}
+                  <strong>{filteredBlogs.length}</strong>
                 </p>
               </div>
 
               <div className="header-actions">
                 <button
+                  type="button"
                   className="refresh-btn"
                   onClick={fetchBlogs}
                 >
-                  🔄 Refresh
+                  <FaSync />
+                  <span>Refresh</span>
                 </button>
 
-                <Link
-                  to="/admin/blogs/add"
-                  className="new-blog-btn"
-                >
-                  + New Blog
+                <Link to="/admin/blogs/add" className="new-blog-btn">
+                  <FaPlus />
+                  <span>New Blog Post</span>
                 </Link>
               </div>
             </div>
 
+            {/* Filter & Search Bar */}
+            <div className="blog-filter-bar">
+              <div className="status-tabs">
+                {["All", "Published", "Draft", "Archived"].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    className={`filter-tab-btn ${
+                      statusFilter === st ? "active" : ""
+                    }`}
+                    onClick={() => setStatusFilter(st)}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+
+              <div className="search-input-wrapper">
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  className="search-input-field"
+                  placeholder="Search by title, slug, category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Table */}
             {loading ? (
-              <div className="empty">
+              <div className="empty-state-box">
                 <h2>Loading Blogs...</h2>
               </div>
-            ) : blogs.length === 0 ? (
-              <div className="empty">
+            ) : filteredBlogs.length === 0 ? (
+              <div className="empty-state-box">
                 <h2>No Blogs Found</h2>
-
                 <p>
-                  Click <strong>New Blog</strong> to publish your first blog.
+                  No blog posts match your criteria. Click{" "}
+                  <strong>New Blog Post</strong> to create one.
                 </p>
               </div>
             ) : (
-              <table className="blog-table">
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>Author</th>
-                    <th>Date</th>
-                    <th style={{ width: "170px" }}>Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {blogs.map((blog) => (
-                    <tr key={blog.id}>
-
-                      <td>
-                        <div className="blog-title">
-                          <strong>{blog.title}</strong>
-
-                          <span>
-                            {blog.slug || blog.id}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td>{blog.category || "-"}</td>
-
-                      <td>
-                        <span
-                          className={`status ${(blog.status || "draft").toLowerCase()}`}
-                        >
-                          {blog.status || "Draft"}
-                        </span>
-                      </td>
-
-                      <td>{blog.author || "Admin"}</td>
-
-                      <td>{formatDate(blog.createdAt)}</td>
-
-                      <td>
-                        <div className="action-buttons">
-
-                          <Link
-                            to={`/admin/blogs/edit/${blog.id}`}
-                            className="edit-btn"
-                          >
-                            ✏ Edit
-                          </Link>
-
-                          <button
-                            className="delete-btn"
-                            onClick={() => handleDelete(blog.id)}
-                          >
-                            🗑 Delete
-                          </button>
-
-                        </div>
-                      </td>
-
+              <div className="blog-table-container">
+                <table className="blog-table">
+                  <thead>
+                    <tr>
+                      <th>Title & Slug</th>
+                      <th>Category</th>
+                      <th>Status</th>
+                      <th>Author</th>
+                      <th>Date</th>
+                      <th style={{ width: "260px" }}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  </thead>
 
+                  <tbody>
+                    {filteredBlogs.map((blog) => (
+                      <tr key={blog.id}>
+                        <td>
+                          <div className="blog-title">
+                            <strong style={{ fontSize: "14.5px", color: "#0f172a" }}>
+                              {blog.title}
+                            </strong>
+                            <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                              /{blog.slug || blog.id}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>{blog.category || "-"}</td>
+
+                        <td>
+                          <span
+                            className={`status-pill ${(
+                              blog.status || "draft"
+                            ).toLowerCase()}`}
+                          >
+                            {blog.status || "Draft"}
+                          </span>
+                        </td>
+
+                        <td>{blog.author || "Admin"}</td>
+
+                        <td>{formatDate(blog.createdAt)}</td>
+
+                        <td>
+                          <div className="action-buttons-group">
+                            <Link
+                              to={`/admin/blogs/edit/${blog.id}`}
+                              className="action-btn-pill btn-edit"
+                              title="Edit post"
+                            >
+                              <FaEdit />
+                              <span>Edit</span>
+                            </Link>
+
+                            {blog.status === "Published" ? (
+                              <button
+                                type="button"
+                                className="action-btn-pill btn-unpublish"
+                                onClick={() => handleStatusChange(blog.id, "Draft")}
+                                title="Unpublish post"
+                              >
+                                <FaUndo />
+                                <span>Unpublish</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="action-btn-pill btn-publish"
+                                onClick={() => handleStatusChange(blog.id, "Published")}
+                                title="Publish post"
+                              >
+                                <FaPaperPlane />
+                                <span>Publish</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              className="action-btn-pill btn-delete"
+                              onClick={() => handleDelete(blog.id)}
+                              title="Delete post"
+                            >
+                              <FaTrash />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>

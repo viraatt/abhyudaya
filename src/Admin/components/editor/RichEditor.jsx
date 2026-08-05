@@ -4,7 +4,7 @@ import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
-import Image from "@tiptap/extension-image";
+import { CustomImage } from "./CustomImage";
 import { useEffect } from "react";
 
 import Toolbar from "./Toolbar";
@@ -38,11 +38,7 @@ export default function RichEditor({
       Placeholder.configure({
         placeholder,
       }),
-      Image.configure({
-        HTMLAttributes: {
-          class: "editor-inline-image",
-        },
-      }),
+      CustomImage,
     ],
     content: value
       ? typeof value === "string"
@@ -51,7 +47,6 @@ export default function RichEditor({
       : "",
     onUpdate: ({ editor }) => {
       if (onChange) {
-        // Pass JSON object as primary value, plus html & text helpers
         const json = editor.getJSON();
         const html = editor.getHTML();
         const text = editor.getText();
@@ -60,7 +55,6 @@ export default function RichEditor({
     },
   });
 
-  // Sync value if updated externally (e.g., when editing an existing post loaded asynchronously)
   useEffect(() => {
     if (!editor || !value) return;
 
@@ -79,7 +73,6 @@ export default function RichEditor({
         console.error("Failed to parse incoming Tiptap JSON content", err);
       }
     } else if (typeof value === "string" && !value.startsWith("{") && editor.getHTML() !== value) {
-      // Fallback if legacy HTML string is passed to Edit mode
       editor.commands.setContent(value);
     }
   }, [value, editor]);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   FaBold,
   FaItalic,
@@ -18,19 +18,34 @@ import {
   FaUndo,
   FaRedo,
   FaImage,
+  FaFolderOpen,
+  FaUpload,
+  FaExclamationTriangle,
+  FaTimes,
 } from "react-icons/fa";
+import { uploadToCloudinary } from "../../../utils/cloudinary";
+import MediaLibrary from "../media/MediaLibrary";
 
 export default function Toolbar({ editor }) {
+  const fileInputRef = useRef(null);
+
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrlInput, setImageUrlInput] = useState("");
+
+  const [showMediaModal, setShowMediaModal] = useState(false);
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState(null);
 
   if (!editor) {
     return null;
   }
 
-  // Handle Link Popup
+  // --- Link Handlers ---
   const openLinkDialog = () => {
     const previousUrl = editor.getAttributes("link").href || "";
     setLinkUrl(previousUrl);
@@ -43,7 +58,11 @@ export default function Toolbar({ editor }) {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
     } else {
       let finalUrl = linkUrl.trim();
-      if (!/^https?:\/\//i.test(finalUrl) && !finalUrl.startsWith("mailto:") && !finalUrl.startsWith("/")) {
+      if (
+        !/^https?:\/\//i.test(finalUrl) &&
+        !finalUrl.startsWith("mailto:") &&
+        !finalUrl.startsWith("/")
+      ) {
         finalUrl = `https://${finalUrl}`;
       }
       editor.chain().focus().extendMarkRange("link").setLink({ href: finalUrl }).run();
@@ -58,20 +77,129 @@ export default function Toolbar({ editor }) {
     setLinkUrl("");
   };
 
-  // Handle Image Popup
-  const handleInsertImage = (e) => {
+  // --- Image Upload Handlers ---
+  const triggerFilePicker = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    e.target.value = "";
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadError(null);
+
+    try {
+      const result = await uploadToCloudinary(file, (percent) => {
+        setUploadProgress(percent);
+      });
+
+      editor
+        .chain()
+        .focus()
+        .setImage({
+          src: result.secure_url,
+          public_id: result.public_id,
+          width: "100%",
+          alignment: "center",
+          caption: "",
+          alt: file.name || "Uploaded Blog Image",
+        })
+        .run();
+
+      setIsUploading(false);
+      setUploadProgress(0);
+    } catch (err) {
+      console.error("Cloudinary upload error:", err);
+      setIsUploading(false);
+      setUploadError(err.message || "Failed to upload image. Please try again.");
+    }
+  };
+
+  const handleInsertImageUrl = (e) => {
     e.preventDefault();
-    if (imageUrl.trim()) {
-      editor.chain().focus().setImage({ src: imageUrl.trim() }).run();
+    if (imageUrlInput.trim()) {
+      editor
+        .chain()
+        .focus()
+        .setImage({
+          src: imageUrlInput.trim(),
+          width: "100%",
+          alignment: "center",
+          caption: "",
+        })
+        .run();
     }
     setShowImageDialog(false);
-    setImageUrl("");
+    setImageUrlInput("");
+  };
+
+  const handleSelectFromMediaLibrary = (mediaItem) => {
+    if (mediaItem && mediaItem.url) {
+      editor
+        .chain()
+        .focus()
+        .setImage({
+          src: mediaItem.url,
+          public_id: mediaItem.public_id || "",
+          width: "100%",
+          alignment: "center",
+          caption: "",
+          alt: mediaItem.name || "Blog Image",
+        })
+        .run();
+    }
+    setShowMediaModal(false);
   };
 
   return (
     <div className="rich-toolbar-wrapper">
-      <div className="rich-toolbar">
+      {/* Hidden File Picker Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
 
+      {/* --- Upload Progress Overlay Banner --- */}
+      {isUploading && (
+        <div className="upload-progress-bar-wrapper">
+          <div className="spinner" />
+          <span>Uploading image to Cloudinary... {uploadProgress}%</span>
+          <div className="upload-progress-track">
+            <div
+              className="upload-progress-fill"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* --- Error Notification Banner --- */}
+      {uploadError && (
+        <div className="upload-error-banner">
+          <FaExclamationTriangle />
+          <span>{uploadError}</span>
+          <button
+            type="button"
+            className="error-dismiss-btn"
+            onClick={() => setUploadError(null)}
+            title="Dismiss error"
+          >
+            <FaTimes />
+          </button>
+        </div>
+      )}
+
+      {/* --- Main Toolbar Buttons --- */}
+      <div className="rich-toolbar">
         {/* --- Undo / Redo --- */}
         <div className="toolbar-group">
           <button
@@ -141,7 +269,9 @@ export default function Toolbar({ editor }) {
         <div className="toolbar-group">
           <button
             type="button"
-            className={`toolbar-btn ${editor.isActive("heading", { level: 1 }) ? "is-active" : ""}`}
+            className={`toolbar-btn ${
+              editor.isActive("heading", { level: 1 }) ? "is-active" : ""
+            }`}
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             title="Heading 1"
           >
@@ -150,7 +280,9 @@ export default function Toolbar({ editor }) {
 
           <button
             type="button"
-            className={`toolbar-btn ${editor.isActive("heading", { level: 2 }) ? "is-active" : ""}`}
+            className={`toolbar-btn ${
+              editor.isActive("heading", { level: 2 }) ? "is-active" : ""
+            }`}
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             title="Heading 2"
           >
@@ -159,7 +291,9 @@ export default function Toolbar({ editor }) {
 
           <button
             type="button"
-            className={`toolbar-btn ${editor.isActive("heading", { level: 3 }) ? "is-active" : ""}`}
+            className={`toolbar-btn ${
+              editor.isActive("heading", { level: 3 }) ? "is-active" : ""
+            }`}
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             title="Heading 3"
           >
@@ -205,7 +339,9 @@ export default function Toolbar({ editor }) {
         <div className="toolbar-group">
           <button
             type="button"
-            className={`toolbar-btn ${editor.isActive({ textAlign: "left" }) ? "is-active" : ""}`}
+            className={`toolbar-btn ${
+              editor.isActive({ textAlign: "left" }) ? "is-active" : ""
+            }`}
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
             title="Align Left"
           >
@@ -214,7 +350,9 @@ export default function Toolbar({ editor }) {
 
           <button
             type="button"
-            className={`toolbar-btn ${editor.isActive({ textAlign: "center" }) ? "is-active" : ""}`}
+            className={`toolbar-btn ${
+              editor.isActive({ textAlign: "center" }) ? "is-active" : ""
+            }`}
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
             title="Align Center"
           >
@@ -223,7 +361,9 @@ export default function Toolbar({ editor }) {
 
           <button
             type="button"
-            className={`toolbar-btn ${editor.isActive({ textAlign: "right" }) ? "is-active" : ""}`}
+            className={`toolbar-btn ${
+              editor.isActive({ textAlign: "right" }) ? "is-active" : ""
+            }`}
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
             title="Align Right"
           >
@@ -232,7 +372,9 @@ export default function Toolbar({ editor }) {
 
           <button
             type="button"
-            className={`toolbar-btn ${editor.isActive({ textAlign: "justify" }) ? "is-active" : ""}`}
+            className={`toolbar-btn ${
+              editor.isActive({ textAlign: "justify" }) ? "is-active" : ""
+            }`}
             onClick={() => editor.chain().focus().setTextAlign("justify").run()}
             title="Justify"
           >
@@ -296,17 +438,47 @@ export default function Toolbar({ editor }) {
             </button>
           )}
 
+          {/* Direct File Picker Upload */}
           <button
             type="button"
             className="toolbar-btn"
-            onClick={() => setShowImageDialog(true)}
-            title="Insert Inline Image URL"
+            onClick={triggerFilePicker}
+            disabled={isUploading}
+            title="Upload Image from Computer (Cloudinary)"
           >
             <FaImage />
           </button>
-        </div>
 
+          {/* Open Media Library Modal */}
+          <button
+            type="button"
+            className="toolbar-btn"
+            onClick={() => setShowMediaModal(true)}
+            title="Select Image from Cloudinary Media Library"
+          >
+            <FaFolderOpen />
+          </button>
+
+          {/* URL Input Popup */}
+          <button
+            type="button"
+            className="toolbar-btn"
+            onClick={() => setShowImageDialog(!showImageDialog)}
+            title="Insert Image by URL"
+          >
+            <FaUpload />
+          </button>
+        </div>
       </div>
+
+      {/* --- Media Library Modal --- */}
+      {showMediaModal && (
+        <MediaLibrary
+          isModalMode={true}
+          onSelectImage={handleSelectFromMediaLibrary}
+          onCloseModal={() => setShowMediaModal(false)}
+        />
+      )}
 
       {/* --- Link Popover Dialog --- */}
       {showLinkDialog && (
@@ -343,19 +515,19 @@ export default function Toolbar({ editor }) {
         </form>
       )}
 
-      {/* --- Image Popover Dialog --- */}
+      {/* --- Image URL Popover Dialog --- */}
       {showImageDialog && (
-        <form className="link-dialog" onSubmit={handleInsertImage}>
+        <form className="link-dialog" onSubmit={handleInsertImageUrl}>
           <input
             type="url"
-            placeholder="Paste image URL (Cloudinary / Unsplash)..."
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="Paste image URL..."
+            value={imageUrlInput}
+            onChange={(e) => setImageUrlInput(e.target.value)}
             autoFocus
           />
           <div className="link-dialog-btns">
             <button type="submit" className="link-set-btn">
-              Insert Image
+              Insert
             </button>
             <button
               type="button"

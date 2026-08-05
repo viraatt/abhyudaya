@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import { ToastProvider } from "./Admin/components/Toast.jsx";
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 
@@ -37,6 +38,7 @@ const EditBlog = lazy(() => import("./Admin/pages/EditBlog.jsx"));
 const AdminTeam = lazy(() => import("./Admin/pages/Team.jsx"));
 const AdminGallery = lazy(() => import("./Admin/pages/Gallery.jsx"));
 const AdminContact = lazy(() => import("./Admin/pages/Contact.jsx"));
+const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrary.jsx"));
 
 NProgress.configure({
   showSpinner: false,
@@ -52,7 +54,7 @@ export default function App() {
   }, [location.pathname]);
 
   return (
-    <>
+    <ToastProvider>
       <ScrollToTop />
 
       <Suspense fallback={<div style={{ padding: "2rem" }}>Loading...</div>}>
@@ -115,6 +117,15 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
                 <EditBlog />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/media"
+            element={
+              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+                <MediaLibraryPage />
               </ProtectedRoute>
             }
           />
@@ -209,6 +220,6 @@ export default function App() {
 
         </Routes>
       </Suspense>
-    </>
+    </ToastProvider>
   );
 }

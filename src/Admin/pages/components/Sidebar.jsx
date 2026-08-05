@@ -10,16 +10,17 @@ export default function Sidebar() {
     { name: "Dashboard", path: "/admin/dashboard", icon: "📊" },
     { name: "Events", path: "/admin/events", icon: "📅" },
     { name: "Blogs", path: "/admin/blogs", icon: "📝" },
+    { name: "Media Library", path: "/admin/media", icon: "📁" },
     { name: "Team", path: "/admin/team", icon: "👥" },
     { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
     { name: "Contact", path: "/admin/contact", icon: "📩" },
-    { name: "Settings", path: "/admin/settings", icon: "⚙️" },
     { name: "Users", path: "/admin/users", icon: "👤" },
   ];
 
   // Admin Menu
   const adminMenu = [
     { name: "Blogs", path: "/admin/blogs", icon: "📝" },
+    { name: "Media Library", path: "/admin/media", icon: "📁" },
   ];
 
   const menu =

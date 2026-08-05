@@ -1,19 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import RichEditor from "../components/editor/RichEditor";
+import SlugInput from "../components/SlugInput";
+import AutosaveIndicator from "../components/AutosaveIndicator";
+import MediaLibrary from "../components/media/MediaLibrary";
+import { useToast } from "../components/Toast";
+import { useAutosave } from "../hooks/useAutosave";
 
 import "./style/admin.css";
 import "./addBlog.css";
 import { uploadImage } from "./services/imageUpload";
+import { updateBlogService, updateBlogStatusService } from "./services/blogService";
 
 function EditBlog() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
 
@@ -26,10 +33,68 @@ function EditBlog() {
   const [status, setStatus] = useState("Draft");
   const [featuredImage, setFeaturedImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+
+  // Action loading states
+  const [saving, setSaving] = useState(false);
+  const [unpublishing, setUnpublishing] = useState(false);
 
   // Tiptap JSON content state
   const [contentJson, setContentJson] = useState(null);
   const [contentExcerpt, setContentExcerpt] = useState("");
+
+  const currentBlogData = useMemo(() => {
+    return {
+      title: title.trim(),
+      category,
+      tags: tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      slug: slug.trim(),
+      seo,
+      publishDate,
+      status,
+      featuredImage,
+      contentJson,
+    };
+  }, [title, category, tags, slug, seo, publishDate, status, featuredImage, contentJson]);
+
+  const handleAutosave = useCallback(
+    async (dataToSave) => {
+      if (!dataToSave.title) return;
+
+      const payload = {
+        title: dataToSave.title,
+        category: dataToSave.category,
+        tags: dataToSave.tags,
+        slug: dataToSave.slug,
+        seo: dataToSave.seo,
+        publishDate: dataToSave.publishDate || new Date().toISOString().split("T")[0],
+        status: dataToSave.status || "Draft",
+        featuredImage: dataToSave.featuredImage,
+        excerpt: contentExcerpt.trim().substring(0, 180),
+        content: dataToSave.contentJson,
+      };
+
+      await updateBlogService(id, payload);
+    },
+    [id, contentExcerpt]
+  );
+
+  const {
+    status: autosaveStatus,
+    lastSavedTime,
+    errorMessage: autosaveError,
+    hasUnsavedChanges,
+    retrySave,
+    setLastSavedData,
+  } = useAutosave({
+    data: currentBlogData,
+    onSave: handleAutosave,
+    interval: 20000,
+    enabled: !loading && !!title.trim(),
+  });
 
   useEffect(() => {
     loadBlog();
@@ -42,7 +107,7 @@ function EditBlog() {
       const snap = await getDoc(ref);
 
       if (!snap.exists()) {
-        alert("Blog not found.");
+        toast.error("Blog not found.");
         navigate("/admin/blogs");
         return;
       }
@@ -59,9 +124,21 @@ function EditBlog() {
       setFeaturedImage(blog.featuredImage || "");
       setContentJson(blog.content || null);
       if (blog.excerpt) setContentExcerpt(blog.excerpt);
+
+      setLastSavedData({
+        title: (blog.title || "").trim(),
+        category: blog.category || "Club News",
+        tags: (blog.tags || []).map((t) => t.trim()).filter(Boolean),
+        slug: (blog.slug || "").trim(),
+        seo: blog.seo || "",
+        publishDate: blog.publishDate || "",
+        status: blog.status || "Draft",
+        featuredImage: blog.featuredImage || "",
+        contentJson: blog.content || null,
+      });
     } catch (error) {
       console.error(error);
-      alert("Failed to load blog.");
+      toast.error("Failed to load blog.");
     } finally {
       setLoading(false);
     }
@@ -80,13 +157,14 @@ function EditBlog() {
       setUploadingImage(true);
       const url = await uploadImage(file);
       if (!url) {
-        alert("Image upload failed.");
+        toast.error("Image upload failed.");
         return;
       }
       setFeaturedImage(url);
+      toast.success("Featured image uploaded!");
     } catch (error) {
       console.error(error);
-      alert("Image upload failed.");
+      toast.error("Image upload failed.");
     } finally {
       setUploadingImage(false);
       e.target.value = "";
@@ -95,41 +173,60 @@ function EditBlog() {
 
   const removeImage = () => {
     setFeaturedImage("");
+    toast.info("Featured image removed.");
   };
 
-  const handleUpdate = async () => {
-    if (!title.trim()) {
-      alert("Please enter blog title.");
-      return;
-    }
-
+  const handleSave = async (targetStatus = status) => {
     try {
-      await updateDoc(doc(db, "blogs", id), {
+      setSaving(true);
+      const blogData = {
         title: title.trim(),
         category,
         tags: tags
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean),
-        slug:
-          slug.trim() ||
-          title
-            .toLowerCase()
-            .replace(/\s+/g, "-")
-            .replace(/[^a-z0-9-]/g, ""),
+        slug: slug.trim(),
         seo,
-        publishDate,
-        status,
+        publishDate: publishDate || new Date().toISOString().split("T")[0],
+        status: targetStatus,
         featuredImage,
         excerpt: contentExcerpt.trim().substring(0, 180),
-        content: contentJson, // Stored strictly as Tiptap JSON
-      });
+        content: contentJson,
+      };
 
-      alert("✅ Blog Updated Successfully");
+      await updateBlogService(id, blogData);
+      setStatus(targetStatus);
+      setLastSavedData(currentBlogData);
+
+      if (targetStatus === "Published") {
+        toast.success("🚀 Blog Published Successfully!");
+      } else if (targetStatus === "Draft") {
+        toast.success("💾 Draft Saved Successfully!");
+      } else {
+        toast.success("✅ Blog Updated Successfully!");
+      }
+
       navigate("/admin/blogs");
     } catch (error) {
       console.error(error);
-      alert("Failed to update blog.");
+      toast.error(error.message || "Failed to save blog changes.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      setUnpublishing(true);
+      await updateBlogStatusService(id, "Draft");
+      setStatus("Draft");
+      toast.info("Blog unpublished and moved to Drafts.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to unpublish blog.");
+    } finally {
+      setUnpublishing(false);
     }
   };
 
@@ -141,7 +238,7 @@ function EditBlog() {
           <Topbar />
           <div className="dashboard-content">
             <div className="empty">
-              <h2>Loading Blog...</h2>
+              <h2>Loading Blog Data...</h2>
             </div>
           </div>
         </div>
@@ -160,21 +257,87 @@ function EditBlog() {
           <div className="create-post">
             <div className="create-header">
               <div className="header-left">
-                <h1>Edit Blog</h1>
-                <p>Update your existing blog and save the changes.</p>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <h1>Edit Blog</h1>
+                  <AutosaveIndicator
+                    status={autosaveStatus}
+                    lastSavedTime={lastSavedTime}
+                    errorMessage={autosaveError}
+                    hasUnsavedChanges={hasUnsavedChanges}
+                    onRetry={retrySave}
+                  />
+                </div>
+                <p>
+                  Current Status:{" "}
+                  <strong className={`status ${(status || "draft").toLowerCase()}`}>
+                    {status}
+                  </strong>
+                </p>
               </div>
 
               <div className="header-buttons">
                 <button
+                  type="button"
                   className="draft-btn"
                   onClick={() => navigate("/admin/blogs")}
                 >
                   ← Back
                 </button>
 
-                <button className="publish-btn" onClick={handleUpdate}>
-                  💾 Update Blog
-                </button>
+                {status === "Draft" && (
+                  <>
+                    <button
+                      type="button"
+                      className="draft-btn"
+                      onClick={() => handleSave("Draft")}
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : "💾 Save Draft"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="publish-btn"
+                      onClick={() => handleSave("Published")}
+                      disabled={saving}
+                    >
+                      {saving ? "Publishing..." : "🚀 Publish"}
+                    </button>
+                  </>
+                )}
+
+                {status === "Published" && (
+                  <>
+                    <button
+                      type="button"
+                      className="draft-btn"
+                      onClick={handleUnpublish}
+                      disabled={unpublishing || saving}
+                    >
+                      {unpublishing ? "Unpublishing..." : "↩ Unpublish to Draft"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="publish-btn"
+                      onClick={() => handleSave("Published")}
+                      disabled={saving || unpublishing}
+                    >
+                      {saving ? "Saving..." : "💾 Update Post"}
+                    </button>
+                  </>
+                )}
+
+                {status === "Archived" && (
+                  <button
+                    type="button"
+                    className="publish-btn"
+                    onClick={() => handleSave("Draft")}
+                    disabled={saving}
+                  >
+                    Restore to Draft
+                  </button>
+                )}
               </div>
             </div>
 
@@ -199,7 +362,7 @@ function EditBlog() {
                 <div className="card">
                   <h3>Featured Image</h3>
 
-                  {featuredImage && (
+                  {featuredImage ? (
                     <div className="image-preview">
                       <img
                         src={featuredImage}
@@ -220,14 +383,25 @@ function EditBlog() {
                         ❌ Remove Image
                       </button>
                     </div>
-                  )}
+                  ) : null}
 
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploadingImage}
-                  />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                    />
+
+                    <button
+                      type="button"
+                      className="draft-btn"
+                      style={{ background: "#eff6ff", color: "#2563eb", borderColor: "#bfdbfe" }}
+                      onClick={() => setShowMediaModal(true)}
+                    >
+                      📁 Choose from Media Library
+                    </button>
+                  </div>
 
                   {uploadingImage && <p>Uploading image...</p>}
                 </div>
@@ -259,13 +433,11 @@ function EditBlog() {
                 </div>
 
                 <div className="card">
-                  <h3>URL Slug</h3>
-
-                  <input
-                    type="text"
-                    placeholder="my-first-blog"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
+                  <SlugInput
+                    title={title}
+                    slug={slug}
+                    onSlugChange={setSlug}
+                    currentBlogId={id}
                   />
                 </div>
 
@@ -273,7 +445,7 @@ function EditBlog() {
                   <h3>SEO Description</h3>
 
                   <textarea
-                    rows="5"
+                    rows="4"
                     placeholder="Write SEO description..."
                     value={seo}
                     onChange={(e) => setSeo(e.target.value)}
@@ -291,21 +463,15 @@ function EditBlog() {
                 </div>
 
                 <div className="card">
-                  <h3>Author</h3>
-
-                  <input type="text" value="Admin" readOnly />
-                </div>
-
-                <div className="card">
                   <h3>Status</h3>
 
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                   >
-                    <option>Draft</option>
-                    <option>Published</option>
-                    <option>Scheduled</option>
+                    <option value="Draft">Draft</option>
+                    <option value="Published">Published</option>
+                    <option value="Archived">Archived</option>
                   </select>
                 </div>
               </aside>
@@ -313,6 +479,14 @@ function EditBlog() {
           </div>
         </div>
       </div>
+
+      {showMediaModal && (
+        <MediaLibrary
+          isModalMode={true}
+          onSelectImage={(item) => setFeaturedImage(item.url)}
+          onCloseModal={() => setShowMediaModal(false)}
+        />
+      )}
     </div>
   );
 }
