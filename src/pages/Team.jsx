@@ -1,20 +1,24 @@
-import { team } from '../data/club.js'
+import { useEffect, useState } from 'react'
+import { team as staticTeam } from '../data/club.js'
 import { Helmet } from 'react-helmet-async'
 import PageHero from '../components/PageHero.jsx'
+import { getTeamMembers } from '../Admin/pages/services/teamService.js'
 import './Team.css'
 
 function TeamCard({ person }) {
+  const avatarFallback =
+    "https://ui-avatars.com/api/?name=" +
+    encodeURIComponent(person.name) +
+    "&background=0D8ABC&color=fff&size=500";
+
   return (
     <div className="team-card">
       <img
-        src={person.image}
+        src={person.image || avatarFallback}
         alt={person.name}
         className="team-card__image"
         onError={(e) => {
-          e.target.src =
-            "https://ui-avatars.com/api/?name=" +
-            encodeURIComponent(person.name) +
-            "&background=0D8ABC&color=fff&size=500"
+          e.target.src = avatarFallback;
         }}
       />
 
@@ -23,24 +27,68 @@ function TeamCard({ person }) {
 
         <p className="team-card__role">{person.role}</p>
 
-        <a
-          href={person.linkedin || "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="team-card__linkedin"
-          style={{
-            pointerEvents: person.linkedin ? "auto" : "none",
-            opacity: person.linkedin ? 1 : 0.5,
-          }}
-        >
-          LinkedIn
-        </a>
+        {person.bio && (
+          <p style={{ fontSize: "13px", opacity: 0.8, marginTop: "4px" }}>
+            {person.bio}
+          </p>
+        )}
+
+        <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+          {person.linkedin && (
+            <a
+              href={person.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="team-card__linkedin"
+            >
+              LinkedIn
+            </a>
+          )}
+          {person.github && (
+            <a
+              href={person.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="team-card__linkedin"
+            >
+              GitHub
+            </a>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
 export default function Team() {
+  const [dbMembers, setDbMembers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await getTeamMembers()
+        setDbMembers(data)
+      } catch (err) {
+        console.error("Error loading team members from Firestore:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  // If DB has members, use them, grouped by category; else fallback to static data
+  const hasDbData = dbMembers.length > 0;
+
+  const facultyMembers = hasDbData
+    ? dbMembers.filter((m) => m.category === "Faculty Co-ordinators")
+    : staticTeam.faculty;
+
+  const studentMembers = hasDbData
+    ? dbMembers.filter((m) => m.category !== "Faculty Co-ordinators")
+    : staticTeam.core;
+
   return (
     <>
       <Helmet>
@@ -69,8 +117,8 @@ export default function Team() {
           </div>
 
           <div className="team-grid team-grid--faculty">
-            {team.faculty.map((person) => (
-              <TeamCard key={person.name} person={person} />
+            {facultyMembers.map((person) => (
+              <TeamCard key={person.id || person.name} person={person} />
             ))}
           </div>
         </div>
@@ -80,12 +128,12 @@ export default function Team() {
         <div className="wrap">
           <div className="section__head">
             <p className="eyebrow">Student Leadership</p>
-            <h2>Core Team</h2>
+            <h2>Executive Board & Team Leads</h2>
           </div>
 
           <div className="team-grid">
-            {team.core.map((person) => (
-              <TeamCard key={person.name} person={person} />
+            {studentMembers.map((person) => (
+              <TeamCard key={person.id || person.name} person={person} />
             ))}
           </div>
         </div>

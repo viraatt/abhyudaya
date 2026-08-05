@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { club, socials } from '../data/club.js'
 import PageHero from '../components/PageHero.jsx'
 import './Contact.css'
+import { submitContactMessage } from '../Admin/pages/services/contactService.js'
 
 // Fades/slides in any ".reveal" child inside the returned ref, once it scrolls into view.
 function useReveal() {
@@ -31,6 +32,44 @@ function useReveal() {
 export default function Contact() {
   const gridRef = useReveal()
   const faqRef = useReveal()
+
+  const [formState, setFormState] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: '',
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [submittedStatus, setSubmittedStatus] = useState(null)
+
+  const handleInputChange = (e) => {
+    setFormState({ ...formState, [e.target.name]: e.target.value })
+  }
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault()
+    if (!formState.name || !formState.email || !formState.message) return
+    setSubmitting(true)
+    setSubmittedStatus(null)
+
+    try {
+      await submitContactMessage(formState)
+      setSubmittedStatus({
+        success: true,
+        message: 'Thank you! Your message has been sent successfully. We will get back to you soon.',
+      })
+      setFormState({ name: '', email: '', phone: '', subject: '', message: '' })
+    } catch (err) {
+      console.error(err)
+      setSubmittedStatus({
+        success: false,
+        message: 'Unable to send message at the moment. Please try emailing us directly.',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const mapQuery = encodeURIComponent(`${club.institute}, ${club.department}`)
 
@@ -137,23 +176,76 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* Collaboration Card */}
+          {/* Contact Inquiry Form */}
           <div className="join-card reveal">
             <span className="join-badge">
-              🤝 Collaborate With Us
+              📩 Send Us a Message
             </span>
-            <h2>Partner With Abhyudaya</h2>
-            <p>
-              We welcome collaborations from students, faculty,
-              startups, organizations, alumni and industry experts
-              for workshops, events and innovation initiatives.
-            </p>
-           <a
-             href={`mailto:${socials.email}`}
+            <h2>Get in Touch Directly</h2>
+            <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
+              <input
+                type="text"
+                name="name"
+                value={formState.name}
+                onChange={handleInputChange}
+                placeholder="Your Full Name *"
+                required
+                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
+              />
+
+              <input
+                type="email"
+                name="email"
+                value={formState.email}
+                onChange={handleInputChange}
+                placeholder="Your Email Address *"
+                required
+                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
+              />
+
+              <input
+                type="tel"
+                name="phone"
+                value={formState.phone}
+                onChange={handleInputChange}
+                placeholder="Phone Number (Optional)"
+                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
+              />
+
+              <input
+                type="text"
+                name="subject"
+                value={formState.subject}
+                onChange={handleInputChange}
+                placeholder="Subject / Topic"
+                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
+              />
+
+              <textarea
+                rows="4"
+                name="message"
+                value={formState.message}
+                onChange={handleInputChange}
+                placeholder="Write your message here... *"
+                required
+                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff", resize: "vertical" }}
+              />
+
+              <button
+                type="submit"
                 className="btn btn--solid register-btn"
-            >
-             Email Us →
-              </a>
+                disabled={submitting}
+                style={{ border: "none", cursor: "pointer", opacity: submitting ? 0.7 : 1 }}
+              >
+                {submitting ? "Sending..." : "Submit Message →"}
+              </button>
+
+              {submittedStatus && (
+                <p style={{ marginTop: "8px", color: submittedStatus.success ? "#4ade80" : "#f87171", fontSize: "14px" }}>
+                  {submittedStatus.message}
+                </p>
+              )}
+            </form>
           </div>
         </div>
       </section>

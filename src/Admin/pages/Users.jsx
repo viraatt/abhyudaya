@@ -4,6 +4,9 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 
@@ -15,6 +18,14 @@ import "./style/users.css";
 export default function Users() {
   const [showModal, setShowModal] = useState(false);
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "admin",
+  });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -52,6 +63,53 @@ export default function Users() {
       alert("Failed to update role.");
     }
   }
+
+  async function handleDeleteUser(userId, userName) {
+    if (!window.confirm(`Delete user "${userName}"?`)) return;
+    try {
+      await deleteDoc(doc(db, "users", userId));
+      alert("User removed from database.");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete user.");
+    }
+  }
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) {
+      alert("Name and email are required.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Create user record in Firestore users collection
+      const userDocRef = doc(collection(db, "users"));
+      await setDoc(userDocRef, {
+        name: formData.name,
+        email: formData.email.toLowerCase(),
+        role: formData.role,
+        createdAt: serverTimestamp(),
+      });
+
+      alert(`Admin account created for ${formData.name}!`);
+      setShowModal(false);
+      setFormData({ name: "", email: "", password: "", role: "admin" });
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Failed to create user.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="dashboard-layout">
@@ -119,13 +177,36 @@ export default function Users() {
                         </span>
                       </td>
 
-                      <td>
+                      <td style={{ display: "flex", gap: "8px" }}>
                         <button
                           onClick={() =>
                             changeRole(user.id, user.role)
                           }
+                          style={{
+                            padding: "6px 12px",
+                            background: "#3b82f6",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
                         >
-                          Change Role
+                          Toggle Role
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDeleteUser(user.id, user.name)
+                          }
+                          style={{
+                            padding: "6px 12px",
+                            background: "#ef4444",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Delete
                         </button>
                       </td>
                     </tr>
@@ -136,44 +217,64 @@ export default function Users() {
           </div>
 
           {showModal && (
-            <div className="modal-overlay">
-              <div className="modal">
+            <div className="modal-overlay" onClick={() => setShowModal(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
                 <h2>Add New Admin</h2>
 
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                />
+                <form onSubmit={handleCreateUser} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Full Name"
+                    required
+                    style={{ padding: "10px", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "6px" }}
+                  />
 
-                <input
-                  type="email"
-                  placeholder="Email"
-                />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Email Address"
+                    required
+                    style={{ padding: "10px", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "6px" }}
+                  />
 
-                <input
-                  type="password"
-                  placeholder="Password"
-                />
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Password (for initial login setup)"
+                    style={{ padding: "10px", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "6px" }}
+                  />
 
-                <select>
-                  <option value="admin">Admin</option>
-                  <option value="superadmin">
-                    Super Admin
-                  </option>
-                </select>
-
-                <div className="modal-actions">
-                  <button
-                    className="cancel"
-                    onClick={() => setShowModal(false)}
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleInputChange}
+                    style={{ padding: "10px", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "6px" }}
                   >
-                    Cancel
-                  </button>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                  </select>
 
-                  <button className="save">
-                    Create User
-                  </button>
-                </div>
+                  <div className="modal-actions" style={{ marginTop: "12px" }}>
+                    <button
+                      type="button"
+                      className="cancel"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancel
+                    </button>
+
+                    <button type="submit" className="save" disabled={loading}>
+                      {loading ? "Creating..." : "Create User"}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

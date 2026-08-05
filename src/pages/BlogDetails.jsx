@@ -3,7 +3,50 @@ import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import "./BlogDetails.css";
 
+import { generateHTML } from "@tiptap/html";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import LinkExtension from "@tiptap/extension-link";
+import TextAlign from "@tiptap/extension-text-align";
+import ImageExtension from "@tiptap/extension-image";
+
 import { db } from "../Firebase/firebase";
+
+function renderBlogContent(content) {
+  if (!content) return "";
+  if (typeof content === "object") {
+    try {
+      return generateHTML(content, [
+        StarterKit,
+        Underline,
+        LinkExtension,
+        TextAlign.configure({ types: ["heading", "paragraph"] }),
+        ImageExtension,
+      ]);
+    } catch (e) {
+      console.error("Error generating HTML from Tiptap JSON:", e);
+      return "";
+    }
+  }
+  if (typeof content === "string" && content.trim().startsWith("{")) {
+    try {
+      const json = JSON.parse(content);
+      return generateHTML(json, [
+        StarterKit,
+        Underline,
+        LinkExtension,
+        TextAlign.configure({ types: ["heading", "paragraph"] }),
+        ImageExtension,
+      ]);
+    } catch (e) {
+      return content;
+    }
+  }
+  return content; // Legacy HTML string fallback
+}
+
+const SITE_URL = "https://abhyudayaclub.in";
+const ORG_NAME = "Abhyudaya Club";
 
 import {
   collection,
@@ -30,9 +73,6 @@ import {
 } from "react-icons/fa";
 
 import { FaXTwitter } from "react-icons/fa6";
-
-const SITE_URL = "https://abhyudayaclub.in";
-const ORG_NAME = "Abhyudaya Club";
 
 export default function BlogDetails() {
   // Use slug from URL params
@@ -528,7 +568,7 @@ export default function BlogDetails() {
           {/* Blog Content */}
           <div
             className="details-content"
-            dangerouslySetInnerHTML={{ __html: blog.content || "" }}
+            dangerouslySetInnerHTML={{ __html: renderBlogContent(blog.content) }}
           />
 
           {/* COMMENTS SECTION */}
