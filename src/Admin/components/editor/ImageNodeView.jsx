@@ -1,12 +1,9 @@
 import { NodeViewWrapper } from "@tiptap/react";
-import { useState } from "react";
 import {
   FaAlignLeft,
   FaAlignCenter,
   FaAlignRight,
   FaTrash,
-  FaExpandAlt,
-  FaCompressAlt,
 } from "react-icons/fa";
 
 export default function ImageNodeView(props) {
@@ -52,13 +49,14 @@ export default function ImageNodeView(props) {
       >
         {/* Hover / Selection Toolbar for Image Actions */}
         {selected && (
-          <div className="image-controls-toolbar">
+          <div className="image-controls-toolbar" role="toolbar" aria-label="Image action toolbar">
             <div className="img-toolbar-group">
               <button
                 type="button"
                 className={`img-btn ${alignment === "left" ? "active" : ""}`}
                 onClick={() => handleAlign("left")}
                 title="Align Left"
+                aria-label="Align image left"
               >
                 <FaAlignLeft />
               </button>
@@ -67,6 +65,7 @@ export default function ImageNodeView(props) {
                 className={`img-btn ${alignment === "center" ? "active" : ""}`}
                 onClick={() => handleAlign("center")}
                 title="Align Center"
+                aria-label="Align image center"
               >
                 <FaAlignCenter />
               </button>
@@ -75,6 +74,7 @@ export default function ImageNodeView(props) {
                 className={`img-btn ${alignment === "right" ? "active" : ""}`}
                 onClick={() => handleAlign("right")}
                 title="Align Right"
+                aria-label="Align image right"
               >
                 <FaAlignRight />
               </button>
@@ -87,6 +87,7 @@ export default function ImageNodeView(props) {
                 type="button"
                 className={`img-btn ${width === "25%" ? "active" : ""}`}
                 onClick={() => handleResize("25%")}
+                aria-label="Resize image to 25%"
               >
                 25%
               </button>
@@ -94,6 +95,7 @@ export default function ImageNodeView(props) {
                 type="button"
                 className={`img-btn ${width === "50%" ? "active" : ""}`}
                 onClick={() => handleResize("50%")}
+                aria-label="Resize image to 50%"
               >
                 50%
               </button>
@@ -101,6 +103,7 @@ export default function ImageNodeView(props) {
                 type="button"
                 className={`img-btn ${width === "75%" ? "active" : ""}`}
                 onClick={() => handleResize("75%")}
+                aria-label="Resize image to 75%"
               >
                 75%
               </button>
@@ -108,6 +111,7 @@ export default function ImageNodeView(props) {
                 type="button"
                 className={`img-btn ${width === "100%" ? "active" : ""}`}
                 onClick={() => handleResize("100%")}
+                aria-label="Resize image to 100%"
               >
                 100%
               </button>
@@ -120,6 +124,7 @@ export default function ImageNodeView(props) {
               className="img-btn danger"
               onClick={deleteNode}
               title="Delete Image"
+              aria-label="Delete image"
             >
               <FaTrash />
             </button>
@@ -147,6 +152,7 @@ export default function ImageNodeView(props) {
             placeholder="Type image caption (optional)..."
             value={caption || ""}
             onChange={handleCaptionChange}
+            aria-label="Image caption"
           />
         </div>
       </div>

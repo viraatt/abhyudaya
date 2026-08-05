@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import {
   FaBold,
   FaItalic,
@@ -26,7 +26,7 @@ import {
 import { uploadToCloudinary } from "../../../utils/cloudinary";
 import MediaLibrary from "../media/MediaLibrary";
 
-export default function Toolbar({ editor }) {
+function Toolbar({ editor }) {
   const fileInputRef = useRef(null);
 
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -41,6 +41,18 @@ export default function Toolbar({ editor }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState(null);
 
+  // Keyboard shortcut to close dialogs on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        if (showLinkDialog) setShowLinkDialog(false);
+        if (showImageDialog) setShowImageDialog(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showLinkDialog, showImageDialog]);
+
   if (!editor) {
     return null;
   }
@@ -49,7 +61,8 @@ export default function Toolbar({ editor }) {
   const openLinkDialog = () => {
     const previousUrl = editor.getAttributes("link").href || "";
     setLinkUrl(previousUrl);
-    setShowLinkDialog(true);
+    setShowLinkDialog((prev) => !prev);
+    setShowImageDialog(false);
   };
 
   const handleSetLink = (e) => {
@@ -158,7 +171,7 @@ export default function Toolbar({ editor }) {
   };
 
   return (
-    <div className="rich-toolbar-wrapper">
+    <div className="rich-toolbar-wrapper" role="toolbar" aria-label="Rich text editor toolbar">
       {/* Hidden File Picker Input */}
       <input
         type="file"
@@ -166,11 +179,12 @@ export default function Toolbar({ editor }) {
         accept="image/*"
         onChange={handleFileChange}
         style={{ display: "none" }}
+        aria-hidden="true"
       />
 
       {/* --- Upload Progress Overlay Banner --- */}
       {isUploading && (
-        <div className="upload-progress-bar-wrapper">
+        <div className="upload-progress-bar-wrapper" role="status" aria-live="polite">
           <div className="spinner" />
           <span>Uploading image to Cloudinary... {uploadProgress}%</span>
           <div className="upload-progress-track">
@@ -184,7 +198,7 @@ export default function Toolbar({ editor }) {
 
       {/* --- Error Notification Banner --- */}
       {uploadError && (
-        <div className="upload-error-banner">
+        <div className="upload-error-banner" role="alert">
           <FaExclamationTriangle />
           <span>{uploadError}</span>
           <button
@@ -192,6 +206,7 @@ export default function Toolbar({ editor }) {
             className="error-dismiss-btn"
             onClick={() => setUploadError(null)}
             title="Dismiss error"
+            aria-label="Dismiss error notification"
           >
             <FaTimes />
           </button>
@@ -208,6 +223,7 @@ export default function Toolbar({ editor }) {
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
             title="Undo (Ctrl+Z)"
+            aria-label="Undo"
           >
             <FaUndo />
           </button>
@@ -217,6 +233,7 @@ export default function Toolbar({ editor }) {
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
             title="Redo (Ctrl+Y)"
+            aria-label="Redo"
           >
             <FaRedo />
           </button>
@@ -231,6 +248,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("bold") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleBold().run()}
             title="Bold (Ctrl+B)"
+            aria-label="Bold text"
           >
             <FaBold />
           </button>
@@ -240,6 +258,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("italic") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleItalic().run()}
             title="Italic (Ctrl+I)"
+            aria-label="Italic text"
           >
             <FaItalic />
           </button>
@@ -249,6 +268,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("underline") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             title="Underline (Ctrl+U)"
+            aria-label="Underline text"
           >
             <FaUnderline />
           </button>
@@ -258,6 +278,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("strike") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleStrike().run()}
             title="Strikethrough"
+            aria-label="Strikethrough text"
           >
             <FaStrikethrough />
           </button>
@@ -274,6 +295,7 @@ export default function Toolbar({ editor }) {
             }`}
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             title="Heading 1"
+            aria-label="Heading level 1"
           >
             H1
           </button>
@@ -285,6 +307,7 @@ export default function Toolbar({ editor }) {
             }`}
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             title="Heading 2"
+            aria-label="Heading level 2"
           >
             H2
           </button>
@@ -296,6 +319,7 @@ export default function Toolbar({ editor }) {
             }`}
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             title="Heading 3"
+            aria-label="Heading level 3"
           >
             H3
           </button>
@@ -305,6 +329,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("paragraph") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().setParagraph().run()}
             title="Normal Paragraph"
+            aria-label="Normal paragraph"
           >
             P
           </button>
@@ -319,6 +344,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("bulletList") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             title="Bullet List"
+            aria-label="Bullet list"
           >
             <FaListUl />
           </button>
@@ -328,6 +354,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("orderedList") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             title="Numbered List"
+            aria-label="Numbered list"
           >
             <FaListOl />
           </button>
@@ -344,6 +371,7 @@ export default function Toolbar({ editor }) {
             }`}
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
             title="Align Left"
+            aria-label="Align text left"
           >
             <FaAlignLeft />
           </button>
@@ -355,6 +383,7 @@ export default function Toolbar({ editor }) {
             }`}
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
             title="Align Center"
+            aria-label="Align text center"
           >
             <FaAlignCenter />
           </button>
@@ -366,6 +395,7 @@ export default function Toolbar({ editor }) {
             }`}
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
             title="Align Right"
+            aria-label="Align text right"
           >
             <FaAlignRight />
           </button>
@@ -377,6 +407,7 @@ export default function Toolbar({ editor }) {
             }`}
             onClick={() => editor.chain().focus().setTextAlign("justify").run()}
             title="Justify"
+            aria-label="Justify text"
           >
             <FaAlignJustify />
           </button>
@@ -391,6 +422,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("blockquote") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Blockquote"
+            aria-label="Blockquote"
           >
             <FaQuoteRight />
           </button>
@@ -400,6 +432,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("codeBlock") ? "is-active" : ""}`}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             title="Code Block"
+            aria-label="Code block"
           >
             <FaCode />
           </button>
@@ -409,6 +442,7 @@ export default function Toolbar({ editor }) {
             className="toolbar-btn"
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
             title="Horizontal Line"
+            aria-label="Horizontal rule"
           >
             <FaMinus />
           </button>
@@ -423,6 +457,7 @@ export default function Toolbar({ editor }) {
             className={`toolbar-btn ${editor.isActive("link") ? "is-active" : ""}`}
             onClick={openLinkDialog}
             title="Insert Link"
+            aria-label="Insert link"
           >
             <FaLink />
           </button>
@@ -433,6 +468,7 @@ export default function Toolbar({ editor }) {
               className="toolbar-btn"
               onClick={handleUnsetLink}
               title="Remove Link"
+              aria-label="Remove link"
             >
               <FaUnlink />
             </button>
@@ -445,6 +481,7 @@ export default function Toolbar({ editor }) {
             onClick={triggerFilePicker}
             disabled={isUploading}
             title="Upload Image from Computer (Cloudinary)"
+            aria-label="Upload image file"
           >
             <FaImage />
           </button>
@@ -455,6 +492,7 @@ export default function Toolbar({ editor }) {
             className="toolbar-btn"
             onClick={() => setShowMediaModal(true)}
             title="Select Image from Cloudinary Media Library"
+            aria-label="Open media library"
           >
             <FaFolderOpen />
           </button>
@@ -463,8 +501,12 @@ export default function Toolbar({ editor }) {
           <button
             type="button"
             className="toolbar-btn"
-            onClick={() => setShowImageDialog(!showImageDialog)}
+            onClick={() => {
+              setShowImageDialog((prev) => !prev);
+              setShowLinkDialog(false);
+            }}
             title="Insert Image by URL"
+            aria-label="Insert image from URL"
           >
             <FaUpload />
           </button>
@@ -482,13 +524,19 @@ export default function Toolbar({ editor }) {
 
       {/* --- Link Popover Dialog --- */}
       {showLinkDialog && (
-        <form className="link-dialog" onSubmit={handleSetLink}>
+        <form
+          className="link-dialog"
+          onSubmit={handleSetLink}
+          role="dialog"
+          aria-label="Insert link dialog"
+        >
           <input
             type="text"
             placeholder="Paste or type URL..."
             value={linkUrl}
             onChange={(e) => setLinkUrl(e.target.value)}
             autoFocus
+            aria-label="Link URL"
           />
           <div className="link-dialog-btns">
             <button type="submit" className="link-set-btn">
@@ -517,13 +565,19 @@ export default function Toolbar({ editor }) {
 
       {/* --- Image URL Popover Dialog --- */}
       {showImageDialog && (
-        <form className="link-dialog" onSubmit={handleInsertImageUrl}>
+        <form
+          className="link-dialog"
+          onSubmit={handleInsertImageUrl}
+          role="dialog"
+          aria-label="Insert image from URL dialog"
+        >
           <input
             type="url"
             placeholder="Paste image URL..."
             value={imageUrlInput}
             onChange={(e) => setImageUrlInput(e.target.value)}
             autoFocus
+            aria-label="Image URL"
           />
           <div className="link-dialog-btns">
             <button type="submit" className="link-set-btn">
@@ -543,3 +597,5 @@ export default function Toolbar({ editor }) {
     </div>
   );
 }
+
+export default memo(Toolbar);

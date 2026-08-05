@@ -12,6 +12,34 @@ import ImageExtension from "@tiptap/extension-image";
 
 import { db } from "../Firebase/firebase";
 
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  where,
+  serverTimestamp,
+} from "firebase/firestore";
+
+import {
+  FiArrowLeft,
+  FiCalendar,
+  FiClock,
+  FiUser,
+  FiCopy,
+} from "react-icons/fi";
+
+import {
+  FaWhatsapp,
+  FaLinkedin,
+} from "react-icons/fa";
+
+import { FaXTwitter } from "react-icons/fa6";
+
 function renderBlogContent(content) {
   if (!content) return "";
   if (typeof content === "object") {
@@ -48,35 +76,10 @@ function renderBlogContent(content) {
 const SITE_URL = "https://abhyudayaclub.in";
 const ORG_NAME = "Abhyudaya Club";
 
-import {
-  collection,
-  getDocs,
-  addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  serverTimestamp,
-} from "firebase/firestore";
-
-import {
-  FiArrowLeft,
-  FiCalendar,
-  FiClock,
-  FiUser,
-  FiCopy,
-} from "react-icons/fi";
-
-import {
-  FaWhatsapp,
-  FaLinkedin,
-} from "react-icons/fa";
-
-import { FaXTwitter } from "react-icons/fa6";
-
 export default function BlogDetails() {
-  // Use slug from URL params
-  const { slug } = useParams();
+  // Extract route parameters flexibly (supports both :slug and :id params)
+  const params = useParams();
+  const blogIdentifier = params.slug || params.id || "";
 
   // ==========================
   // STATES
@@ -100,7 +103,7 @@ export default function BlogDetails() {
   const [posting, setPosting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  const canonicalUrl = `${SITE_URL}/blog/${slug}`;
+  const canonicalUrl = `${SITE_URL}/blog/${blogIdentifier}`;
 
   const shareText = blog
     ? `${blog.title} | ${ORG_NAME}`
@@ -208,34 +211,59 @@ export default function BlogDetails() {
   };
 
   // ==========================
-  // FETCH BLOG BY SLUG
+  // FETCH BLOG BY SLUG OR DOC ID
   // ==========================
 
   useEffect(() => {
-    if (!slug) return;
+    if (!blogIdentifier) {
+      setLoading(false);
+      setBlog(null);
+      return;
+    }
 
     const fetchBlog = async () => {
       try {
         setLoading(true);
 
-        // Query by slug (not by document ID)
-        const q = query(
-          collection(db, "blogs"),
-          where("slug", "==", slug)
-        );
+        let docSnap = null;
+        let data = null;
 
-        const snapshot = await getDocs(q);
+        // 1. Primary Query: Search by URL slug
+        try {
+          const q = query(
+            collection(db, "blogs"),
+            where("slug", "==", blogIdentifier)
+          );
+          const snapshot = await getDocs(q);
 
-        if (snapshot.empty) {
+          if (!snapshot.empty) {
+            docSnap = snapshot.docs[0];
+            data = docSnap.data();
+          }
+        } catch (slugQueryErr) {
+          console.warn("Slug query encountered error:", slugQueryErr);
+        }
+
+        // 2. Fallback: If not found by slug, search directly by Firestore Document ID
+        if (!docSnap) {
+          try {
+            const docRef = doc(db, "blogs", blogIdentifier);
+            const directSnap = await getDoc(docRef);
+            if (directSnap.exists()) {
+              docSnap = directSnap;
+              data = directSnap.data();
+            }
+          } catch (docIdErr) {
+            // Direct doc lookup failed
+          }
+        }
+
+        if (!docSnap || !data) {
           setBlog(null);
-          setLoading(false);
           return;
         }
 
-        const docSnap = snapshot.docs[0];
-        const data = docSnap.data();
-
-        // Store the Firestore document ID internally for comments
+        // Store internal Firestore document ID for comments
         setBlogDocId(docSnap.id);
 
         const currentBlog = {
@@ -247,7 +275,7 @@ export default function BlogDetails() {
                 month: "long",
                 year: "numeric",
               })
-            : "Recently",
+            : data.publishDate || "Recently",
           dateISO: data.createdAt?.toDate
             ? data.createdAt.toDate().toISOString()
             : null,
@@ -259,17 +287,22 @@ export default function BlogDetails() {
         setBlog(currentBlog);
 
         // Fetch related blogs (exclude current)
-        const blogsSnapshot = await getDocs(
-          query(collection(db, "blogs"), where("status", "==", "Published"))
-        );
+        try {
+          const blogsSnapshot = await getDocs(
+            query(collection(db, "blogs"), where("status", "==", "Published"))
+          );
 
-        const related = blogsSnapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter((item) => item.slug !== slug)
-          .slice(0, 3);
+          const related = blogsSnapshot.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .filter((item) => item.id !== docSnap.id && item.slug !== blogIdentifier)
+            .slice(0, 3);
 
-        setRelatedBlogs(related);
-      } catch {
+          setRelatedBlogs(related);
+        } catch (relatedErr) {
+          console.warn("Error fetching related blogs:", relatedErr);
+        }
+      } catch (error) {
+        console.error("Error loading blog details:", error);
         setBlog(null);
       } finally {
         setLoading(false);
@@ -277,7 +310,7 @@ export default function BlogDetails() {
     };
 
     fetchBlog();
-  }, [slug]);
+  }, [blogIdentifier]);
 
   // ==========================
   // READING PROGRESS
@@ -304,15 +337,14 @@ export default function BlogDetails() {
     if (!blogDocId) return;
 
     const commentsRef = collection(db, "blogs", blogDocId, "comments");
-
     const q = query(commentsRef, orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const data = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
         }));
         setComments(data);
       },
@@ -335,7 +367,7 @@ export default function BlogDetails() {
   }, [cooldown]);
 
   // ==========================
-  // LOADING
+  // LOADING STATE
   // ==========================
 
   if (loading) {
@@ -349,15 +381,18 @@ export default function BlogDetails() {
   }
 
   // ==========================
-  // BLOG NOT FOUND
+  // BLOG NOT FOUND STATE
   // ==========================
 
   if (!blog) {
     return (
       <section className="blog-details">
-        <div className="blog-details-container">
-          <h1>Blog Not Found</h1>
-          <Link to="/blog" className="back-btn">
+        <div className="blog-details-container" style={{ textAlign: "center", padding: "60px 20px" }}>
+          <h1 style={{ marginBottom: "16px" }}>Blog Not Found</h1>
+          <p style={{ color: "#64748b", marginBottom: "24px" }}>
+            The requested article could not be found or may have been removed.
+          </p>
+          <Link to="/blog" className="back-btn" style={{ display: "inline-flex" }}>
             <FiArrowLeft />
             Back to Blog
           </Link>
@@ -503,7 +538,7 @@ export default function BlogDetails() {
           <div className="details-meta">
             <span>
               <FiUser aria-hidden="true" />
-              {blog.author}
+              {blog.author || "Admin"}
             </span>
             <span>
               <FiCalendar aria-hidden="true" />
@@ -511,7 +546,7 @@ export default function BlogDetails() {
             </span>
             <span>
               <FiClock aria-hidden="true" />
-              {blog.readTime}
+              {blog.readTime || "5 min read"}
             </span>
           </div>
 

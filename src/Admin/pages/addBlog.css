@@ -1,978 +1,338 @@
 /* =====================================================
    ABHYUDAYA BLOG EDITOR
-   PART 1
-   Theme • Layout • Header • Editor
+   Add / Edit Blog Page Layout Styles
+   src/Admin/pages/addBlog.css
 ===================================================== */
 
-:root{
-
-    --primary:#2563eb;
-    --primary-dark:#1d4ed8;
-
-    --accent:#ff6b00;
-    --accent-dark:#ea580c;
-
-    --bg:#f5f7fb;
-    --card:#ffffff;
-
-    --text:#111827;
-    --muted:#6b7280;
-
-    --border:#e5e7eb;
-
-    --shadow:
-    0 15px 40px rgba(15,23,42,.08);
-
-    --radius:20px;
-
-}
-
-*{
-    box-sizing:border-box;
-}
-
 /* =========================
-   PAGE
-========================= */
+   PAGE LAYOUT
+======================== */
 
-.create-post{
-
-    width:100%;
-    min-height:100%;
-
+.create-post {
+  width: 100%;
+  min-height: 100%;
 }
 
 /* =========================
    HEADER
-========================= */
+======================== */
 
-.create-header{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    gap:25px;
-
-    margin-bottom:30px;
-
+.create-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  margin-bottom: 30px;
 }
 
-.header-left h1{
-
-    margin:0;
-
-    font-size:36px;
-
-    font-weight:800;
-
-    color:var(--text);
-
+.header-left h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text, #0f172a);
 }
 
-.header-left p{
-
-    margin-top:8px;
-
-    color:var(--muted);
-
-    font-size:15px;
-
+.header-left p {
+  margin-top: 6px;
+  color: var(--muted, #64748b);
+  font-size: 14.5px;
 }
 
 /* =========================
-   BUTTONS
-========================= */
+   HEADER BUTTONS
+======================== */
 
-.header-buttons{
-
-    display:flex;
-
-    gap:15px;
-
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.header-buttons button{
-
-    border:none;
-
-    border-radius:14px;
-
-    padding:14px 24px;
-
-    cursor:pointer;
-
-    font-size:15px;
-
-    font-weight:700;
-
-    transition:.25s;
-
+.header-buttons button {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 22px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.draft-btn{
-
-    background:#6b7280;
-
-    color:white;
-
+.draft-btn {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1 !important;
 }
 
-.preview-btn{
-
-    background:var(--primary);
-
-    color:white;
-
+.draft-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
-.publish-btn{
-
-    background:var(--accent);
-
-    color:white;
-
+.publish-btn {
+  background: var(--primary, #2563eb);
+  color: white;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
 }
 
-.header-buttons button:hover{
+.publish-btn:hover:not(:disabled) {
+  background: var(--primary-dark, #1d4ed8);
+  transform: translateY(-1px);
+}
 
-    transform:translateY(-3px);
-
-    box-shadow:0 12px 25px rgba(0,0,0,.15);
-
+.header-buttons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
 /* =========================
-   GRID
-========================= */
+   EDITOR GRID LAYOUT
+======================== */
 
-.editor-layout{
-
-    display:grid;
-
-    grid-template-columns:
-    minmax(0,1fr)
-    360px;
-
-    gap:30px;
-
-    align-items:start;
-
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 28px;
+  align-items: start;
 }
 
 /* =========================
-   EDITOR
-========================= */
+   MAIN EDITOR SECTION
+======================== */
 
-.editor-section{
-
-    background:var(--card);
-
-    border-radius:22px;
-
-    padding:35px;
-
-    box-shadow:var(--shadow);
-
-    width:100%;
-
-    min-width:0;
-
+.editor-section {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  border: 1px solid #e2e8f0;
+  width: 100%;
+  min-width: 0;
+  animation: fadeUp 0.35s ease;
 }
 
 /* =========================
-   TITLE
-========================= */
+   TITLE INPUT
+======================== */
 
-.title-input{
-
-    width:100%;
-
-    border:none;
-
-    outline:none;
-
-    background:transparent;
-
-    font-size:46px;
-
-    font-weight:800;
-
-    color:var(--text);
-
-    padding-bottom:20px;
-
-    margin-bottom:25px;
-
-    border-bottom:2px solid var(--border);
-
+.title-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--text, #0f172a);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e2e8f0;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
 }
 
-.title-input::placeholder{
+.title-input:focus {
+  border-bottom-color: var(--primary, #2563eb);
+}
 
-    color:#c2c7d0;
-
+.title-input::placeholder {
+  color: #cbd5e1;
 }
 
 /* =========================
-   EDITOR AREA
-========================= */
+   RIGHT SIDEBAR CARDS
+======================== */
 
-.editor-area{
-
-    margin-top:24px;
-
+.blog-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: calc(84px + 20px);
+  align-self: start;
 }
 
-.content-box{
-
-    width:100%;
-
-    min-height:720px;
-
-    resize:vertical;
-
-    border:none;
-
-    outline:none;
-
-    font-size:18px;
-
-    line-height:1.9;
-
-    color:#374151;
-
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.04);
+  border: 1px solid #e2e8f0;
+  animation: fadeUp 0.35s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* =========================
-   RIGHT SIDEBAR
-========================= */
-
-.blog-sidebar{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:24px;
-
-    position:sticky;
-
-    top:105px;
-
-    align-self:start;
-
-}
-/* =====================================================
-   PART 2
-   TOOLBAR • CARDS • FORMS • UPLOAD
-===================================================== */
-
-/* =========================
-   TOOLBAR
-========================= */
-
-.toolbar{
-
-    display:flex;
-
-    flex-wrap:wrap;
-
-    align-items:center;
-
-    gap:10px;
-
-    padding:16px;
-
-    background:#f8fafc;
-
-    border:1px solid var(--border);
-
-    border-radius:16px;
-
-    margin-bottom:24px;
-
+.card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.07);
 }
 
-.toolbar button{
-
-    width:42px;
-
-    height:42px;
-
-    border:none;
-
-    background:white;
-
-    border-radius:12px;
-
-    cursor:pointer;
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
-
-    font-size:15px;
-
-    transition:.25s;
-
-    box-shadow:0 3px 8px rgba(15,23,42,.05);
-
+.card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 14px 0;
 }
 
-.toolbar button:hover{
+/* Sidebar Inputs & Controls */
 
-    background:var(--accent);
-
-    color:white;
-
-    transform:translateY(-2px);
-
-}
-
-.toolbar button.active{
-
-    background:var(--primary);
-
-    color:white;
-
-}
-
-.divider{
-
-    width:1px;
-
-    height:28px;
-
-    background:#d1d5db;
-
-    margin:0 6px;
-
-}
-
-/* =========================
-   CARD
-========================= */
-
-.card{
-
-    background:white;
-
-    border-radius:18px;
-
-    padding:22px;
-
-    box-shadow:var(--shadow);
-
-    border:1px solid #eef2f7;
-
-}
-
-.card h3{
-
-    font-size:17px;
-
-    font-weight:700;
-
-    color:var(--text);
-
-    margin-bottom:16px;
-
-}
-
-/* =========================
-   INPUTS
-========================= */
-
-.card input,
-
+.card input[type="text"],
+.card input[type="date"],
 .card select,
-
-.card textarea{
-
-    width:100%;
-
-    border:1px solid var(--border);
-
-    border-radius:12px;
-
-    padding:14px 16px;
-
-    font-size:15px;
-
-    background:white;
-
-    outline:none;
-
-    transition:.25s;
-
+.card textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.card textarea{
-
-    resize:vertical;
-
-    min-height:120px;
-
+.card textarea {
+  resize: vertical;
+  min-height: 100px;
 }
 
 .card input:focus,
-
 .card select:focus,
+.card textarea:focus {
+  border-color: var(--primary, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
 
-.card textarea:focus{
+.card label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
 
-    border-color:var(--primary);
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
 
-    box-shadow:
-    0 0 0 4px rgba(37,99,235,.12);
+.upload-btn:hover {
+  background: #1d4ed8;
+}
 
+.featured-image-preview img,
+.image-preview img {
+  width: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+  max-height: 200px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-pill.draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-pill.published {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-pill.archived {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 /* =========================
-   LABELS
-========================= */
+   ANIMATION & RESPONSIVE
+======================== */
 
-.card label{
-
-    display:block;
-
-    margin-bottom:8px;
-
-    font-size:14px;
-
-    font-weight:600;
-
-    color:var(--muted);
-
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* =========================
-   FEATURE IMAGE
-========================= */
+@media (max-width: 1100px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
 
-.upload-box{
-
-    border:2px dashed #d6dbe4;
-
-    border-radius:18px;
-
-    background:#fbfcfe;
-
-    padding:42px 20px;
-
-    text-align:center;
-
-    cursor:pointer;
-
-    transition:.25s;
-
+  .blog-sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
 }
 
-.upload-box:hover{
+@media (max-width: 768px) {
+  .create-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
 
-    border-color:var(--accent);
+  .header-buttons {
+    width: 100%;
+  }
 
-    background:#fff7f1;
+  .header-buttons button {
+    flex: 1;
+    justify-content: center;
+  }
 
+  .editor-section {
+    padding: 20px;
+  }
+
+  .title-input {
+    font-size: 28px;
+  }
 }
 
-.upload-box span{
-
-    display:block;
-
-    font-size:56px;
-
-    margin-bottom:16px;
-
-}
-
-.upload-box p{
-
-    font-size:16px;
-
-    font-weight:600;
-
-    color:var(--text);
-
-}
-
-.upload-box small{
-
-    display:block;
-
-    margin-top:8px;
-
-    color:var(--muted);
-
-}
-
-/* =========================
-   IMAGE PREVIEW
-========================= */
-
-.image-preview{
-
-    margin-top:18px;
-
-}
-
-.image-preview img{
-
-    width:100%;
-
-    border-radius:14px;
-
-    object-fit:cover;
-
-    max-height:220px;
-
-    box-shadow:var(--shadow);
-
-}
-
-/* =========================
-   SEO BOX
-========================= */
-
-.seo-score{
-
-    margin-top:12px;
-
-    padding:12px 14px;
-
-    border-radius:12px;
-
-    background:#ecfdf5;
-
-    color:#15803d;
-
-    font-size:14px;
-
-    font-weight:600;
-
-}
-
-/* =========================
-   STATUS BADGE
-========================= */
-
-.status-pill{
-
-    display:inline-flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    padding:8px 14px;
-
-    border-radius:999px;
-
-    font-size:13px;
-
-    font-weight:700;
-
-    background:#eff6ff;
-
-    color:var(--primary);
-
-}
-
-/* =========================
-   CARD HOVER
-========================= */
-
-.card{
-
-    transition:.25s;
-
-}
-
-.card:hover{
-
-    transform:translateY(-3px);
-
-}
-/* =====================================================
-   PART 3
-   TIPTAP • RESPONSIVE • SCROLLBAR • ANIMATIONS
-===================================================== */
-
-/* =========================
-   TIPTAP EDITOR
-========================= */
-
-.ProseMirror{
-
-    min-height:700px;
-
-    outline:none;
-
-    border:none;
-
-    font-size:18px;
-
-    line-height:1.9;
-
-    color:#374151;
-
-    padding:8px 2px;
-
-}
-
-.ProseMirror:focus{
-
-    outline:none;
-
-}
-
-.ProseMirror p{
-
-    margin:16px 0;
-
-}
-
-.ProseMirror h1{
-
-    font-size:40px;
-
-    font-weight:800;
-
-    margin:30px 0 18px;
-
-    color:#111827;
-
-}
-
-.ProseMirror h2{
-
-    font-size:32px;
-
-    font-weight:700;
-
-    margin:28px 0 16px;
-
-    color:#111827;
-
-}
-
-.ProseMirror h3{
-
-    font-size:26px;
-
-    font-weight:700;
-
-    margin:24px 0 14px;
-
-    color:#111827;
-
-}
-
-.ProseMirror ul{
-
-    padding-left:28px;
-
-    margin:18px 0;
-
-}
-
-.ProseMirror ol{
-
-    padding-left:28px;
-
-    margin:18px 0;
-
-}
-
-.ProseMirror li{
-
-    margin:8px 0;
-
-}
-
-.ProseMirror blockquote{
-
-    border-left:5px solid var(--accent);
-
-    background:#fff7f1;
-
-    padding:18px 22px;
-
-    margin:24px 0;
-
-    font-style:italic;
-
-    border-radius:0 14px 14px 0;
-
-}
-
-.ProseMirror code{
-
-    background:#eef2f7;
-
-    padding:3px 8px;
-
-    border-radius:6px;
-
-    font-size:15px;
-
-    font-family:Consolas, monospace;
-
-}
-
-.ProseMirror pre{
-
-    background:#111827;
-
-    color:#fff;
-
-    padding:22px;
-
-    border-radius:14px;
-
-    overflow:auto;
-
-    margin:24px 0;
-
-}
-
-.ProseMirror pre code{
-
-    background:none;
-
-    color:inherit;
-
-    padding:0;
-
-}
-
-.ProseMirror img{
-
-    width:100%;
-
-    border-radius:16px;
-
-    margin:28px 0;
-
-}
-
-.ProseMirror table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
-    margin:28px 0;
-
-}
-
-.ProseMirror th{
-
-    background:#f3f4f6;
-
-    border:1px solid #d1d5db;
-
-    padding:14px;
-
-    text-align:left;
-
-    font-weight:700;
-
-}
-
-.ProseMirror td{
-
-    border:1px solid #e5e7eb;
-
-    padding:14px;
-
-}
-
-/* =========================
-   PLACEHOLDER
-========================= */
-
-.ProseMirror p.is-editor-empty:first-child::before{
-
-    content:attr(data-placeholder);
-
-    color:#9ca3af;
-
-    float:left;
-
-    pointer-events:none;
-
-    height:0;
-
-}
-
-/* =========================
-   SCROLLBAR
-========================= */
-
-::-webkit-scrollbar{
-
-    width:8px;
-
-    height:8px;
-
-}
-
-::-webkit-scrollbar-thumb{
-
-    background:#cbd5e1;
-
-    border-radius:999px;
-
-}
-
-::-webkit-scrollbar-thumb:hover{
-
-    background:#94a3b8;
-
-}
-
-::-webkit-scrollbar-track{
-
-    background:#f8fafc;
-
-}
-
-/* =========================
-   ANIMATION
-========================= */
-
-.card,
-.editor-section,
-.toolbar{
-
-    animation:fadeUp .45s ease;
-
-}
-
-@keyframes fadeUp{
-
-    from{
-
-        opacity:0;
-
-        transform:translateY(12px);
-
-    }
-
-    to{
-
-        opacity:1;
-
-        transform:translateY(0);
-
-    }
-
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media (max-width:1200px){
-
-    .editor-layout{
-
-        grid-template-columns:1fr;
-
-    }
-
-    .blog-sidebar{
-
-        position:static;
-
-        order:-1;
-
-    }
-
-}
-
-@media (max-width:768px){
-
-    .create-header{
-
-        flex-direction:column;
-
-        align-items:flex-start;
-
-        gap:20px;
-
-    }
-
-    .header-buttons{
-
-        width:100%;
-
-        flex-wrap:wrap;
-
-    }
-
-    .header-buttons button{
-
-        flex:1;
-
-        min-width:150px;
-
-    }
-
-    .editor-section{
-
-        padding:24px;
-
-    }
-
-    .title-input{
-
-        font-size:34px;
-
-    }
-
-    .toolbar{
-
-        gap:8px;
-
-    }
-
-    .toolbar button{
-
-        width:38px;
-
-        height:38px;
-
-    }
-
-    .ProseMirror{
-
-        min-height:500px;
-
-        font-size:16px;
-
-    }
-
-}
-
-@media (max-width:500px){
-
-    .header-buttons{
-
-        flex-direction:column;
-
-    }
-
-    .header-buttons button{
-
-        width:100%;
-
-    }
-
+@media (max-width: 500px) {
+  .header-buttons {
+    flex-direction: column;
+  }
+
+  .header-buttons button {
+    width: 100%;
+  }
+
+  .blog-sidebar {
+    grid-template-columns: 1fr;
+  }
 }

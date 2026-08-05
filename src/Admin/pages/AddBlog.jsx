@@ -6,6 +6,7 @@ import RichEditor from "../components/editor/RichEditor";
 import SlugInput from "../components/SlugInput";
 import AutosaveIndicator from "../components/AutosaveIndicator";
 import MediaLibrary from "../components/media/MediaLibrary";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { useToast } from "../components/Toast";
 import { useAutosave } from "../hooks/useAutosave";
 
@@ -53,11 +54,11 @@ function AddBlog() {
       slug: slug.trim(),
       seo,
       publishDate,
-      status: "Draft",
+      status,
       featuredImage,
       contentJson,
     };
-  }, [title, category, tags, slug, seo, publishDate, featuredImage, contentJson]);
+  }, [title, category, tags, slug, seo, publishDate, status, featuredImage, contentJson]);
 
   // Async Autosave Handler
   const handleAutosave = useCallback(
@@ -176,6 +177,7 @@ function AddBlog() {
   const handlePublish = async () => {
     try {
       setPublishing(true);
+      const targetStatus = status === "Archived" ? "Archived" : "Published";
       const blogData = {
         title: title.trim(),
         category,
@@ -187,7 +189,7 @@ function AddBlog() {
         slug: slug.trim(),
         seo,
         publishDate: publishDate || new Date().toISOString().split("T")[0],
-        status: "Published",
+        status: targetStatus,
         author: "Admin",
         excerpt: contentExcerpt.trim().substring(0, 180),
         content: contentJson,
@@ -199,7 +201,11 @@ function AddBlog() {
         await publishBlog(blogData);
       }
 
-      toast.success("🚀 Blog Published Successfully!");
+      toast.success(
+        targetStatus === "Published"
+          ? "🚀 Blog Published Successfully!"
+          : "📦 Blog Post Saved!"
+      );
       navigate("/admin/blogs");
     } catch (err) {
       console.error(err);
@@ -220,7 +226,7 @@ function AddBlog() {
           <div className="create-post">
             <div className="create-header">
               <div className="header-left">
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
                   <h1>Create Blog</h1>
                   <AutosaveIndicator
                     status={autosaveStatus}
@@ -262,16 +268,19 @@ function AddBlog() {
                   placeholder="Enter Blog Title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  aria-label="Blog title"
                 />
 
-                <RichEditor
-                  value={contentJson}
-                  onChange={handleEditorChange}
-                  placeholder="Write your story here with rich formatting..."
-                />
+                <ErrorBoundary>
+                  <RichEditor
+                    value={contentJson}
+                    onChange={handleEditorChange}
+                    placeholder="Write your story here with rich formatting..."
+                  />
+                </ErrorBoundary>
               </section>
 
-              <aside className="blog-sidebar">
+              <aside className="blog-sidebar" aria-label="Blog post settings">
                 <div className="card">
                   <h3>Featured Image</h3>
 
@@ -281,7 +290,7 @@ function AddBlog() {
                     <div className="featured-image-preview">
                       <img
                         src={featuredImage}
-                        alt="Featured"
+                        alt="Featured post visual"
                         style={{
                           width: "100%",
                           borderRadius: "8px",
@@ -326,6 +335,7 @@ function AddBlog() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
+                    aria-label="Category"
                   >
                     <option>Club News</option>
                     <option>Workshop</option>
@@ -343,6 +353,7 @@ function AddBlog() {
                     placeholder="React, Firebase, AI"
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
+                    aria-label="Tags separated by comma"
                   />
                 </div>
 
@@ -363,6 +374,7 @@ function AddBlog() {
                     placeholder="Write SEO description..."
                     value={seo}
                     onChange={(e) => setSeo(e.target.value)}
+                    aria-label="SEO meta description"
                   />
                 </div>
 
@@ -373,15 +385,17 @@ function AddBlog() {
                     type="date"
                     value={publishDate}
                     onChange={(e) => setPublishDate(e.target.value)}
+                    aria-label="Publish date"
                   />
                 </div>
 
                 <div className="card">
-                  <h3>Status</h3>
+                  <h3>Initial Status</h3>
 
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
+                    aria-label="Blog post status"
                   >
                     <option value="Draft">Draft</option>
                     <option value="Published">Published</option>

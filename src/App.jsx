@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import PageLoader from "./components/PageLoader.jsx";
 import { ToastProvider } from "./Admin/components/Toast.jsx";
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
@@ -42,7 +43,8 @@ const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrar
 
 NProgress.configure({
   showSpinner: false,
-  speed: 200,
+  speed: 300,
+  minimum: 0.2,
 });
 
 export default function App() {
@@ -50,14 +52,20 @@ export default function App() {
 
   useEffect(() => {
     NProgress.start();
-    NProgress.done();
+    const timer = setTimeout(() => {
+      NProgress.done();
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+      NProgress.done();
+    };
   }, [location.pathname]);
 
   return (
     <ToastProvider>
       <ScrollToTop />
 
-      <Suspense fallback={<div style={{ padding: "2rem" }}>Loading...</div>}>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
 
           {/* ================= ADMIN ================= */}
@@ -197,7 +205,7 @@ export default function App() {
             />
 
             <Route
-              path="/blog/:id"
+              path="/blog/:slug"
               element={<BlogDetails />}
             />
 

@@ -1,18 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   FaSearch,
   FaPlus,
   FaCopy,
   FaTimes,
   FaCheck,
-  FaCalendarAlt,
-  FaExpand,
   FaChevronLeft,
   FaChevronRight,
   FaSync,
 } from "react-icons/fa";
 import MediaCard from "./MediaCard";
 import UploadModal from "./UploadModal";
+import SkeletonLoader from "../SkeletonLoader";
 import { getMediaItems, deleteMediaItem } from "../../pages/services/mediaService";
 import { useToast } from "../Toast";
 import Sidebar from "../../pages/components/Sidebar";
@@ -42,11 +41,7 @@ export default function MediaLibrary({
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedPreviewUrl, setCopiedPreviewUrl] = useState(false);
 
-  useEffect(() => {
-    fetchMedia();
-  }, []);
-
-  const fetchMedia = async () => {
+  const fetchMedia = useCallback(async () => {
     setLoading(true);
     try {
       const items = await getMediaItems();
@@ -57,7 +52,11 @@ export default function MediaLibrary({
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchMedia();
+  }, [fetchMedia]);
 
   const handleUploadSuccess = (newItem) => {
     setMediaItems((prev) => [newItem, ...prev]);
@@ -89,30 +88,34 @@ export default function MediaLibrary({
     }
   };
 
-  // Filtering Logic
-  const filteredItems = mediaItems.filter((item) => {
-    const matchesSearch =
-      !searchQuery.trim() ||
-      (item.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.url || "").toLowerCase().includes(searchQuery.toLowerCase());
+  // Memoized Filtering Logic
+  const filteredItems = useMemo(() => {
+    return mediaItems.filter((item) => {
+      const matchesSearch =
+        !searchQuery.trim() ||
+        (item.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.url || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (activeTab === "recent") {
-      // Filter items created within last 7 days or top 10 items
-      const isRecent =
-        item.createdAt?.seconds &&
-        Date.now() / 1000 - item.createdAt.seconds < 7 * 24 * 3600;
-      return matchesSearch && isRecent;
-    }
+      if (activeTab === "recent") {
+        const isRecent =
+          item.createdAt?.seconds &&
+          Date.now() / 1000 - item.createdAt.seconds < 7 * 24 * 3600;
+        return matchesSearch && isRecent;
+      }
 
-    return matchesSearch;
-  });
+      return matchesSearch;
+    });
+  }, [mediaItems, searchQuery, activeTab]);
 
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE) || 1;
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  // Memoized Pagination Logic
+  const totalPages = Math.max(Math.ceil(filteredItems.length / ITEMS_PER_PAGE), 1);
+
+  const paginatedItems = useMemo(() => {
+    return filteredItems.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+    );
+  }, [filteredItems, currentPage]);
 
   const mainContent = (
     <div className={`media-library-container ${isModalMode ? "modal-view" : ""}`}>
@@ -129,6 +132,7 @@ export default function MediaLibrary({
             className="media-btn secondary"
             onClick={fetchMedia}
             title="Refresh library"
+            aria-label="Refresh media library"
           >
             <FaSync />
             <span>Refresh</span>
@@ -138,6 +142,7 @@ export default function MediaLibrary({
             type="button"
             className="media-btn primary"
             onClick={() => setShowUploadModal(true)}
+            aria-label="Upload new image"
           >
             <FaPlus />
             <span>Upload New Image</span>
@@ -148,6 +153,7 @@ export default function MediaLibrary({
               type="button"
               className="media-close-modal-btn"
               onClick={onCloseModal}
+              aria-label="Close media library modal"
             >
               <FaTimes />
             </button>
@@ -157,9 +163,11 @@ export default function MediaLibrary({
 
       {/* Toolbar & Filter Tabs */}
       <div className="media-toolbar">
-        <div className="media-tabs">
+        <div className="media-tabs" role="tablist" aria-label="Media filter tabs">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === "all"}
             className={`tab-btn ${activeTab === "all" ? "active" : ""}`}
             onClick={() => {
               setActiveTab("all");
@@ -170,6 +178,8 @@ export default function MediaLibrary({
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === "recent"}
             className={`tab-btn ${activeTab === "recent" ? "active" : ""}`}
             onClick={() => {
               setActiveTab("recent");
@@ -181,7 +191,7 @@ export default function MediaLibrary({
         </div>
 
         <div className="media-search-box">
-          <FaSearch className="search-icon" />
+          <FaSearch className="search-icon" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search images by name or URL..."
@@ -190,15 +200,14 @@ export default function MediaLibrary({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
+            aria-label="Search media files"
           />
         </div>
       </div>
 
-      {/* Media Grid */}
+      {/* Media Grid / Skeleton Loading State */}
       {loading ? (
-        <div className="media-empty-state">
-          <p>Loading media library...</p>
-        </div>
+        <SkeletonLoader type="grid" count={ITEMS_PER_PAGE} />
       ) : paginatedItems.length === 0 ? (
         <div className="media-empty-state">
           <p>No media files found matching your search.</p>
@@ -227,12 +236,13 @@ export default function MediaLibrary({
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="media-pagination">
+        <nav className="media-pagination" aria-label="Media gallery pagination">
           <button
             type="button"
             className="pag-btn"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            aria-label="Previous page"
           >
             <FaChevronLeft /> Previous
           </button>
@@ -246,10 +256,11 @@ export default function MediaLibrary({
             className="pag-btn"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            aria-label="Next page"
           >
             Next <FaChevronRight />
           </button>
-        </div>
+        </nav>
       )}
 
       {/* Upload Modal */}
@@ -264,6 +275,9 @@ export default function MediaLibrary({
         <div
           className="media-modal-backdrop"
           onClick={() => setPreviewItem(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview modal"
         >
           <div
             className="preview-lightbox-card"
@@ -273,6 +287,7 @@ export default function MediaLibrary({
               type="button"
               className="lightbox-close-btn"
               onClick={() => setPreviewItem(null)}
+              aria-label="Close preview"
             >
               <FaTimes />
             </button>
@@ -290,7 +305,7 @@ export default function MediaLibrary({
               )}
 
               <div className="lightbox-url-box">
-                <input type="text" value={previewItem.url} readOnly />
+                <input type="text" value={previewItem.url} readOnly aria-label="Image URL" />
                 <button
                   type="button"
                   className="copy-url-btn"
@@ -300,6 +315,7 @@ export default function MediaLibrary({
                     toast.success("Image URL copied!");
                     setTimeout(() => setCopiedPreviewUrl(false), 2000);
                   }}
+                  aria-label="Copy image URL"
                 >
                   {copiedPreviewUrl ? <FaCheck style={{ color: "#22c55e" }} /> : <FaCopy />}
                   <span>{copiedPreviewUrl ? "Copied!" : "Copy URL"}</span>
@@ -332,10 +348,15 @@ export default function MediaLibrary({
     </div>
   );
 
-  // If used inside a Modal dialog overlay
   if (isModalMode) {
     return (
-      <div className="media-modal-backdrop" onClick={onCloseModal}>
+      <div
+        className="media-modal-backdrop"
+        onClick={onCloseModal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Select image from media library"
+      >
         <div className="media-modal-dialog" onClick={(e) => e.stopPropagation()}>
           {mainContent}
         </div>
@@ -343,7 +364,6 @@ export default function MediaLibrary({
     );
   }
 
-  // Standalone Admin Page view (/admin/media)
   return (
     <div className="dashboard-layout">
       <Sidebar />

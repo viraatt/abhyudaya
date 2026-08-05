@@ -40,11 +40,16 @@ export default function AutosaveIndicator({
   }, [lastSavedTime]);
 
   return (
-    <div className={`autosave-indicator-chip status-${status}`}>
+    <div
+      className={`autosave-indicator-chip status-${status}`}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       {/* 1. Saving State */}
       {status === "saving" && (
         <>
-          <FaCloudUploadAlt className="icon-saving-pulse" />
+          <FaCloudUploadAlt className="icon-saving-pulse" aria-hidden="true" />
           <span className="label font-weight-600">Saving...</span>
         </>
       )}
@@ -52,12 +57,12 @@ export default function AutosaveIndicator({
       {/* 2. Saved State */}
       {status === "saved" && (
         <>
-          <FaCheckCircle className="icon-success" />
+          <FaCheckCircle className="icon-success" aria-hidden="true" />
           <div className="saved-text-group">
             <span className="label font-weight-600">Saved</span>
             {formattedTime && (
               <span className="time-subtext">
-                <FaClock className="subicon" /> {formattedTime}
+                <FaClock className="subicon" aria-hidden="true" /> {formattedTime}
               </span>
             )}
           </div>
@@ -67,7 +72,7 @@ export default function AutosaveIndicator({
       {/* 3. Offline State */}
       {status === "offline" && (
         <>
-          <FaWifi className="icon-offline" />
+          <FaWifi className="icon-offline" aria-hidden="true" />
           <div className="saved-text-group">
             <span className="label font-weight-600">Offline - Paused</span>
             <span className="time-subtext">Will auto-sync when reconnected</span>
@@ -78,7 +83,7 @@ export default function AutosaveIndicator({
       {/* 4. Error State */}
       {status === "error" && (
         <>
-          <FaExclamationTriangle className="icon-error" />
+          <FaExclamationTriangle className="icon-error" aria-hidden="true" />
           <div className="saved-text-group">
             <span className="label font-weight-600">Save Failed</span>
             {errorMessage && (
@@ -91,8 +96,9 @@ export default function AutosaveIndicator({
               className="autosave-retry-btn"
               onClick={onRetry}
               title="Click to retry saving now"
+              aria-label="Retry saving post"
             >
-              <FaRedo />
+              <FaRedo aria-hidden="true" />
               <span>Retry</span>
             </button>
           )}
@@ -104,13 +110,13 @@ export default function AutosaveIndicator({
         <>
           {hasUnsavedChanges ? (
             <>
-              <span className="unsaved-dot" />
+              <span className="unsaved-dot" aria-hidden="true" />
               <span className="label unsaved">Unsaved changes</span>
             </>
           ) : (
             formattedTime && (
               <>
-                <FaCheckCircle className="icon-success" />
+                <FaCheckCircle className="icon-success" aria-hidden="true" />
                 <span className="time-subtext">Saved at {formattedTime}</span>
               </>
             )
