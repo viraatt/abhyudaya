@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
+import { FaCloudUploadAlt, FaImages, FaTrash, FaSpinner } from "react-icons/fa";
 import { db } from "../../Firebase/firebase";
 
 import Sidebar from "./components/Sidebar";
@@ -10,7 +11,7 @@ import SlugInput from "../components/SlugInput";
 import AutosaveIndicator from "../components/AutosaveIndicator";
 import MediaLibrary from "../components/media/MediaLibrary";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { useToast } from "../components/Toast";
+import { useToast } from "../Toast";
 import { useAutosave } from "../hooks/useAutosave";
 
 import "./style/admin.css";
@@ -32,22 +33,64 @@ function EditBlog() {
   const [seo, setSeo] = useState("");
   const [publishDate, setPublishDate] = useState("");
   const [status, setStatus] = useState("Draft");
+
+  // Editor States
+  const [contentJson, setContentJson] = useState(null);
+  const [contentExcerpt, setContentExcerpt] = useState("");
+
+  // Featured Image
   const [featuredImage, setFeaturedImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
 
-  // Action loading states
+  // Save / Action Loaders
   const [saving, setSaving] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
 
-  // Tiptap JSON content state
-  const [contentJson, setContentJson] = useState(null);
-  const [contentExcerpt, setContentExcerpt] = useState("");
+  // Fetch Blog Data
+  useEffect(() => {
+    async function loadBlog() {
+      try {
+        setLoading(true);
+        const docRef = doc(db, "blogs", id);
+        const snapshot = await getDoc(docRef);
 
-  const currentBlogData = useMemo(() => {
+        if (!snapshot.exists()) {
+          toast.error("Blog post not found.");
+          navigate("/admin/blogs");
+          return;
+        }
+
+        const data = snapshot.data();
+        setTitle(data.title || "");
+        setCategory(data.category || "Club News");
+        setTags(Array.isArray(data.tags) ? data.tags.join(", ") : "");
+        setSlug(data.slug || "");
+        setSeo(data.seo || "");
+        setPublishDate(data.publishDate || "");
+        setStatus(data.status || "Draft");
+        setFeaturedImage(data.featuredImage || "");
+        setContentJson(data.content || null);
+        setContentExcerpt(data.excerpt || "");
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load blog post.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (id) {
+      loadBlog();
+    }
+  }, [id, navigate, toast]);
+
+  // Callback to compute blog data payload for autosave
+  const getAutosaveData = useCallback(() => {
     return {
       title: title.trim(),
       category,
+      featuredImage,
       tags: tags
         .split(",")
         .map((t) => t.trim())
@@ -56,119 +99,54 @@ function EditBlog() {
       seo,
       publishDate,
       status,
-      featuredImage,
-      contentJson,
+      author: "Admin",
+      excerpt: contentExcerpt.trim().substring(0, 180),
+      content: contentJson,
     };
-  }, [title, category, tags, slug, seo, publishDate, status, featuredImage, contentJson]);
+  }, [title, category, featuredImage, tags, slug, seo, publishDate, status, contentExcerpt, contentJson]);
 
+  // Handle autosave callback from hook
   const handleAutosave = useCallback(
-    async (dataToSave) => {
-      if (!dataToSave.title) return;
-
-      const payload = {
-        title: dataToSave.title,
-        category: dataToSave.category,
-        tags: dataToSave.tags,
-        slug: dataToSave.slug,
-        seo: dataToSave.seo,
-        publishDate: dataToSave.publishDate || new Date().toISOString().split("T")[0],
-        status: dataToSave.status || "Draft",
-        featuredImage: dataToSave.featuredImage,
-        excerpt: contentExcerpt.trim().substring(0, 180),
-        content: dataToSave.contentJson,
-      };
-
-      await updateBlogService(id, payload);
+    async (blogData) => {
+      await updateBlogService(id, blogData);
+      return id;
     },
-    [id, contentExcerpt]
+    [id]
   );
 
+  // Use Autosave Hook (30 sec interval)
   const {
-    status: autosaveStatus,
+    autosaveStatus,
     lastSavedTime,
-    errorMessage: autosaveError,
+    autosaveError,
     hasUnsavedChanges,
     retrySave,
-    setLastSavedData,
-  } = useAutosave({
-    data: currentBlogData,
-    onSave: handleAutosave,
-    interval: 20000,
-    enabled: !loading && !!title.trim(),
+  } = useAutosave(getAutosaveData, handleAutosave, {
+    enabled: !loading && Boolean(id),
+    interval: 30000,
   });
 
-  const loadBlog = useCallback(async () => {
-    try {
-      setLoading(true);
-      const ref = doc(db, "blogs", id);
-      const snap = await getDoc(ref);
-
-      if (!snap.exists()) {
-        toast.error("Blog not found.");
-        navigate("/admin/blogs");
-        return;
-      }
-
-      const blog = snap.data();
-
-      setTitle(blog.title || "");
-      setCategory(blog.category || "Club News");
-      setTags((blog.tags || []).join(", "));
-      setSlug(blog.slug || "");
-      setSeo(blog.seo || "");
-      setPublishDate(blog.publishDate || "");
-      setStatus(blog.status || "Draft");
-      setFeaturedImage(blog.featuredImage || "");
-      setContentJson(blog.content || null);
-      if (blog.excerpt) setContentExcerpt(blog.excerpt);
-
-      setLastSavedData({
-        title: (blog.title || "").trim(),
-        category: blog.category || "Club News",
-        tags: (blog.tags || []).map((t) => t.trim()).filter(Boolean),
-        slug: (blog.slug || "").trim(),
-        seo: blog.seo || "",
-        publishDate: blog.publishDate || "",
-        status: blog.status || "Draft",
-        featuredImage: blog.featuredImage || "",
-        contentJson: blog.content || null,
-      });
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load blog.");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, navigate, toast, setLastSavedData]);
-
-  useEffect(() => {
-    loadBlog();
-  }, [loadBlog]);
-
-  const handleEditorChange = (json, html, text) => {
+  // Handle Editor Change
+  const handleEditorChange = useCallback(({ json, text }) => {
     setContentJson(json);
     setContentExcerpt(text || "");
-  };
+  }, []);
 
+  // Upload Featured Image
   const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files[0];
     if (!file) return;
 
     try {
       setUploadingImage(true);
       const url = await uploadImage(file);
-      if (!url) {
-        toast.error("Image upload failed.");
-        return;
-      }
       setFeaturedImage(url);
-      toast.success("Featured image uploaded!");
-    } catch (error) {
-      console.error(error);
-      toast.error("Image upload failed.");
+      toast.success("Featured image updated!");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to upload image.");
     } finally {
       setUploadingImage(false);
-      e.target.value = "";
     }
   };
 
@@ -177,46 +155,51 @@ function EditBlog() {
     toast.info("Featured image removed.");
   };
 
+  const handleSelectMediaImage = (mediaItem) => {
+    if (mediaItem && mediaItem.url) {
+      setFeaturedImage(mediaItem.url);
+      setShowMediaModal(false);
+      toast.success("Featured image selected from Media Library!");
+    }
+  };
+
+  // Manual Save (Draft or Published)
   const handleSave = async (targetStatus = status) => {
     try {
       setSaving(true);
       const blogData = {
         title: title.trim(),
         category,
+        featuredImage,
         tags: tags
           .split(",")
-          .map((tag) => tag.trim())
+          .map((t) => t.trim())
           .filter(Boolean),
         slug: slug.trim(),
         seo,
         publishDate: publishDate || new Date().toISOString().split("T")[0],
         status: targetStatus,
-        featuredImage,
+        author: "Admin",
         excerpt: contentExcerpt.trim().substring(0, 180),
         content: contentJson,
       };
 
       await updateBlogService(id, blogData);
       setStatus(targetStatus);
-      setLastSavedData(currentBlogData);
-
-      if (targetStatus === "Published") {
-        toast.success("🚀 Blog Published Successfully!");
-      } else if (targetStatus === "Draft") {
-        toast.success("💾 Draft Saved Successfully!");
-      } else {
-        toast.success("✅ Blog Updated Successfully!");
-      }
-
-      navigate("/admin/blogs");
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message || "Failed to save blog changes.");
+      toast.success(
+        targetStatus === "Published"
+          ? "🚀 Blog Post Published!"
+          : "💾 Changes Saved Successfully!"
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to save blog post.");
     } finally {
       setSaving(false);
     }
   };
 
+  // Unpublish (Revert to Draft)
   const handleUnpublish = async () => {
     try {
       setUnpublishing(true);
@@ -225,7 +208,7 @@ function EditBlog() {
       toast.info("Blog unpublished and moved to Drafts.");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to unpublish blog.");
+      toast.error(err.message || "Failed to unpublish blog.");
     } finally {
       setUnpublishing(false);
     }
@@ -238,9 +221,7 @@ function EditBlog() {
         <div className="dashboard-main">
           <Topbar />
           <div className="dashboard-content">
-            <div className="empty" style={{ padding: "40px 0", textAlign: "center" }}>
-              <h2>Loading Blog Data...</h2>
-            </div>
+            <p>Loading blog post...</p>
           </div>
         </div>
       </div>
@@ -260,6 +241,9 @@ function EditBlog() {
               <div className="header-left">
                 <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
                   <h1>Edit Blog</h1>
+                  <span className={`status-pill ${status.toLowerCase()}`}>
+                    {status}
+                  </span>
                   <AutosaveIndicator
                     status={autosaveStatus}
                     lastSavedTime={lastSavedTime}
@@ -268,23 +252,10 @@ function EditBlog() {
                     onRetry={retrySave}
                   />
                 </div>
-                <p>
-                  Current Status:{" "}
-                  <strong className={`status ${(status || "draft").toLowerCase()}`}>
-                    {status}
-                  </strong>
-                </p>
+                <p>Editing post: <strong>{title || "Untitled"}</strong></p>
               </div>
 
               <div className="header-buttons">
-                <button
-                  type="button"
-                  className="draft-btn"
-                  onClick={() => navigate("/admin/blogs")}
-                >
-                  ← Back
-                </button>
-
                 {status === "Draft" && (
                   <>
                     <button
@@ -366,49 +337,45 @@ function EditBlog() {
                 <div className="card">
                   <h3>Featured Image</h3>
 
-                  {featuredImage ? (
-                    <div className="image-preview">
+                  {uploadingImage ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#2563eb", fontSize: "14px", fontWeight: 600, padding: "10px 0" }}>
+                      <FaSpinner className="spin" /> Uploading image...
+                    </div>
+                  ) : featuredImage ? (
+                    <div className="featured-image-preview">
                       <img
                         src={featuredImage}
                         alt="Featured post visual"
-                        style={{
-                          width: "100%",
-                          borderRadius: "8px",
-                          marginBottom: "8px",
-                        }}
                       />
 
                       <button
                         type="button"
-                        className="draft-btn"
+                        className="remove-image-btn"
                         onClick={removeImage}
-                        style={{ marginBottom: "8px" }}
                       >
-                        ❌ Remove Image
+                        <FaTrash /> Remove Image
                       </button>
                     </div>
-                  ) : null}
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
-                      aria-label="Upload featured image file"
-                    />
-
-                    <button
-                      type="button"
-                      className="draft-btn"
-                      style={{ background: "#eff6ff", color: "#2563eb", borderColor: "#bfdbfe" }}
-                      onClick={() => setShowMediaModal(true)}
-                    >
-                      📁 Choose from Media Library
-                    </button>
-                  </div>
-
-                  {uploadingImage && <p>Uploading image...</p>}
+                  ) : (
+                    <div className="featured-image-box">
+                      <label className="upload-btn-primary" style={{ cursor: "pointer" }}>
+                        <FaCloudUploadAlt style={{ fontSize: "18px" }} /> Upload Image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          style={{ display: "none" }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="media-library-btn"
+                        onClick={() => setShowMediaModal(true)}
+                      >
+                        <FaImages /> Choose from Library
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="card">
@@ -444,7 +411,6 @@ function EditBlog() {
                     title={title}
                     slug={slug}
                     onSlugChange={setSlug}
-                    currentBlogId={id}
                   />
                 </div>
 
@@ -467,7 +433,7 @@ function EditBlog() {
                     type="date"
                     value={publishDate}
                     onChange={(e) => setPublishDate(e.target.value)}
-                    aria-label="Publish date"
+                    aria-label="Publish Date"
                   />
                 </div>
 
@@ -477,7 +443,7 @@ function EditBlog() {
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    aria-label="Blog post status"
+                    aria-label="Post Status"
                   >
                     <option value="Draft">Draft</option>
                     <option value="Published">Published</option>
@@ -490,12 +456,17 @@ function EditBlog() {
         </div>
       </div>
 
+      {/* Media Library Modal */}
       {showMediaModal && (
-        <MediaLibrary
-          isModalMode={true}
-          onSelectImage={(item) => setFeaturedImage(item.url)}
-          onCloseModal={() => setShowMediaModal(false)}
-        />
+        <div className="media-modal-backdrop" onClick={() => setShowMediaModal(false)}>
+          <div className="media-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <MediaLibrary
+              isModalMode={true}
+              onSelectImage={handleSelectMediaImage}
+              onCloseModal={() => setShowMediaModal(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

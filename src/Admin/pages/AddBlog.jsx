@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaCloudUploadAlt, FaImages, FaTrash, FaSpinner } from "react-icons/fa";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import RichEditor from "../components/editor/RichEditor";
@@ -7,7 +8,7 @@ import SlugInput from "../components/SlugInput";
 import AutosaveIndicator from "../components/AutosaveIndicator";
 import MediaLibrary from "../components/media/MediaLibrary";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { useToast } from "../components/Toast";
+import { useToast } from "../Toast";
 import { useAutosave } from "../hooks/useAutosave";
 
 import "./style/admin.css";
@@ -28,95 +29,87 @@ function AddBlog() {
   const [publishDate, setPublishDate] = useState("");
   const [status, setStatus] = useState("Draft");
 
+  // Rich Text Editor State
+  const [contentJson, setContentJson] = useState(null);
+  const [contentExcerpt, setContentExcerpt] = useState("");
+
+  // Featured Image
   const [featuredImage, setFeaturedImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
 
-  // Created blog ID if autosave creates a draft document in background
-  const createdDocIdRef = useRef(null);
-
-  // Action loading states
+  // Draft / Publish Action Loading States
   const [savingDraft, setSavingDraft] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
-  // Tiptap JSON content state
-  const [contentJson, setContentJson] = useState(null);
-  const [contentExcerpt, setContentExcerpt] = useState("");
+  // Created Doc Ref for Autosave & Manual Saves
+  const createdDocIdRef = useRef(null);
 
-  const currentBlogData = useMemo(() => {
+  // Callback to compute blog data payload for autosave hook
+  const getAutosaveData = useCallback(() => {
     return {
       title: title.trim(),
       category,
+      featuredImage,
       tags: tags
         .split(",")
-        .map((t) => t.trim())
+        .map((tag) => tag.trim())
         .filter(Boolean),
       slug: slug.trim(),
       seo,
-      publishDate,
-      status,
-      featuredImage,
-      contentJson,
+      publishDate: publishDate || new Date().toISOString().split("T")[0],
+      status: "Draft",
+      author: "Admin",
+      excerpt: contentExcerpt.trim().substring(0, 180),
+      content: contentJson,
     };
-  }, [title, category, tags, slug, seo, publishDate, status, featuredImage, contentJson]);
+  }, [title, category, featuredImage, tags, slug, seo, publishDate, contentExcerpt, contentJson]);
 
-  // Async Autosave Handler
-  const handleAutosave = useCallback(
-    async (dataToSave) => {
-      if (!dataToSave.title) return;
+  // Handle autosave callback from custom hook
+  const handleAutosave = useCallback(async (blogData) => {
+    if (createdDocIdRef.current) {
+      await updateBlogService(createdDocIdRef.current, blogData);
+      return createdDocIdRef.current;
+    } else {
+      const result = await publishBlog(blogData);
+      createdDocIdRef.current = result.id;
+      return result.id;
+    }
+  }, []);
 
-      const payload = {
-        title: dataToSave.title,
-        category: dataToSave.category,
-        tags: dataToSave.tags,
-        slug: dataToSave.slug,
-        seo: dataToSave.seo,
-        publishDate: dataToSave.publishDate || new Date().toISOString().split("T")[0],
-        status: "Draft",
-        featuredImage: dataToSave.featuredImage,
-        excerpt: contentExcerpt.trim().substring(0, 180),
-        content: dataToSave.contentJson,
-      };
-
-      if (createdDocIdRef.current) {
-        await updateBlogService(createdDocIdRef.current, payload);
-      } else {
-        const result = await publishBlog(payload);
-        createdDocIdRef.current = result.id;
-      }
-    },
-    [contentExcerpt]
-  );
-
-  // 20-Second Autosave Hook
+  // Use Autosave Hook (30 sec interval)
   const {
-    status: autosaveStatus,
+    autosaveStatus,
     lastSavedTime,
-    errorMessage: autosaveError,
+    autosaveError,
     hasUnsavedChanges,
     retrySave,
-  } = useAutosave({
-    data: currentBlogData,
-    onSave: handleAutosave,
-    interval: 20000,
-    enabled: !!title.trim(),
+  } = useAutosave(getAutosaveData, handleAutosave, {
+    enabled: true,
+    interval: 30000,
   });
 
+  // Handle Editor Changes
+  const handleEditorChange = useCallback(({ json, text }) => {
+    setContentJson(json);
+    setContentExcerpt(text || "");
+  }, []);
+
+  // Upload Featured Image from device
   const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files[0];
     if (!file) return;
 
     try {
       setUploadingImage(true);
-      const imageUrl = await uploadImage(file);
-      setFeaturedImage(imageUrl);
-      toast.success("Featured image uploaded successfully!");
+      const url = await uploadImage(file);
+      setFeaturedImage(url);
+      toast.success("Image uploaded successfully!");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to upload image. Please try again.");
+      toast.error(err.message || "Failed to upload image.");
     } finally {
       setUploadingImage(false);
-      e.target.value = "";
     }
   };
 
@@ -125,22 +118,20 @@ function AddBlog() {
     toast.info("Featured image removed.");
   };
 
-  const handleEditorChange = (json, html, text) => {
-    setContentJson(json);
-    setContentExcerpt(text || "");
+  const handleSelectMediaImage = (mediaItem) => {
+    if (mediaItem && mediaItem.url) {
+      setFeaturedImage(mediaItem.url);
+      setShowMediaModal(false);
+      toast.success("Featured image selected from Media Library!");
+    }
   };
 
-  // --- Save as Draft ---
+  // --- Save Draft (Manual) ---
   const handleSaveDraft = async () => {
-    if (!title.trim() && !contentJson) {
-      toast.warning("Please enter a blog title or write some content before saving draft.");
-      return;
-    }
-
     try {
       setSavingDraft(true);
       const blogData = {
-        title: title.trim() || "Untitled Draft",
+        title: title.trim(),
         category,
         featuredImage,
         tags: tags
@@ -253,7 +244,7 @@ function AddBlog() {
                   type="button"
                   className="publish-btn"
                   onClick={handlePublish}
-                  disabled={savingDraft || publishing}
+                  disabled={publishing || savingDraft}
                 >
                   {publishing ? "Publishing..." : "🚀 Publish Post"}
                 </button>
@@ -285,31 +276,28 @@ function AddBlog() {
                   <h3>Featured Image</h3>
 
                   {uploadingImage ? (
-                    <p>Uploading image...</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#2563eb", fontSize: "14px", fontWeight: 600, padding: "10px 0" }}>
+                      <FaSpinner className="spin" /> Uploading image...
+                    </div>
                   ) : featuredImage ? (
                     <div className="featured-image-preview">
                       <img
                         src={featuredImage}
                         alt="Featured post visual"
-                        style={{
-                          width: "100%",
-                          borderRadius: "8px",
-                          marginBottom: "10px",
-                        }}
                       />
 
                       <button
                         type="button"
-                        className="draft-btn"
+                        className="remove-image-btn"
                         onClick={removeImage}
                       >
-                        ❌ Remove Image
+                        <FaTrash /> Remove Image
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <label className="upload-btn" style={{ cursor: "pointer", textAlign: "center" }}>
-                        📤 Upload Image
+                    <div className="featured-image-box">
+                      <label className="upload-btn-primary" style={{ cursor: "pointer" }}>
+                        <FaCloudUploadAlt style={{ fontSize: "18px" }} /> Upload Image
                         <input
                           type="file"
                           accept="image/*"
@@ -319,11 +307,10 @@ function AddBlog() {
                       </label>
                       <button
                         type="button"
-                        className="draft-btn"
-                        style={{ background: "#eff6ff", color: "#2563eb", borderColor: "#bfdbfe" }}
+                        className="media-library-btn"
                         onClick={() => setShowMediaModal(true)}
                       >
-                        📁 Media Library
+                        <FaImages /> Choose from Library
                       </button>
                     </div>
                   )}
@@ -385,17 +372,17 @@ function AddBlog() {
                     type="date"
                     value={publishDate}
                     onChange={(e) => setPublishDate(e.target.value)}
-                    aria-label="Publish date"
+                    aria-label="Publish Date"
                   />
                 </div>
 
                 <div className="card">
-                  <h3>Initial Status</h3>
+                  <h3>Status</h3>
 
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    aria-label="Blog post status"
+                    aria-label="Post Status"
                   >
                     <option value="Draft">Draft</option>
                     <option value="Published">Published</option>
@@ -408,13 +395,17 @@ function AddBlog() {
         </div>
       </div>
 
-      {/* Media Library Modal for Featured Image Selection */}
+      {/* Media Library Picker Modal */}
       {showMediaModal && (
-        <MediaLibrary
-          isModalMode={true}
-          onSelectImage={(item) => setFeaturedImage(item.url)}
-          onCloseModal={() => setShowMediaModal(false)}
-        />
+        <div className="media-modal-backdrop" onClick={() => setShowMediaModal(false)}>
+          <div className="media-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <MediaLibrary
+              isModalMode={true}
+              onSelectImage={handleSelectMediaImage}
+              onCloseModal={() => setShowMediaModal(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -2,11 +2,11 @@
    ABHYUDAYA BLOG EDITOR
    Add / Edit Blog Page Layout Styles
    src/Admin/pages/addBlog.css
-===================================================== */
+ ===================================================== */
 
 /* =========================
    PAGE LAYOUT
-======================== */
+ ======================== */
 
 .create-post {
   width: 100%;
@@ -15,7 +15,7 @@
 
 /* =========================
    HEADER
-======================== */
+ ======================== */
 
 .create-header {
   display: flex;
@@ -40,7 +40,7 @@
 
 /* =========================
    HEADER BUTTONS
-======================== */
+ ======================== */
 
 .header-buttons {
   display: flex;
@@ -92,7 +92,7 @@
 
 /* =========================
    EDITOR GRID LAYOUT
-======================== */
+ ======================== */
 
 .editor-layout {
   display: grid;
@@ -103,7 +103,7 @@
 
 /* =========================
    MAIN EDITOR SECTION
-======================== */
+ ======================== */
 
 .editor-section {
   background: #ffffff;
@@ -118,7 +118,7 @@
 
 /* =========================
    TITLE INPUT
-======================== */
+ ======================== */
 
 .title-input {
   width: 100%;
@@ -145,7 +145,7 @@
 
 /* =========================
    RIGHT SIDEBAR CARDS
-======================== */
+ ======================== */
 
 .blog-sidebar {
   display: flex;
@@ -216,7 +216,14 @@
   color: #64748b;
 }
 
-.upload-btn {
+/* Featured Image Upload Box */
+.featured-image-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upload-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -228,11 +235,61 @@
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  text-align: center;
 }
 
-.upload-btn:hover {
+.upload-btn-primary:hover {
   background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.media-library-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.media-library-btn:hover {
+  background: #dbeafe;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.remove-image-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 14px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 8px;
+}
+
+.remove-image-btn:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
 }
 
 .featured-image-preview img,
@@ -241,7 +298,8 @@
   border-radius: 10px;
   object-fit: cover;
   max-height: 200px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
 }
 
 .status-pill {
@@ -272,7 +330,7 @@
 
 /* =========================
    ANIMATION & RESPONSIVE
-======================== */
+ ======================== */
 
 @keyframes fadeUp {
   from {

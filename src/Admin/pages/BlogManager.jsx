@@ -127,9 +127,9 @@ function BlogManager() {
         <Topbar />
 
         <div className="dashboard-content">
-          <div className="blog-manager">
+          <div className="admin-blog-manager">
             {/* Header */}
-            <div className="blog-header">
+            <div className="admin-blog-header">
               <div>
                 <h1>Blog Manager</h1>
                 <p>
@@ -157,7 +157,7 @@ function BlogManager() {
             </div>
 
             {/* Filter & Search Bar */}
-            <div className="blog-filter-bar">
+            <div className="admin-blog-filter-bar">
               <div className="status-tabs" role="tablist" aria-label="Blog status filter">
                 {["All", "Published", "Draft", "Archived"].map((st) => (
                   <button
@@ -200,11 +200,11 @@ function BlogManager() {
                 </p>
               </div>
             ) : (
-              <div className="blog-table-container">
-                <table className="blog-table" aria-label="Blog posts list">
+              <div className="admin-blog-table-container">
+                <table className="admin-blog-table" aria-label="Blog posts list">
                   <thead>
                     <tr>
-                      <th scope="col">Title & Slug</th>
+                      <th scope="col">Title &amp; Slug</th>
                       <th scope="col">Category</th>
                       <th scope="col">Status</th>
                       <th scope="col">Author</th>
@@ -217,13 +217,13 @@ function BlogManager() {
                     {filteredBlogs.map((blog) => (
                       <tr key={blog.id}>
                         <td>
-                          <div className="blog-title">
-                            <strong style={{ fontSize: "14.5px", color: "#0f172a" }}>
+                          <div className="admin-blog-title-cell">
+                            <strong className="admin-blog-title-text">
                               {blog.title}
                             </strong>
-                            <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                            <span className="admin-blog-slug-text">
                               /{blog.slug || blog.id}
-                            </div>
+                            </span>
                           </div>
                         </td>
 
