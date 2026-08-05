@@ -1,95 +1,110 @@
-.blog-search-wrapper{
-    position:relative;
+/* ============================================================
+   SEARCH BAR — Blog Page
+   Fixes: left-alignment bug, sizing, padding, shadow, focus ring
+   Design: Vercel/Stripe inspired — clean, pill-shaped, centered
+   ============================================================ */
 
-    max-width:820px;
+/* Outer centering wrapper */
+.blog-search-wrapper {
+  /* Force true horizontal centering */
+  display: flex;
+  align-items: center;
+  gap: 0;
 
-    margin:40px auto;
+  /* Constrained width: 480px on desktop, 90vw on mobile */
+  width: min(480px, 90%);
+  margin: 0 auto 36px;
 
-    display:flex;
+  /* Card-like appearance */
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid rgba(20, 23, 43, 0.10);
+  box-shadow:
+    0 4px 16px rgba(20, 23, 43, 0.07),
+    0 1px 4px rgba(20, 23, 43, 0.04);
 
-    align-items:center;
+  /* Smooth transitions for hover + focus effects */
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
 
-    background:#fff;
-
-    border-radius:70px;
-
-    padding:8px;
-
-    box-shadow:
-    0 15px 45px rgba(16,33,59,.12);
-
-    transition:.35s;
+  /* Prevent overflow from border-radius rounding */
+  overflow: hidden;
 }
 
-.blog-search-wrapper:hover{
-
-transform:translateY(-3px);
-
-box-shadow:
-0 20px 55px rgba(16,33,59,.18);
-
+/* Hover lift */
+.blog-search-wrapper:hover {
+  border-color: rgba(20, 23, 43, 0.2);
+  box-shadow:
+    0 8px 28px rgba(20, 23, 43, 0.10),
+    0 2px 6px rgba(20, 23, 43, 0.05);
+  transform: translateY(-2px);
 }
 
-.blog-search-wrapper:focus-within{
-
-box-shadow:
-0 0 0 5px rgba(255,193,7,.18),
-0 20px 55px rgba(16,33,59,.18);
-
+/* Focus ring — saffron glow consistent with site accent */
+.blog-search-wrapper:focus-within {
+  border-color: #eeb84a;
+  box-shadow:
+    0 0 0 3px rgba(238, 184, 74, 0.18),
+    0 8px 28px rgba(20, 23, 43, 0.10);
+  transform: translateY(-2px);
 }
 
-.search-icon{
-
-font-size:24px;
-
-margin-left:22px;
-
-color:#f4b400;
-
-flex-shrink:0;
-
+/* ---- Search Icon ---- */
+.search-icon {
+  /* Fixed-width slot so input doesn't jump on focus */
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-left: 18px;
+  color: #eeb84a;            /* site saffron accent */
+  pointer-events: none;
 }
 
-.blog-search-wrapper input{
+/* ---- Input Field ---- */
+.blog-search-wrapper input {
+  /* Take remaining width */
+  flex: 1;
+  min-width: 0;             /* fixes flex overflow on small screens */
 
-width:100%;
+  /* Remove browser defaults */
+  border: none;
+  outline: none;
+  background: transparent;
 
-padding:18px 24px;
+  /* Spacing */
+  padding: 16px 18px 16px 12px;
 
-border:none;
-
-outline:none;
-
-font-size:17px;
-
-background:transparent;
-
-color:#10213b;
-
-font-weight:500;
-
+  /* Typography — consistent with site body */
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1;
 }
 
-.blog-search-wrapper input::placeholder{
-
-color:#94a3b8;
-
+.blog-search-wrapper input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
 }
 
-@media(max-width:768px){
+/* ============================================================
+   RESPONSIVE — Mobile (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  .blog-search-wrapper {
+    /* 90% width from parent — already set via min() above */
+    width: 90%;
+    margin-bottom: 28px;
+    border-radius: 12px;
+  }
 
-.blog-search-wrapper{
+  .search-icon {
+    margin-left: 14px;
+    width: 18px;
+    height: 18px;
+  }
 
-margin:30px 20px;
-
-}
-
-.blog-search-wrapper input{
-
-font-size:15px;
-
-padding:16px;
-
-}
-
+  .blog-search-wrapper input {
+    padding: 14px 14px 14px 10px;
+    font-size: 14px;
+  }
 }

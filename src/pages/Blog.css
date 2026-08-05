@@ -1,85 +1,168 @@
-/* ==========================================
-   BLOG PAGE
-========================================== */
+/* ============================================================
+   BLOG PAGE — Main Layout
+   Fixes: missing blog-grid CSS, layout flow, consistent spacing
+   Layout: Hero → Search → Category Pills → Featured → Blog Grid
+   ============================================================ */
 
-.blog-page{
-    padding:70px 0 90px;
-    background:linear-gradient(180deg,#fffdf8 0%,#f8fafc 100%);
-    min-height:100vh;
+/* ---- Page wrapper ---- */
+.blog-page {
+  /* Consistent section padding: 80px desktop, scales down on mobile */
+  padding: 80px 0 100px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f8fafc 100%);
+  min-height: 100vh;
 }
 
-.blog-container{
-    width:min(1280px,92%);
-    margin:auto;
+/* ---- Inner width constraint (used on blog-grid etc.) ---- */
+.blog-container {
+  width: min(1280px, 92%);
+  margin: auto;
 }
 
-/* ==========================================
-   BLOG HEADER
-========================================== */
+/* ============================================================
+   BLOG HERO
+   ============================================================ */
 
-.blog-header{
-    max-width:850px;
-    margin:0 auto 60px;
-    text-align:center;
+.blog-header {
+  max-width: 860px;
+  margin: 0 auto 48px;    /* tighter — search bar follows immediately below */
+  text-align: center;
+  padding: 0 20px;
 }
 
-.blog-badge{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:8px 18px;
-    border-radius:999px;
-    background:#eff6ff;
-    color:#2563eb;
-    border:1px solid #bfdbfe;
-    font-size:14px;
-    font-weight:700;
-    margin-bottom:24px;
+/* Badge pill */
+.blog-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 22px;
 }
 
-.blog-header h1{
-    font-size:clamp(42px,6vw,64px);
-    font-weight:800;
-    line-height:1.1;
-    color:#111827;
-    margin:0 0 18px;
-    letter-spacing:-2px;
+/* Headline */
+.blog-header h1,
+.blog-title {
+  font-family: var(--font-display, "Fraunces", serif);
+  font-size: clamp(40px, 6vw, 64px);
+  font-weight: 800;
+  line-height: 1.08;
+  color: #111827;
+  margin: 0 0 18px;
+  letter-spacing: -0.03em;
 }
 
-.blog-header p{
-    max-width:720px;
-    margin:auto;
-    font-size:20px;
-    line-height:1.8;
-    color:#6b7280;
+/* Headline accent span */
+.blog-header h1 span,
+.blog-title span {
+  color: #1e3a8a;
 }
 
-.blog-header strong{
-    color:#1e3a8a;
+/* Sub-headline */
+.blog-header p,
+.blog-subtitle {
+  max-width: 680px;
+  margin: 0 auto;
+  font-size: 18px;
+  line-height: 1.8;
+  color: #6b7280;
 }
 
-/* ==========================================
-   SEARCH BAR
-========================================== */
-
+/* ============================================================
+   SEARCH BAR CENTERING SHIM
+   (Overrides any stray centering issues from SearchBar.css)
+   ============================================================ */
 .search-wrapper,
 .search-bar,
-.search-container{
-    max-width:760px;
-    margin:0 auto 35px;
+.search-container {
+  /* These class names appear in older CSS — ensure they're centered */
+  max-width: 480px;
+  margin: 0 auto 36px;
 }
 
-/* ==========================================
-   CATEGORY FILTER
-========================================== */
-
-.category-filter{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:14px;
-    margin-bottom:55px;
+/* ============================================================
+   CATEGORY FILTER (position fix)
+   Blog.css used .category-filter but component outputs .category-wrapper
+   Keep both pointing to same centering behavior
+   ============================================================ */
+.category-filter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 52px;
 }
 
-/* =========================================
+/* ============================================================
+   BLOG GRID — the missing piece that was causing layout failure
+   ============================================================ */
+.blog-grid {
+  /* Responsive 3-column → 2-column → 1-column grid */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+
+  /* Constrain width, center on page */
+  width: min(1280px, 92%);
+  margin: 0 auto;
+}
+
+/* ============================================================
+   LOADING + EMPTY STATES
+   ============================================================ */
+.blog-loading {
+  text-align: center;
+  padding: 80px 20px;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 16px;
+  color: #9ca3af;
+  letter-spacing: 0.02em;
+}
+
+.no-blogs {
+  text-align: center;
+  padding: 80px 20px;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 18px;
+  color: #6b7280;
+  grid-column: 1 / -1;    /* span all grid columns */
+}
+
+/* ============================================================
+   RESPONSIVE — Tablet (≤ 1024px)
+   ============================================================ */
+@media (max-width: 1024px) {
+  .blog-page {
+    padding: 60px 0 80px;
+  }
+
+  .blog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  .blog-page {
+    padding: 40px 0 60px;
+  }
+
+  .blog-header {
+    margin-bottom: 36px;
+  }
+
+  .blog-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    width: 90%;
+  }
+}
