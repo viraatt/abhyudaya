@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   collection,
@@ -20,6 +20,7 @@ import {
 import { db } from "../../Firebase/firebase";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../components/Toast";
 import { updateBlogStatusService } from "./services/blogService";
 
@@ -33,11 +34,7 @@ function BlogManager() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    fetchBlogs();
-  }, []);
-
-  const fetchBlogs = async () => {
+  const fetchBlogs = useCallback(async () => {
     setLoading(true);
     try {
       const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
@@ -55,7 +52,11 @@ function BlogManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchBlogs();
+  }, [fetchBlogs]);
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
@@ -102,19 +103,21 @@ function BlogManager() {
     });
   };
 
-  // Filtering Logic
-  const filteredBlogs = blogs.filter((blog) => {
-    const matchesStatus =
-      statusFilter === "All" ||
-      (blog.status || "Draft").toLowerCase() === statusFilter.toLowerCase();
-    const matchesSearch =
-      !searchQuery.trim() ||
-      (blog.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (blog.slug || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (blog.category || "").toLowerCase().includes(searchQuery.toLowerCase());
+  // Memoized Filtering Logic
+  const filteredBlogs = useMemo(() => {
+    return blogs.filter((blog) => {
+      const matchesStatus =
+        statusFilter === "All" ||
+        (blog.status || "Draft").toLowerCase() === statusFilter.toLowerCase();
+      const matchesSearch =
+        !searchQuery.trim() ||
+        (blog.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (blog.slug || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (blog.category || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesStatus && matchesSearch;
-  });
+      return matchesStatus && matchesSearch;
+    });
+  }, [blogs, statusFilter, searchQuery]);
 
   return (
     <div className="dashboard-layout">
@@ -140,6 +143,7 @@ function BlogManager() {
                   type="button"
                   className="refresh-btn"
                   onClick={fetchBlogs}
+                  aria-label="Refresh blog list"
                 >
                   <FaSync />
                   <span>Refresh</span>
@@ -154,11 +158,13 @@ function BlogManager() {
 
             {/* Filter & Search Bar */}
             <div className="blog-filter-bar">
-              <div className="status-tabs">
+              <div className="status-tabs" role="tablist" aria-label="Blog status filter">
                 {["All", "Published", "Draft", "Archived"].map((st) => (
                   <button
                     key={st}
                     type="button"
+                    role="tab"
+                    aria-selected={statusFilter === st}
                     className={`filter-tab-btn ${
                       statusFilter === st ? "active" : ""
                     }`}
@@ -170,22 +176,21 @@ function BlogManager() {
               </div>
 
               <div className="search-input-wrapper">
-                <FaSearch className="search-icon" />
+                <FaSearch className="search-icon" aria-hidden="true" />
                 <input
                   type="text"
                   className="search-input-field"
                   placeholder="Search by title, slug, category..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search blog posts"
                 />
               </div>
             </div>
 
-            {/* Table */}
+            {/* Table / Skeleton Loading State */}
             {loading ? (
-              <div className="empty-state-box">
-                <h2>Loading Blogs...</h2>
-              </div>
+              <SkeletonLoader type="table" rows={6} />
             ) : filteredBlogs.length === 0 ? (
               <div className="empty-state-box">
                 <h2>No Blogs Found</h2>
@@ -196,15 +201,15 @@ function BlogManager() {
               </div>
             ) : (
               <div className="blog-table-container">
-                <table className="blog-table">
+                <table className="blog-table" aria-label="Blog posts list">
                   <thead>
                     <tr>
-                      <th>Title & Slug</th>
-                      <th>Category</th>
-                      <th>Status</th>
-                      <th>Author</th>
-                      <th>Date</th>
-                      <th style={{ width: "260px" }}>Actions</th>
+                      <th scope="col">Title & Slug</th>
+                      <th scope="col">Category</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Author</th>
+                      <th scope="col">Date</th>
+                      <th scope="col" style={{ width: "260px" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -244,6 +249,7 @@ function BlogManager() {
                               to={`/admin/blogs/edit/${blog.id}`}
                               className="action-btn-pill btn-edit"
                               title="Edit post"
+                              aria-label={`Edit ${blog.title}`}
                             >
                               <FaEdit />
                               <span>Edit</span>
@@ -255,6 +261,7 @@ function BlogManager() {
                                 className="action-btn-pill btn-unpublish"
                                 onClick={() => handleStatusChange(blog.id, "Draft")}
                                 title="Unpublish post"
+                                aria-label={`Unpublish ${blog.title}`}
                               >
                                 <FaUndo />
                                 <span>Unpublish</span>
@@ -265,6 +272,7 @@ function BlogManager() {
                                 className="action-btn-pill btn-publish"
                                 onClick={() => handleStatusChange(blog.id, "Published")}
                                 title="Publish post"
+                                aria-label={`Publish ${blog.title}`}
                               >
                                 <FaPaperPlane />
                                 <span>Publish</span>
@@ -276,6 +284,7 @@ function BlogManager() {
                               className="action-btn-pill btn-delete"
                               onClick={() => handleDelete(blog.id)}
                               title="Delete post"
+                              aria-label={`Delete ${blog.title}`}
                             >
                               <FaTrash />
                               <span>Delete</span>

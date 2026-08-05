@@ -29,7 +29,7 @@ export default function Sidebar() {
       : adminMenu;
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" aria-label="Admin Navigation Sidebar">
       <div className="sidebar-logo">
         <h2>Abhyudaya</h2>
         <span>
@@ -39,19 +39,21 @@ export default function Sidebar() {
         </span>
       </div>
 
-      <nav className="sidebar-menu">
-        {menu.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`sidebar-link ${
-              location.pathname === item.path ? "active" : ""
-            }`}
-          >
-            <span>{item.icon}</span>
-            <span>{item.name}</span>
-          </Link>
-        ))}
+      <nav className="sidebar-menu" aria-label="Admin Menu">
+        {menu.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`sidebar-link ${isActive ? "active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <span aria-hidden="true">{item.icon}</span>
+              <span>{item.name}</span>
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );

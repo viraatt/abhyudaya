@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FaCloudUploadAlt, FaTimes, FaSpinner, FaFileImage } from "react-icons/fa";
 import { uploadMediaFile } from "../../pages/services/mediaService";
 import { useToast } from "../Toast";
@@ -13,6 +13,15 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Clean up object URL on unmount or when previewUrl changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   if (!isOpen) return null;
 
@@ -46,6 +55,10 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
       toast.error("Please select a valid image file.");
       return;
     }
+    // Revoke old URL if replacing file
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
@@ -75,20 +88,44 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
     }
   };
 
+  const handleClearSelection = () => {
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
   const handleClose = () => {
     if (isUploading) return;
-    setSelectedFile(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
+    handleClearSelection();
     onClose();
   };
 
+  const handleKeyDownDropZone = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
-    <div className="media-modal-backdrop" onClick={handleClose}>
+    <div
+      className="media-modal-backdrop"
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="upload-modal-title"
+    >
       <div className="upload-modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="media-modal-header">
-          <h3>📤 Upload Media to Cloudinary</h3>
-          <button type="button" className="media-close-btn" onClick={handleClose}>
+          <h3 id="upload-modal-title">📤 Upload Media to Cloudinary</h3>
+          <button
+            type="button"
+            className="media-close-btn"
+            onClick={handleClose}
+            aria-label="Close upload modal"
+          >
             <FaTimes />
           </button>
         </div>
@@ -111,6 +148,10 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
               onDragOver={handleDrag}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={handleKeyDownDropZone}
+              tabIndex={0}
+              role="button"
+              aria-label="Drag and drop image here or press Enter to browse files from device"
             >
               <FaCloudUploadAlt className="upload-drop-icon" />
               <h4>Drag and drop image here</h4>
@@ -134,7 +175,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
                 </div>
 
                 {isUploading ? (
-                  <div className="upload-progress-section">
+                  <div className="upload-progress-section" role="status" aria-live="polite">
                     <div className="progress-status-line">
                       <span>
                         <FaSpinner className="spin" /> Uploading to Cloudinary...
@@ -160,10 +201,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }) {
                     <button
                       type="button"
                       className="media-btn secondary"
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setPreviewUrl(null);
-                      }}
+                      onClick={handleClearSelection}
                     >
                       Choose Different Image
                     </button>

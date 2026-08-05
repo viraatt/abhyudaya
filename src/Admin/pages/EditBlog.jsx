@@ -9,6 +9,7 @@ import RichEditor from "../components/editor/RichEditor";
 import SlugInput from "../components/SlugInput";
 import AutosaveIndicator from "../components/AutosaveIndicator";
 import MediaLibrary from "../components/media/MediaLibrary";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { useToast } from "../components/Toast";
 import { useAutosave } from "../hooks/useAutosave";
 
@@ -96,11 +97,7 @@ function EditBlog() {
     enabled: !loading && !!title.trim(),
   });
 
-  useEffect(() => {
-    loadBlog();
-  }, [id]);
-
-  const loadBlog = async () => {
+  const loadBlog = useCallback(async () => {
     try {
       setLoading(true);
       const ref = doc(db, "blogs", id);
@@ -142,7 +139,11 @@ function EditBlog() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate, toast, setLastSavedData]);
+
+  useEffect(() => {
+    loadBlog();
+  }, [loadBlog]);
 
   const handleEditorChange = (json, html, text) => {
     setContentJson(json);
@@ -237,7 +238,7 @@ function EditBlog() {
         <div className="dashboard-main">
           <Topbar />
           <div className="dashboard-content">
-            <div className="empty">
+            <div className="empty" style={{ padding: "40px 0", textAlign: "center" }}>
               <h2>Loading Blog Data...</h2>
             </div>
           </div>
@@ -257,7 +258,7 @@ function EditBlog() {
           <div className="create-post">
             <div className="create-header">
               <div className="header-left">
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
                   <h1>Edit Blog</h1>
                   <AutosaveIndicator
                     status={autosaveStatus}
@@ -349,16 +350,19 @@ function EditBlog() {
                   placeholder="Enter Blog Title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  aria-label="Blog title"
                 />
 
-                <RichEditor
-                  value={contentJson}
-                  onChange={handleEditorChange}
-                  placeholder="Write your story here..."
-                />
+                <ErrorBoundary>
+                  <RichEditor
+                    value={contentJson}
+                    onChange={handleEditorChange}
+                    placeholder="Write your story here..."
+                  />
+                </ErrorBoundary>
               </section>
 
-              <aside className="blog-sidebar">
+              <aside className="blog-sidebar" aria-label="Blog post settings">
                 <div className="card">
                   <h3>Featured Image</h3>
 
@@ -366,7 +370,7 @@ function EditBlog() {
                     <div className="image-preview">
                       <img
                         src={featuredImage}
-                        alt="Featured"
+                        alt="Featured post visual"
                         style={{
                           width: "100%",
                           borderRadius: "8px",
@@ -391,6 +395,7 @@ function EditBlog() {
                       accept="image/*"
                       onChange={handleImageUpload}
                       disabled={uploadingImage}
+                      aria-label="Upload featured image file"
                     />
 
                     <button
@@ -412,6 +417,7 @@ function EditBlog() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
+                    aria-label="Category"
                   >
                     <option>Club News</option>
                     <option>Workshop</option>
@@ -429,6 +435,7 @@ function EditBlog() {
                     placeholder="React, Firebase, AI"
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
+                    aria-label="Tags separated by comma"
                   />
                 </div>
 
@@ -449,6 +456,7 @@ function EditBlog() {
                     placeholder="Write SEO description..."
                     value={seo}
                     onChange={(e) => setSeo(e.target.value)}
+                    aria-label="SEO meta description"
                   />
                 </div>
 
@@ -459,6 +467,7 @@ function EditBlog() {
                     type="date"
                     value={publishDate}
                     onChange={(e) => setPublishDate(e.target.value)}
+                    aria-label="Publish date"
                   />
                 </div>
 
@@ -468,6 +477,7 @@ function EditBlog() {
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
+                    aria-label="Blog post status"
                   >
                     <option value="Draft">Draft</option>
                     <option value="Published">Published</option>

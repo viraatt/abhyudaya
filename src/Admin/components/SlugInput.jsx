@@ -6,7 +6,6 @@ import {
   FaSync,
   FaCopy,
   FaCheck,
-  FaExternalLinkAlt,
 } from "react-icons/fa";
 import {
   generateSlug,
@@ -130,8 +129,9 @@ export default function SlugInput({
               ? "Auto-sync with title active. Click to regenerate."
               : "Click to resync slug with title"
           }
+          aria-label={isAutoSync ? "Auto-synced with title" : "Sync slug with title"}
         >
-          <FaSync className={isAutoSync ? "icon-spin-hover" : ""} />
+          <FaSync className={isAutoSync ? "icon-spin-hover" : ""} aria-hidden="true" />
           {isAutoSync ? "Auto-Synced" : "Sync with Title"}
         </button>
       </div>
@@ -154,24 +154,26 @@ export default function SlugInput({
           value={slug}
           onChange={handleInputChange}
           autoComplete="off"
+          aria-invalid={!!validationError || availability === "taken"}
+          aria-describedby="slug-feedback-msg"
         />
 
         {/* Status Indicator Icon */}
         <div className="slug-status-badge">
           {checking ? (
-            <FaSpinner className="slug-spinner" title="Checking availability..." />
+            <FaSpinner className="slug-spinner" title="Checking availability..." aria-label="Checking availability" />
           ) : validationError ? (
-            <FaExclamationCircle className="status-icon invalid" title={validationError} />
+            <FaExclamationCircle className="status-icon invalid" title={validationError} aria-label={validationError} />
           ) : availability === "taken" ? (
-            <FaExclamationCircle className="status-icon taken" title="Slug already taken!" />
+            <FaExclamationCircle className="status-icon taken" title="Slug already taken!" aria-label="Slug already taken" />
           ) : availability === "available" ? (
-            <FaCheckCircle className="status-icon available" title="Slug is available!" />
+            <FaCheckCircle className="status-icon available" title="Slug is available!" aria-label="Slug is available" />
           ) : null}
         </div>
       </div>
 
       {/* Status & Feedback Messages */}
-      <div className="slug-feedback">
+      <div className="slug-feedback" id="slug-feedback-msg" role="status" aria-live="polite">
         {checking && <span className="msg checking">Checking availability in database...</span>}
         {!checking && validationError && (
           <span className="msg error">⚠️ {validationError}</span>
@@ -201,8 +203,9 @@ export default function SlugInput({
           onClick={handleCopyLink}
           disabled={!slug || !!validationError}
           title="Copy full URL to clipboard"
+          aria-label="Copy full URL to clipboard"
         >
-          {copied ? <FaCheck style={{ color: "#16a34a" }} /> : <FaCopy />}
+          {copied ? <FaCheck style={{ color: "#16a34a" }} aria-hidden="true" /> : <FaCopy aria-hidden="true" />}
           <span>{copied ? "Copied!" : "Copy"}</span>
         </button>
       </div>

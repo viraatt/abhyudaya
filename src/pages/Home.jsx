@@ -38,10 +38,7 @@ export default function Home() {
         <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
       </Helmet>
       <section className="hero">
-        {/* Background video. Drop your file at public/videos/hero-bg.mp4
-            (and optionally a .webm copy) — see README for details.
-            Until a file exists there, this silently falls back to the
-            navy gradient below with zero layout shift or console noise. */}
+        {/* Background video. Drop your file at public/videos/hero-bg.mp4 */}
         <div className="hero__media" aria-hidden="true">
           <video
             ref={videoRef}
@@ -54,7 +51,6 @@ export default function Home() {
             onCanPlay={() => setVideoReady(true)}
             onError={() => setVideoReady(false)}
           >
-            <source src="/videos/hero-bg.webm" type="video/webm" />
             <source src="/videos/hero-bg.mp4" type="video/mp4" />
           </video>
           <div className="hero__media-overlay" />
@@ -147,13 +143,19 @@ export default function Home() {
 
       <section className="section cta">
         <div className="wrap cta__inner">
-          <h2>
-            Got an idea worth <span>building</span>?
-          </h2>
-          <p>Come to a meeting, pitch it, and we'll help you find the runway.</p>
-          <Link to="/contact" className="btn btn--solid">
-            Get in touch
-          </Link>
+          <h2>Ready to build something?</h2>
+          <p>
+            Whether you want to organize an event, host a workshop, or join
+            our core team — there's a place for you in Abhyudaya.
+          </p>
+          <div className="cta__actions">
+            <Link to="/contact" className="btn btn--solid">
+              Get in touch
+            </Link>
+            <Link to="/team" className="btn btn--ghost btn--ghost-light">
+              Meet the team
+            </Link>
+          </div>
         </div>
       </section>
     </>
