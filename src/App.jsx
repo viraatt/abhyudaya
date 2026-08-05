@@ -31,7 +31,9 @@ const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 // ─────────────────────────────────────────────────────────────
 const Login = lazy(() => import("./Admin/pages/login.jsx"));
 const Dashboard = lazy(() => import("./Admin/pages/dashboard.jsx"));
-const AdminEvents = lazy(() => import("./Admin/pages/Events.jsx"));
+const EventManager = lazy(() => import("./Admin/pages/EventManager.jsx"));
+const AddEvent = lazy(() => import("./Admin/pages/AddEvent.jsx"));
+const EditEvent = lazy(() => import("./Admin/pages/EditEvent.jsx"));
 const Users = lazy(() => import("./Admin/pages/Users.jsx"));
 const BlogManager = lazy(() => import("./Admin/pages/BlogManager.jsx"));
 const AddBlog = lazy(() => import("./Admin/pages/AddBlog.jsx"));
@@ -88,7 +90,25 @@ export default function App() {
             path="/admin/events"
             element={
               <ProtectedRoute allowedRoles={["superadmin"]}>
-                <AdminEvents />
+                <EventManager />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/events/add"
+            element={
+              <ProtectedRoute allowedRoles={["superadmin"]}>
+                <AddEvent />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/events/edit/:id"
+            element={
+              <ProtectedRoute allowedRoles={["superadmin"]}>
+                <EditEvent />
               </ProtectedRoute>
             }
           />
