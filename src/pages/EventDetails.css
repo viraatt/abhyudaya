@@ -136,15 +136,396 @@
 
 }
 
-.event-section h2{
-
-    font-size:2.5rem;
-
-    color:#0f172a;
-
-    margin-bottom:20px;
-
+.event-section h2 {
+  font-size: 2.5rem;
+  color: #0f172a;
+  margin-bottom: 20px;
 }
+
+/* Alternate background for alternating sections */
+.event-section.alt-bg {
+  background: #ffffff;
+}
+
+/* ======================================================
+   OBJECTIVES
+====================================================== */
+.event-objectives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.event-objective-card {
+  background: white;
+  border-radius: 18px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.event-objective-icon {
+  font-size: 24px;
+  background: #eff6ff;
+  color: #2563eb;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.event-objective-card p {
+  margin: 0;
+  color: #334155;
+  font-weight: 600;
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+/* ======================================================
+   SCHEDULE / TIMELINE
+====================================================== */
+.event-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+  max-width: 850px;
+}
+
+.event-schedule-item {
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+}
+
+.event-schedule-time {
+  background: #2563eb;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.event-schedule-info h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.event-schedule-info p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* ======================================================
+   SPEAKERS
+====================================================== */
+.event-speakers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.event-speaker-card {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.event-speaker-img {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 16px;
+  border: 3px solid #2563eb;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+}
+
+.event-speaker-img-placeholder {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  margin: 0 auto 16px;
+  border: 3px dashed #cbd5e1;
+}
+
+.event-speaker-card h4 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.event-speaker-designation {
+  font-size: 0.92rem;
+  color: #2563eb;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.event-speaker-company {
+  font-size: 0.82rem;
+  color: #64748b;
+  display: inline-block;
+  background: #f1f5f9;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.event-speaker-bio {
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 10px 0 16px 0;
+  text-align: center;
+}
+
+.event-speaker-linkedin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #0077b5;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 119, 181, 0.25);
+}
+
+.event-speaker-linkedin-btn:hover {
+  background: #005885;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 119, 181, 0.35);
+}
+
+/* ======================================================
+   GALLERY GRID
+====================================================== */
+.event-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.event-gallery-item {
+  border-radius: 16px;
+  overflow: hidden;
+  height: 220px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.event-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+  display: block;
+}
+
+.event-gallery-item:hover img {
+  transform: scale(1.06);
+}
+
+/* ======================================================
+   REGISTRATION & DOWNLOADS
+====================================================== */
+.event-registration-card {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-radius: 24px;
+  padding: 40px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.event-registration-info h3 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0 0 10px 0;
+}
+
+.event-registration-info p {
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+}
+
+.event-reg-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.event-reg-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.event-reg-btn {
+  background: #2563eb;
+  color: white;
+  padding: 14px 32px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  white-space: nowrap;
+}
+
+.event-reg-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+}
+
+.event-downloads-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.event-download-item {
+  background: white;
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.event-download-item:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.1);
+}
+
+/* ======================================================
+   FAQS ACCORDION
+====================================================== */
+.event-faqs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 24px;
+  max-width: 850px;
+}
+
+.event-faq-item {
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.event-faq-item h4 {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.event-faq-item p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.7;
+}
+
+/* ======================================================
+   CTA BANNER
+====================================================== */
+.event-cta-banner {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  padding: 80px 20px;
+  text-align: center;
+  color: white;
+}
+
+.event-cta-banner h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.event-cta-banner p {
+  max-width: 600px;
+  margin: 0 auto 30px;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.event-cta-btn {
+  background: white;
+  color: #2563eb;
+  padding: 16px 36px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.event-cta-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  background: #f8fafc;
+}
+
 
 .event-section p{
 

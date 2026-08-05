@@ -41,7 +41,10 @@ export default function Sidebar() {
 
       <nav className="sidebar-menu" aria-label="Admin Menu">
         {menu.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive =
+          location.pathname === item.path ||
+          (item.path !== "/admin/dashboard" &&
+            location.pathname.startsWith(item.path + "/"));
           return (
             <Link
               key={item.path}
