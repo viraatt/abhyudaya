@@ -138,18 +138,11 @@ export function useAutosave({
     }
   }, [isOnline, status, checkIfChanged, performSave]);
 
-  // Periodic Timer (Save every 20 seconds)
+  // Periodic Timer disabled for Spark plan write minimization
   useEffect(() => {
-    if (!enabled) return;
-
-    const timer = setInterval(() => {
-      if (checkIfChanged()) {
-        performSave();
-      }
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, [enabled, interval, checkIfChanged, performSave]);
+    // Background interval auto-saving disabled to preserve Firebase Spark write quota
+    return () => {};
+  }, []);
 
   const hasUnsavedChanges = checkIfChanged();
 

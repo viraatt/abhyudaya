@@ -18,7 +18,6 @@ import {
   getDoc,
   getDocs,
   addDoc,
-  onSnapshot,
   query,
   orderBy,
   where,
@@ -333,27 +332,24 @@ export default function BlogDetails() {
   // LOAD COMMENTS (uses blogDocId)
   // ==========================
 
-  useEffect(() => {
+  const fetchComments = async () => {
     if (!blogDocId) return;
+    try {
+      const commentsRef = collection(db, "blogs", blogDocId, "comments");
+      const q = query(commentsRef, orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setComments(data);
+    } catch (err) {
+      console.warn("Error loading comments:", err);
+    }
+  };
 
-    const commentsRef = collection(db, "blogs", blogDocId, "comments");
-    const q = query(commentsRef, orderBy("createdAt", "desc"));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
-        setComments(data);
-      },
-      () => {
-        // Snapshot error — fail silently
-      }
-    );
-
-    return () => unsubscribe();
+  useEffect(() => {
+    fetchComments();
   }, [blogDocId]);
 
   // ==========================

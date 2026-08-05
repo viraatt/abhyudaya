@@ -1,3 +1,4 @@
+import { memo } from "react";
 import "./BlogCard.css";
 import { Link } from "react-router-dom";
 
@@ -8,7 +9,7 @@ import {
   FiUser,
 } from "react-icons/fi";
 
-export default function BlogCard({ blog }) {
+function BlogCard({ blog }) {
   return (
     <article className="blog-card">
       <div className="blog-card-image">
@@ -19,6 +20,7 @@ export default function BlogCard({ blog }) {
           }
           alt={blog.title}
           loading="lazy"
+          decoding="async"
         />
 
         <span className="blog-category">
@@ -52,10 +54,10 @@ export default function BlogCard({ blog }) {
           </span>
         </div>
 
-       <Link
-  to={`/blog/${blog.slug}`}
-  className="blog-read-btn"
->
+        <Link
+          to={`/blog/${blog.slug}`}
+          className="blog-read-btn"
+        >
           Read Article
           <FiArrowRight />
         </Link>
@@ -63,3 +65,5 @@ export default function BlogCard({ blog }) {
     </article>
   );
 }
+
+export default memo(BlogCard);

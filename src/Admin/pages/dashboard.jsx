@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { collection, getCountFromServer } from "firebase/firestore";
+import { db } from "../../Firebase/firebase";
 import { useAuth } from "../../context/AuthContext";
 
 import Sidebar from "./components/Sidebar";
@@ -8,8 +11,36 @@ import "./style/admin.css";
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
+  const [stats, setStats] = useState({
+    blogs: 0,
+    events: 0,
+    team: 0,
+    loading: true,
+  });
 
-  console.log("Current User:", currentUser);
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const [blogsSnap, eventsSnap, teamSnap] = await Promise.all([
+          getCountFromServer(collection(db, "blogs")),
+          getCountFromServer(collection(db, "events")),
+          getCountFromServer(collection(db, "team")),
+        ]);
+
+        setStats({
+          blogs: blogsSnap.data().count,
+          events: eventsSnap.data().count,
+          team: teamSnap.data().count,
+          loading: false,
+        });
+      } catch (err) {
+        console.error("Error loading count stats:", err);
+        setStats((prev) => ({ ...prev, loading: false }));
+      }
+    }
+
+    loadStats();
+  }, []);
 
   return (
     <div className="dashboard-layout">
@@ -19,8 +50,6 @@ export default function Dashboard() {
         <Topbar />
 
         <div className="dashboard-content">
-
-          {/* Temporary Role Test */}
           <div
             style={{
               background: "#fff",
@@ -29,53 +58,31 @@ export default function Dashboard() {
               marginBottom: "20px",
             }}
           >
-            <h2>Authentication Test</h2>
-
-            <p>
-              <strong>Name:</strong> {currentUser?.name}
-            </p>
-
-            <p>
-              <strong>Email:</strong> {currentUser?.email}
-            </p>
-
-            <p>
-              <strong>Role:</strong> {currentUser?.role}
-            </p>
-
-            <p>
-              <strong>UID:</strong> {currentUser?.uid}
+            <h2>Welcome Back, {currentUser?.name || "Admin"}</h2>
+            <p style={{ color: "#64748b", marginTop: "4px" }}>
+              <strong>Email:</strong> {currentUser?.email} | <strong>Role:</strong> {currentUser?.role}
             </p>
           </div>
 
           <div className="stats-grid">
+            <StatCard
+              title="Total Blogs"
+              value={stats.loading ? "..." : String(stats.blogs)}
+              icon="✍️"
+            />
 
             <StatCard
-              title="Events"
-              value="12"
+              title="Total Events"
+              value={stats.loading ? "..." : String(stats.events)}
               icon="📅"
             />
 
             <StatCard
               title="Team Members"
-              value="18"
+              value={stats.loading ? "..." : String(stats.team)}
               icon="👥"
             />
-
-            <StatCard
-              title="Gallery"
-              value="143"
-              icon="🖼️"
-            />
-
-            <StatCard
-              title="Messages"
-              value="27"
-              icon="📩"
-            />
-
           </div>
-
         </div>
       </div>
     </div>

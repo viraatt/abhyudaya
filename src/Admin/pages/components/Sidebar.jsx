@@ -14,6 +14,7 @@ export default function Sidebar() {
     { name: "Team", path: "/admin/team", icon: "👥" },
     { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
     { name: "Contact", path: "/admin/contact", icon: "📩" },
+    { name: "Reviews", path: "/admin/reviews", icon: "⭐" },
     { name: "Users", path: "/admin/users", icon: "👤" },
   ];
 

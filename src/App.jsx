@@ -41,6 +41,7 @@ const EditBlog = lazy(() => import("./Admin/pages/EditBlog.jsx"));
 const AdminTeam = lazy(() => import("./Admin/pages/Team.jsx"));
 const AdminGallery = lazy(() => import("./Admin/pages/Gallery.jsx"));
 const AdminContact = lazy(() => import("./Admin/pages/Contact.jsx"));
+const AdminReviews = lazy(() => import("./Admin/pages/Reviews.jsx"));
 const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrary.jsx"));
 
 NProgress.configure({
@@ -181,6 +182,15 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["superadmin"]}>
                 <AdminContact />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/reviews"
+            element={
+              <ProtectedRoute allowedRoles={["superadmin"]}>
+                <AdminReviews />
               </ProtectedRoute>
             }
           />

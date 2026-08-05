@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import PageHero from "../components/PageHero.jsx";
 import EventCard from "../components/EventCard.jsx";
-import { getEvents } from "../Firebase/eventService.js";
+import { getEventsPage } from "../Firebase/eventService.js";
 import "./Events.css";
 
 function EventCardSkeleton({ reverse }) {
@@ -38,7 +38,10 @@ function EventCardSkeleton({ reverse }) {
 
 export default function Events() {
   const [events, setEvents] = useState([]);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -46,9 +49,10 @@ export default function Events() {
       try {
         setLoading(true);
         setError(null);
-        // Query Firestore for Published events only (allowFallback: false)
-        const data = await getEvents({ onlyPublished: true, allowFallback: false });
-        setEvents(data);
+        const res = await getEventsPage({ pageSize: 6, onlyPublished: true });
+        setEvents(res.events);
+        setLastDoc(res.lastDoc);
+        setHasMore(res.hasMore);
       } catch (err) {
         console.error("Error loading events from Firestore:", err);
         setError("Unable to load events at this moment. Please try again.");
@@ -59,6 +63,25 @@ export default function Events() {
 
     loadEventsData();
   }, []);
+
+  const handleLoadMore = async () => {
+    if (!hasMore || loadingMore || !lastDoc) return;
+    try {
+      setLoadingMore(true);
+      const res = await getEventsPage({
+        pageSize: 6,
+        lastDoc,
+        onlyPublished: true,
+      });
+      setEvents((prev) => [...prev, ...res.events]);
+      setLastDoc(res.lastDoc);
+      setHasMore(res.hasMore);
+    } catch (err) {
+      console.error("Error loading more events:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
     <>
@@ -109,13 +132,29 @@ export default function Events() {
               <p>Check back soon! New fests, workshops, and competitions will be announced here shortly.</p>
             </div>
           ) : (
-            events.map((event, index) => (
-              <EventCard
-                key={event.id || event.slug || index}
-                event={event}
-                reverse={index % 2 === 1}
-              />
-            ))
+            <>
+              {events.map((event, index) => (
+                <EventCard
+                  key={event.id || event.slug || index}
+                  event={event}
+                  reverse={index % 2 === 1}
+                />
+              ))}
+
+              {hasMore && (
+                <div style={{ display: "flex", justifyContent: "center", marginTop: "32px" }}>
+                  <button
+                    type="button"
+                    className="event-button"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    style={{ border: "none", cursor: "pointer" }}
+                  >
+                    {loadingMore ? "Loading..." : "Load More Events"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
