@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   collection,
-  onSnapshot,
+  getDocs,
   doc,
   updateDoc,
   setDoc,
@@ -27,23 +27,24 @@ export default function Users() {
     role: "admin",
   });
 
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const snapshot = await getDocs(collection(db, "users"));
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setUsers(data);
+    } catch (error) {
+      console.error("Error loading users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "users"),
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setUsers(data);
-      },
-      (error) => {
-        console.error("Error loading users:", error);
-      }
-    );
-
-    return () => unsubscribe();
+    fetchUsers();
   }, []);
 
   async function changeRole(userId, currentRole) {
@@ -58,6 +59,7 @@ export default function Users() {
       });
 
       alert("User role updated successfully!");
+      fetchUsers();
     } catch (error) {
       console.error(error);
       alert("Failed to update role.");
@@ -69,6 +71,7 @@ export default function Users() {
     try {
       await deleteDoc(doc(db, "users", userId));
       alert("User removed from database.");
+      fetchUsers();
     } catch (error) {
       console.error(error);
       alert("Failed to delete user.");

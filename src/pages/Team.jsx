@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { team as staticTeam } from '../data/club.js'
 import { Helmet } from 'react-helmet-async'
 import PageHero from '../components/PageHero.jsx'
@@ -9,7 +9,7 @@ import './Team.css'
    TeamCard — individual person card
    Replaced inline style props with proper CSS class names
    ---------------------------------------------------------------- */
-function TeamCard({ person }) {
+const TeamCard = memo(function TeamCard({ person }) {
   const avatarFallback =
     "https://ui-avatars.com/api/?name=" +
     encodeURIComponent(person.name) +
@@ -17,11 +17,12 @@ function TeamCard({ person }) {
 
   return (
     <div className="team-card">
-      {/* Image fills top section via aspect-ratio: 1/1 in CSS */}
       <img
         src={person.image || avatarFallback}
         alt={person.name}
         className="team-card__image"
+        loading="lazy"
+        decoding="async"
         onError={(e) => {
           e.target.src = avatarFallback;
         }}
@@ -32,14 +33,12 @@ function TeamCard({ person }) {
 
         <p className="team-card__role">{person.role}</p>
 
-        {/* Bio — moved from inline style to CSS class */}
         {person.bio && (
           <p className="team-card__bio">
             {person.bio}
           </p>
         )}
 
-        {/* Social links row — moved from inline style to CSS class */}
         <div className="team-card__links">
           {person.linkedin && (
             <a
@@ -65,7 +64,7 @@ function TeamCard({ person }) {
       </div>
     </div>
   )
-}
+});
 
 /* ----------------------------------------------------------------
    Team — page component

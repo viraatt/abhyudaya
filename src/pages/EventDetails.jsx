@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { getEventBySlug } from "../Firebase/eventService.js";
+import EventReviews from "../components/reviews/EventReviews.jsx";
 import "./EventDetails.css";
 
 export default function EventDetails() {
@@ -391,7 +392,10 @@ export default function EventDetails() {
         </section>
       )}
 
-      {/* 11. CTA BANNER */}
+      {/* 11. REVIEWS & FEEDBACK */}
+      <EventReviews event={event} />
+
+      {/* 12. CTA BANNER */}
       <section className="event-cta-banner">
         <div className="wrap">
           <h2>Experience {event.title} Live</h2>

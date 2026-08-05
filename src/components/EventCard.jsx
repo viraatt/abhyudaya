@@ -1,7 +1,7 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 
-export default function EventCard({ event, reverse }) {
-  // Support both static (hardcoded) and dynamic (Firestore) data shapes
+function EventCard({ event, reverse }) {
   const image        = event.image || event.banner || "";
   const icon         = event.icon  || "📅";
   const subtitle     = event.subtitle || event.category || "";
@@ -16,10 +16,9 @@ export default function EventCard({ event, reverse }) {
 
   return (
     <section className={`event-showcase ${reverse ? "reverse" : ""}`}>
-
       <div className="event-showcase-image">
         {image ? (
-          <img src={image} alt={title} loading="lazy" />
+          <img src={image} alt={title} loading="lazy" decoding="async" />
         ) : (
           <div className="event-image-placeholder">
             <span>{icon}</span>
@@ -28,7 +27,6 @@ export default function EventCard({ event, reverse }) {
       </div>
 
       <div className="event-showcase-content">
-
         <span className="event-category">
           {icon} {subtitle}
         </span>
@@ -80,9 +78,9 @@ export default function EventCard({ event, reverse }) {
             {ctaText}
           </Link>
         )}
-
       </div>
-
     </section>
   );
 }
+
+export default memo(EventCard);
