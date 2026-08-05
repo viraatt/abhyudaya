@@ -1,100 +1,173 @@
+/* ============================================================
+   BLOG CARD — Individual post card
+   Fixes: unequal heights, weak typography, no flex column layout
+   Design: Clean card with image zoom, smooth hover lift, equal heights
+   ============================================================ */
+
+/* ---- Card container ---- */
 .blog-card {
+  /* Flex column so body can grow to fill card height */
+  display: flex;
+  flex-direction: column;
+
   background: #fff;
-  border-radius: 22px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 12px 35px rgba(0,0,0,.08);
-  transition: .35s ease;
+  border: 1px solid rgba(20, 23, 43, 0.07);
+
+  /* Layered shadow for depth */
+  box-shadow:
+    0 4px 16px rgba(20, 23, 43, 0.06),
+    0 1px 4px rgba(20, 23, 43, 0.03);
+
+  /* Smooth hover animations */
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
   cursor: pointer;
+
+  /* Equal card heights in grid rows */
+  height: 100%;
 }
 
 .blog-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 25px 60px rgba(0,0,0,.15);
+  box-shadow:
+    0 20px 50px rgba(20, 23, 43, 0.12),
+    0 4px 12px rgba(20, 23, 43, 0.06);
 }
 
+/* ---- Image section ---- */
 .blog-card-image {
   position: relative;
   overflow: hidden;
-  height: 250px;
+  /* Consistent 16:10 ratio — better than fixed px on all screen sizes */
+  aspect-ratio: 16 / 10;
+  flex-shrink: 0;
 }
 
 .blog-card-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: .5s;
+  /* Smooth zoom on hover */
+  transition: transform 0.50s ease;
+  display: block;
 }
 
-.blog-card:hover img {
-  transform: scale(1.08);
+.blog-card:hover .blog-card-image img {
+  transform: scale(1.06);
 }
 
+/* ---- Category badge on image ---- */
 .blog-category {
   position: absolute;
-  top: 18px;
-  left: 18px;
-  background: #1E3A8A;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 40px;
-  font-size: 13px;
-  font-weight: 600;
+  top: 16px;
+  left: 16px;
+  background: #1e3a8a;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  /* Subtle backdrop so badge is readable over any image */
+  backdrop-filter: blur(4px);
 }
 
+/* ---- Card body ---- */
 .blog-card-body {
-  padding: 28px;
+  /* Grow to fill remaining card height — equal bottom alignment */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 24px 22px;
 }
 
+/* ---- Title ---- */
 .blog-card-title {
-  font-size: 26px;
-  line-height: 1.3;
-  color: #222;
-  margin-bottom: 16px;
+  font-family: var(--font-display, "Fraunces", serif);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #111827;
+  margin: 0 0 12px;
+  /* Prevent overflow on very long titles */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
+/* ---- Excerpt / description ---- */
 .blog-card-desc {
-  color: #666;
-  line-height: 1.8;
-  margin-bottom: 25px;
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 14px;
+  line-height: 1.75;
+  color: #6b7280;
+  /* Clamp to 3 lines for consistent card heights */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 20px;
+
+  /* Push meta + button to bottom */
+  flex: 1;
 }
 
+/* ---- Meta row: author / date / read time ---- */
 .blog-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 25px;
+  gap: 14px;
+  color: #9ca3af;
+  font-size: 13px;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  margin-bottom: 20px;
 }
 
 .blog-meta span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
+/* ---- Read Article button ---- */
 .blog-read-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: #1E3A8A;
+  gap: 6px;
+  color: #1e3a8a;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
-  transition: .3s;
+  letter-spacing: 0.01em;
+  /* Animated underline trick */
+  border-bottom: 1.5px solid transparent;
+  padding-bottom: 1px;
+  transition: gap 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  /* Align to bottom of card body */
+  margin-top: auto;
+  width: fit-content;
 }
 
 .blog-read-btn:hover {
-  gap: 15px;
+  gap: 12px;
+  color: #0d1224;
+  border-bottom-color: #eeb84a;
 }
 
-@media(max-width:768px){
+/* ============================================================
+   RESPONSIVE — Mobile (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  .blog-card-title {
+    font-size: 18px;
+  }
 
-.blog-card-title{
-font-size:22px;
-}
-
-.blog-card-image{
-height:220px;
-}
-
+  .blog-card-body {
+    padding: 20px 18px 18px;
+  }
 }

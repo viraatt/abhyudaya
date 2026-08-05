@@ -33,17 +33,17 @@ export default function EventCard({ event, reverse }) {
 
           <div>
             <strong>{event.participants}</strong>
-            <span>Participants</span>
+            <span>{event.participantsLabel || "Participants"}</span>
           </div>
 
           <div>
             <strong>{event.events}</strong>
-            <span>Activities</span>
+            <span>{event.eventsLabel || "Activities"}</span>
           </div>
 
           <div>
             <strong>{event.editions}</strong>
-            <span>Editions</span>
+            <span>{event.editionsLabel || "Editions"}</span>
           </div>
 
         </div>
