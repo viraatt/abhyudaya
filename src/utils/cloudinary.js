@@ -1,16 +1,20 @@
-const CLOUD_NAME = "cn11zsvp";
-const UPLOAD_PRESET = "abhyudaya_blog";
+const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "cn11zsvp";
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "abhyudaya_blog";
 
 /**
- * Uploads a file to Cloudinary with progress tracking.
- * @param {File} file - The file to upload.
- * @param {Function} [onProgress] - Callback function (percent) => void
+ * Uploads a file to Cloudinary with real-time progress tracking via XMLHttpRequest.
+ * @param {File} file - The file object to upload.
+ * @param {Function} [onProgress] - Callback (percent: number) => void
  * @returns {Promise<{ secure_url: string, public_id: string, width: number, height: number }>}
  */
 export const uploadToCloudinary = (file, onProgress) => {
   return new Promise((resolve, reject) => {
     if (!file) {
       return reject(new Error("No file provided for upload."));
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return reject(new Error("Selected file must be an image."));
     }
 
     const formData = new FormData();
@@ -49,14 +53,23 @@ export const uploadToCloudinary = (file, onProgress) => {
       } else {
         try {
           const errorData = JSON.parse(xhr.responseText);
-          reject(new Error(errorData?.error?.message || "Cloudinary upload failed."));
+          reject(
+            new Error(
+              errorData?.error?.message ||
+                `Cloudinary upload failed with status ${xhr.status}`
+            )
+          );
         } catch {
           reject(new Error(`Upload failed with status ${xhr.status}`));
         }
       }
     };
 
-    xhr.onerror = () => reject(new Error("Network error during Cloudinary upload."));
+    xhr.onerror = () =>
+      reject(new Error("Network error occurred during Cloudinary upload. Please check your connection."));
+    xhr.ontimeout = () =>
+      reject(new Error("Upload timed out. Please try uploading again."));
+
     xhr.send(formData);
   });
 };

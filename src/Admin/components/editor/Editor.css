@@ -1,7 +1,7 @@
 /* ================================================================
    RICH EDITOR — Professional Blogger-style CMS Editor
    src/Admin/components/editor/Editor.css
-================================================================ */
+ ================================================================ */
 
 /* --- Editor Container --- */
 .rich-editor {
@@ -37,13 +37,14 @@
 .upload-progress-bar-wrapper {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 14px;
+  gap: 12px;
+  padding: 8px 16px;
   background: #eff6ff;
   border-bottom: 1px solid #bfdbfe;
   color: #1d4ed8;
   font-size: 13px;
   font-weight: 600;
+  border-radius: 16px 16px 0 0;
 }
 
 .upload-progress-track {
@@ -60,6 +61,37 @@
   transition: width 0.2s ease;
 }
 
+/* --- Upload Error Banner --- */
+.upload-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 16px 16px 0 0;
+}
+
+.error-dismiss-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.error-dismiss-btn:hover {
+  background: #fee2e2;
+}
+
 .spinner {
   width: 14px;
   height: 14px;
@@ -70,7 +102,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* --- Toolbar Groups --- */
@@ -157,8 +191,14 @@
 }
 
 @keyframes linkDialogIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .link-dialog input {
@@ -367,84 +407,116 @@
   color: #1d4ed8;
 }
 
-/* --- Images & Alignments --- */
-.ProseMirror img {
+/* ================================================================
+   INTERACTIVE IMAGE NODE VIEW STYLES
+ ================================================================ */
+.editor-image-wrapper {
+  user-select: none;
+}
+
+.editor-image-container {
+  display: inline-block;
+  border-radius: 12px;
+  position: relative;
+}
+
+.editor-image-container.is-selected {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+}
+
+.editor-img-element {
   max-width: 100%;
   height: auto;
   border-radius: 12px;
-  margin: 1rem 0;
-  display: block;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: outline 0.15s ease, transform 0.15s ease;
+  transition: all 0.2s ease;
 }
 
-.ProseMirror img.ProseMirror-selectednode {
-  outline: 3px solid #2563eb;
-  outline-offset: 2px;
-  border-radius: 12px;
-}
-
-/* Alignments */
-.ProseMirror img[data-align="left"],
-.ProseMirror img.align-left {
-  margin-right: auto;
-  margin-left: 0;
-}
-
-.ProseMirror img[data-align="center"],
-.ProseMirror img.align-center {
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.ProseMirror img[data-align="right"],
-.ProseMirror img.align-right {
-  margin-left: auto;
-  margin-right: 0;
-}
-
-/* --- Image Controls Floating Action Bar --- */
-.image-controls-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: #0f172a;
-  color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  margin-bottom: 12px;
-  animation: linkDialogIn 0.15s ease;
-}
-
-.image-control-btn {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
+/* Floating Action Toolbar on Image Selection */
+.image-controls-toolbar {
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.15s ease;
+  padding: 5px 10px;
+  background: #0f172a;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 50;
+  white-space: nowrap;
 }
 
-.image-control-btn:hover {
+.img-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.img-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.img-btn:hover {
   background: #334155;
-  color: #fff;
+  color: #ffffff;
 }
 
-.image-control-btn.active {
+.img-btn.active {
   background: #2563eb;
-  color: #fff;
+  color: #ffffff;
 }
 
-.image-control-btn.danger:hover {
+.img-btn.danger:hover {
   background: #ef4444;
-  color: #fff;
+  color: #ffffff;
+}
+
+.img-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: #334155;
+  margin: 0 4px;
+}
+
+/* Caption Field Below Image */
+.editor-caption-wrapper {
+  margin-top: 6px;
+  text-align: center;
+  width: 100%;
+}
+
+.editor-caption-input {
+  width: 100%;
+  text-align: center;
+  border: none;
+  border-bottom: 1px dashed #cbd5e1;
+  background: transparent;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #64748b;
+  font-style: italic;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.editor-caption-input:focus {
+  border-bottom-color: #2563eb;
+  color: #1e293b;
 }
 
 /* --- Responsive --- */
@@ -475,5 +547,15 @@
 
   .toolbar-divider {
     margin: 0 3px;
+  }
+
+  .image-controls-toolbar {
+    top: -40px;
+    padding: 4px 6px;
+  }
+
+  .img-btn {
+    padding: 3px 6px;
+    font-size: 11px;
   }
 }

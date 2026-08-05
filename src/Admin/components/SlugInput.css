@@ -1,0 +1,217 @@
+/* ================================================================
+   SLUG INPUT COMPONENT STYLES
+   src/Admin/components/SlugInput.css
+ ================================================================ */
+
+.slug-input-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slug-input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slug-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.slug-sync-btn {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.slug-sync-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.slug-sync-btn.active {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+/* --- Input Wrapper --- */
+.slug-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.slug-field {
+  width: 100%;
+  padding: 10px 38px 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.slug-field:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.slug-field.has-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.slug-field.has-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.slug-field.is-taken {
+  border-color: #f59e0b;
+  background: #fffbebfb;
+}
+
+.slug-field.is-available {
+  border-color: #22c55e;
+}
+
+/* --- Status Badge Icons --- */
+.slug-status-badge {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.slug-spinner {
+  font-size: 15px;
+  color: #2563eb;
+  animation: slugSpin 0.7s linear infinite;
+}
+
+@keyframes slugSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.status-icon {
+  font-size: 16px;
+}
+
+.status-icon.available {
+  color: #16a34a;
+}
+
+.status-icon.taken {
+  color: #d97706;
+}
+
+.status-icon.invalid {
+  color: #dc2626;
+}
+
+/* --- Feedback Messages --- */
+.slug-feedback {
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.slug-feedback .msg {
+  display: block;
+}
+
+.slug-feedback .checking {
+  color: #64748b;
+  font-style: italic;
+}
+
+.slug-feedback .error {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.slug-feedback .taken-warning {
+  color: #b45309;
+}
+
+.slug-feedback .success {
+  color: #15803d;
+}
+
+/* --- URL Preview Chip --- */
+.slug-preview-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.preview-url-text {
+  font-size: 12.5px;
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+}
+
+.domain-prefix {
+  color: #94a3b8;
+}
+
+.slug-path {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.copy-url-btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.copy-url-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.copy-url-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

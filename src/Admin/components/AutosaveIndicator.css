@@ -1,0 +1,142 @@
+/* ================================================================
+   AUTOSAVE INDICATOR COMPONENT STYLES
+   src/Admin/components/AutosaveIndicator.css
+ ================================================================ */
+
+.autosave-indicator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  font-size: 12.5px;
+  color: #475569;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.autosave-indicator-chip .label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.autosave-indicator-chip .saved-text-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.autosave-indicator-chip .time-subtext {
+  font-size: 11.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.autosave-indicator-chip .subicon {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* --- Status Specific Variants --- */
+.autosave-indicator-chip.status-saving {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.icon-saving-pulse {
+  font-size: 15px;
+  color: #2563eb;
+  animation: autosavePulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes autosavePulse {
+  from {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.autosave-indicator-chip.status-saved {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.icon-success {
+  font-size: 14px;
+  color: #16a34a;
+}
+
+.autosave-indicator-chip.status-offline {
+  background: #fffbebfb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.icon-offline {
+  font-size: 13px;
+  color: #d97706;
+}
+
+.autosave-indicator-chip.status-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.icon-error {
+  font-size: 14px;
+  color: #dc2626;
+}
+
+.error-text {
+  color: #dc2626 !important;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autosave-retry-btn {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.autosave-retry-btn:hover {
+  background: #b91c1c;
+}
+
+.unsaved-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.label.unsaved {
+  color: #d97706;
+  font-style: italic;
+}
