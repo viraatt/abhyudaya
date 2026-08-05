@@ -8,7 +8,7 @@ import SlugInput from "../components/SlugInput";
 import AutosaveIndicator from "../components/AutosaveIndicator";
 import MediaLibrary from "../components/media/MediaLibrary";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { useToast } from "../Toast";
+import { useToast } from "../components/Toast";
 import { useAutosave } from "../hooks/useAutosave";
 
 import "./style/admin.css";
