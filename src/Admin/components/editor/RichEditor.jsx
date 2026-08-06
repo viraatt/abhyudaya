@@ -21,6 +21,10 @@ export default function RichEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        // Exclude these because we register them explicitly below
+        // to avoid "Duplicate extension names" warnings.
+        link: false,
+        underline: false,
       }),
       Underline,
       Link.configure({
@@ -50,7 +54,8 @@ export default function RichEditor({
         const json = editor.getJSON();
         const html = editor.getHTML();
         const text = editor.getText();
-        onChange(json, html, text);
+        // Pass a single object so all consumers can destructure {json, html, text}
+        onChange({ json, html, text });
       }
     },
   });

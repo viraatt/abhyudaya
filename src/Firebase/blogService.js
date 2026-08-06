@@ -87,6 +87,39 @@ export const getBlogsPage = async ({
 };
 
 /**
+ * Checks if TipTap content (JSON object or HTML string) contains actual text.
+ */
+function hasActualContent(content) {
+  if (!content) return false;
+
+  // If it's a TipTap JSON doc object
+  if (typeof content === "object") {
+    // Walk the content array to find any text nodes
+    function hasText(node) {
+      if (!node) return false;
+      if (node.text && node.text.trim().length > 0) return true;
+      if (node.type === "image") return true; // images count as content
+      if (Array.isArray(node.content)) {
+        return node.content.some(hasText);
+      }
+      return false;
+    }
+    return hasText(content);
+  }
+
+  // If it's an HTML string
+  if (typeof content === "string") {
+    const plainText = content
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+    return plainText.length > 0;
+  }
+
+  return false;
+}
+
+/**
  * Validates requirements for publishing.
  */
 export const validatePublishRequirements = (blog) => {
@@ -94,7 +127,7 @@ export const validatePublishRequirements = (blog) => {
     return { isValid: false, error: "Cannot publish: Blog Title is required." };
   }
 
-  if (!blog.content) {
+  if (!hasActualContent(blog.content)) {
     return { isValid: false, error: "Cannot publish: Blog Content cannot be empty." };
   }
 
