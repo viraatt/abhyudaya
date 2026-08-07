@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { club, socials } from '../data/club.js'
 import PageHero from '../components/PageHero.jsx'
+import BreadcrumbSchema from '../components/seo/schemas/BreadcrumbSchema.jsx'
 import './Contact.css'
 import { submitContactMessage } from '../Admin/pages/services/contactService.js'
 
-// Fades/slides in any ".reveal" child inside the returned ref, once it scrolls into view.
+const SITE_URL = "https://www.abhyudayaclub.in";
+
 function useReveal() {
   const ref = useRef(null)
   useEffect(() => {
@@ -43,6 +45,50 @@ export default function Contact() {
   const [submitting, setSubmitting] = useState(false)
   const [submittedStatus, setSubmittedStatus] = useState(null)
 
+  const breadcrumbItems = [
+    { name: "Home", url: SITE_URL },
+    { name: "Contact", url: `${SITE_URL}/contact` },
+  ];
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "How can I contact the club?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Email us anytime at abhyudayaclubmpec@gmail.com or reach out through our Instagram or LinkedIn pages.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Can I collaborate with Abhyudaya Club?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. We welcome collaborations, sponsorships, guest lectures and workshops.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Where are your events conducted?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Most events are organized at Maharana Pratap Engineering College, Kanpur.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How quickly do you reply?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "We usually respond within 24–48 hours.",
+        },
+      },
+    ],
+  };
+
   const handleInputChange = (e) => {
     setFormState({ ...formState, [e.target.name]: e.target.value })
   }
@@ -78,15 +124,28 @@ export default function Contact() {
       <Helmet>
         <title>Contact Us | Abhyudaya Club — Get in Touch, MPEC Kanpur</title>
         <meta name="description" content="Contact Abhyudaya Club at MPEC Kanpur. Reach out for collaborations, sponsorships, queries, or to learn more about joining the club." />
-        <link rel="canonical" href="https://abhyudayaclub.in/contact" />
+        <link rel="canonical" href={`${SITE_URL}/contact`} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="Contact Abhyudaya Club | MPEC Kanpur" />
         <meta property="og:description" content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries." />
-        <meta property="og:url" content="https://abhyudayaclub.in/contact" />
-        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta property="og:url" content={`${SITE_URL}/contact`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:locale" content="en_IN" />
+
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Contact Abhyudaya Club | MPEC Kanpur" />
         <meta name="twitter:description" content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries." />
-        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+
+        <script type="application/ld+json">
+          {JSON.stringify(faqSchema)}
+        </script>
       </Helmet>
+
+      <BreadcrumbSchema items={breadcrumbItems} />
+
       <PageHero
         eyebrow="Get in Touch"
         title="Let's Connect."
@@ -190,6 +249,7 @@ export default function Contact() {
                 onChange={handleInputChange}
                 placeholder="Your Full Name *"
                 required
+                aria-label="Your Full Name"
                 style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
               />
 
@@ -200,6 +260,7 @@ export default function Contact() {
                 onChange={handleInputChange}
                 placeholder="Your Email Address *"
                 required
+                aria-label="Your Email Address"
                 style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
               />
 
@@ -209,6 +270,7 @@ export default function Contact() {
                 value={formState.phone}
                 onChange={handleInputChange}
                 placeholder="Phone Number (Optional)"
+                aria-label="Phone Number"
                 style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
               />
 
@@ -218,6 +280,7 @@ export default function Contact() {
                 value={formState.subject}
                 onChange={handleInputChange}
                 placeholder="Subject / Topic"
+                aria-label="Subject or Topic"
                 style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
               />
 
@@ -228,6 +291,7 @@ export default function Contact() {
                 onChange={handleInputChange}
                 placeholder="Write your message here... *"
                 required
+                aria-label="Your message"
                 style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff", resize: "vertical" }}
               />
 

@@ -1,0 +1,4 @@
+Contact: mailto:abhyudayaclubmpec@gmail.com
+Preferred-Languages: en, hi
+Canonical: https://www.abhyudayaclub.in/.well-known/security.txt
+Policy: https://www.abhyudayaclub.in/contact

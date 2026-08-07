@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node scripts/generate-sitemap.js && node scripts/prerender.js",
     "preview": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "generate-sitemap": "node scripts/generate-sitemap.js"
+    "generate-sitemap": "node scripts/generate-sitemap.js",
+    "prerender": "node scripts/prerender.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -38,6 +40,9 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.4.11",
+    "puppeteer": "^25.5.0",
+    "react-snap": "^1.23.0",
+    "serve-handler": "^6.1.7",
     "vite": "^7.3.6"
   }
 }

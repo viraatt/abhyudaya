@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { club, events } from '../data/club.js'
 import logo from '../assets/logo-512.png'
+import OrganizationSchema from '../components/seo/schemas/OrganizationSchema.jsx'
+import WebSiteSchema from '../components/seo/schemas/WebSiteSchema.jsx'
 import './Home.css'
+
+const SITE_URL = 'https://www.abhyudayaclub.in'
 
 const featured = events.find((e) => e.featured)
 const otherEvents = events.filter((e) => !e.featured).slice(0, 4)
@@ -26,17 +30,37 @@ export default function Home() {
   return (
     <>
       <Helmet>
-        <title>Abhyudaya Club | Science & Literary Club of MPEC Kanpur</title>
-        <meta name="description" content="Abhyudaya Club is the official Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur. Explore our events, workshops, and student initiatives." />
-        <link rel="canonical" href="https://abhyudayaclub.in/" />
+        <title>Abhyudaya Club | Science &amp; Literary Club of MPEC Kanpur</title>
+        <meta
+          name="description"
+          content="Abhyudaya Club is the official Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur. Explore our events, workshops, blogs, and student initiatives."
+        />
+        <link rel="canonical" href={`${SITE_URL}/`} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+        <meta name="keywords" content="Abhyudaya Club, MPEC Kanpur, Science Club, Literary Club, Maharana Pratap Engineering College, TechBloom, CommuniCraft, student events" />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Abhyudaya Club" />
         <meta property="og:title" content="Abhyudaya Club | Science & Literary Club of MPEC Kanpur" />
         <meta property="og:description" content="Abhyudaya Club — fostering curiosity, creativity, innovation and leadership at MPEC Kanpur." />
-        <meta property="og:url" content="https://abhyudayaclub.in/" />
-        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta property="og:url" content={`${SITE_URL}/`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:locale" content="en_IN" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Abhyudaya Club | Science & Literary Club of MPEC Kanpur" />
         <meta name="twitter:description" content="Abhyudaya Club — fostering curiosity, creativity, innovation and leadership at MPEC Kanpur." />
-        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
       </Helmet>
+
+      {/* Global Schemas — rendered on home page */}
+      <OrganizationSchema />
+      <WebSiteSchema />
+
       <section className="hero">
         {/* Background video. Drop your file at public/videos/hero-bg.mp4 */}
         <div className="hero__media" aria-hidden="true">
@@ -57,7 +81,15 @@ export default function Home() {
         </div>
 
         <div className="wrap hero__inner">
-          <img src={logo} alt="" className="hero__logo" />
+          <img
+            src={logo}
+            alt="Abhyudaya Club logo"
+            className="hero__logo"
+            width="120"
+            height="120"
+            fetchpriority="high"
+            decoding="async"
+          />
           <p className="eyebrow hero__eyebrow">{club.institute}</p>
           <h1 className="hero__title">
             Abhyudaya <span>rises</span> here.

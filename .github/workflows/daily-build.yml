@@ -1,0 +1,19 @@
+name: Daily Sitemap & Pre-render Rebuild
+
+on:
+  schedule:
+    # Runs at 02:00 UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Netlify Build Hook
+        run: |
+          if [ -n "${{ secrets.NETLIFY_BUILD_HOOK_URL }}" ]; then
+            curl -X POST -d {} ${{ secrets.NETLIFY_BUILD_HOOK_URL }}
+          else
+            echo "NETLIFY_BUILD_HOOK_URL secret is not set. Skipping build trigger."
+          fi

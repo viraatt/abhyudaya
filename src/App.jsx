@@ -58,6 +58,7 @@ export default function App() {
     const timer = setTimeout(() => {
       NProgress.done();
     }, 100);
+
     return () => {
       clearTimeout(timer);
       NProgress.done();
@@ -78,19 +79,21 @@ export default function App() {
             element={<Login />}
           />
 
+          {/* Dashboard */}
           <Route
             path="/admin/dashboard"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin"]}>
                 <Dashboard />
               </ProtectedRoute>
             }
           />
 
+          {/* Events */}
           <Route
             path="/admin/events"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
                 <EventManager />
               </ProtectedRoute>
             }
@@ -99,7 +102,7 @@ export default function App() {
           <Route
             path="/admin/events/add"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
                 <AddEvent />
               </ProtectedRoute>
             }
@@ -108,34 +111,35 @@ export default function App() {
           <Route
             path="/admin/events/edit/:id"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
                 <EditEvent />
               </ProtectedRoute>
             }
           />
 
+          {/* Users */}
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin"]}>
                 <Users />
               </ProtectedRoute>
             }
           />
 
+          {/* Blogs */}
           <Route
             path="/admin/blogs"
             element={
-              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+              <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
                 <BlogManager />
               </ProtectedRoute>
             }
           />
-
-          <Route
+                    <Route
             path="/admin/blogs/add"
             element={
-              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+              <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
                 <AddBlog />
               </ProtectedRoute>
             }
@@ -144,52 +148,63 @@ export default function App() {
           <Route
             path="/admin/blogs/edit/:id"
             element={
-              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+              <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
                 <EditBlog />
               </ProtectedRoute>
             }
           />
 
+          {/* Media Library */}
           <Route
             path="/admin/media"
             element={
-              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+              <ProtectedRoute
+                allowedRoles={[
+                  "super_admin",
+                  "blog_admin",
+                  "event_admin",
+                ]}
+              >
                 <MediaLibraryPage />
               </ProtectedRoute>
             }
           />
 
+          {/* Team */}
           <Route
             path="/admin/team"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin"]}>
                 <AdminTeam />
               </ProtectedRoute>
             }
           />
 
+          {/* Gallery */}
           <Route
             path="/admin/gallery"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin"]}>
                 <AdminGallery />
               </ProtectedRoute>
             }
           />
 
+          {/* Contact */}
           <Route
             path="/admin/contact"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin"]}>
                 <AdminContact />
               </ProtectedRoute>
             }
           />
 
+          {/* Reviews */}
           <Route
             path="/admin/reviews"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["super_admin"]}>
                 <AdminReviews />
               </ProtectedRoute>
             }

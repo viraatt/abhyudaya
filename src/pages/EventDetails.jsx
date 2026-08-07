@@ -3,7 +3,11 @@ import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { getEventBySlug } from "../Firebase/eventService.js";
 import EventReviews from "../components/reviews/EventReviews.jsx";
+import EventSchema from "../components/seo/schemas/EventSchema.jsx";
+import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import "./EventDetails.css";
+
+const SITE_URL = "https://www.abhyudayaclub.in";
 
 export default function EventDetails() {
   const { slug } = useParams();
@@ -43,44 +47,77 @@ export default function EventDetails() {
 
   if (error || !event) {
     return (
-      <section className="event-not-found">
-        <div style={{ textAlign: "center", padding: "40px 20px" }}>
-          <h1 style={{ fontSize: "2.4rem", color: "#0f172a", marginBottom: "12px" }}>Event Not Found</h1>
-          <p style={{ color: "#64748b", marginBottom: "24px" }}>
-            The event you are looking for does not exist or has been removed.
-          </p>
-          <Link
-            to="/events"
-            style={{
-              display: "inline-block",
-              padding: "12px 28px",
-              background: "#2563eb",
-              color: "#fff",
-              borderRadius: "999px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            ← Back to Events
-          </Link>
-        </div>
-      </section>
+      <>
+        <Helmet>
+          <title>Event Not Found | Abhyudaya Club</title>
+          <meta name="robots" content="noindex,follow" />
+        </Helmet>
+        <section className="event-not-found">
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <h1 style={{ fontSize: "2.4rem", color: "#0f172a", marginBottom: "12px" }}>Event Not Found</h1>
+            <p style={{ color: "#64748b", marginBottom: "24px" }}>
+              The event you are looking for does not exist or has been removed.
+            </p>
+            <Link
+              to="/events"
+              style={{
+                display: "inline-block",
+                padding: "12px 28px",
+                background: "#2563eb",
+                color: "#fff",
+                borderRadius: "999px",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              ← Back to Events
+            </Link>
+          </div>
+        </section>
+      </>
     );
   }
 
   const heroImage = event.image || event.banner || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400";
+  const canonicalUrl = `${SITE_URL}/events/${event.slug || slug}`;
+  const metaDescription = event.shortDescription || event.description || `${event.title} organized by Abhyudaya Club at MPEC Kanpur.`;
+
+  const breadcrumbItems = [
+    { name: "Home", url: SITE_URL },
+    { name: "Events", url: `${SITE_URL}/events` },
+    { name: event.title, url: canonicalUrl },
+  ];
 
   return (
     <>
       <Helmet>
         <title>{`${event.title} | Abhyudaya Club — MPEC Kanpur`}</title>
-        <meta name="description" content={event.shortDescription || event.description || `${event.title} organized by Abhyudaya Club at MPEC Kanpur.`} />
-        <link rel="canonical" href={`https://abhyudayaclub.in/events/${event.slug || slug}`} />
+        <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={`${event.title}, Abhyudaya Club, MPEC Kanpur, ${event.subtitle || ""}, student event Kanpur`} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
         <meta property="og:title" content={`${event.title} | Abhyudaya Club`} />
-        <meta property="og:description" content={event.tagline || event.shortDescription || event.description} />
+        <meta property="og:description" content={event.tagline || metaDescription} />
         <meta property="og:image" content={heroImage} />
-        <meta property="og:url" content={`https://abhyudayaclub.in/events/${event.slug || slug}`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="Abhyudaya Club" />
+        <meta property="og:locale" content="en_IN" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${event.title} | Abhyudaya Club`} />
+        <meta name="twitter:description" content={event.tagline || metaDescription} />
+        <meta name="twitter:image" content={heroImage} />
       </Helmet>
+
+      {/* JSON-LD Structured Data */}
+      <EventSchema event={event} canonicalUrl={canonicalUrl} />
+      <BreadcrumbSchema items={breadcrumbItems} />
 
       {/* 1. HERO BANNER */}
       <section
@@ -238,7 +275,7 @@ export default function EventDetails() {
                 <div key={idx} className="event-schedule-item">
                   <span className="event-schedule-time">{item.time || `Session ${idx + 1}`}</span>
                   <div className="event-schedule-info">
-                    <h4>{item.title || item.name || "Schedule Item"}</h4>
+                    <h3>{item.title || item.name || "Schedule Item"}</h3>
                     {item.description && <p>{item.description}</p>}
                   </div>
                 </div>
@@ -257,12 +294,20 @@ export default function EventDetails() {
               {event.speakers.map((speaker, idx) => (
                 <div key={idx} className="event-speaker-card">
                   {speaker.image ? (
-                    <img src={speaker.image} alt={speaker.name} className="event-speaker-img" />
+                    <img
+                      src={speaker.image}
+                      alt={`${speaker.name} — ${speaker.designation || "Speaker"}`}
+                      className="event-speaker-img"
+                      loading="lazy"
+                      decoding="async"
+                      width="120"
+                      height="120"
+                    />
                   ) : (
-                    <div className="event-speaker-img-placeholder">👤</div>
+                    <div className="event-speaker-img-placeholder" aria-hidden="true">👤</div>
                   )}
 
-                  <h4>{speaker.name}</h4>
+                  <h3>{speaker.name}</h3>
 
                   {(speaker.designation || speaker.role) && (
                     <p className="event-speaker-designation">
@@ -288,6 +333,7 @@ export default function EventDetails() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="event-speaker-linkedin-btn"
+                      aria-label={`${speaker.name} LinkedIn profile`}
                     >
                       LinkedIn Profile →
                     </a>
@@ -307,7 +353,14 @@ export default function EventDetails() {
             <div className="event-gallery-grid">
               {event.gallery.map((imgUrl, idx) => (
                 <div key={idx} className="event-gallery-item">
-                  <img src={imgUrl} alt={`${event.title} glimpse ${idx + 1}`} />
+                  <img
+                    src={imgUrl}
+                    alt={`${event.title} — glimpse ${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    width="400"
+                    height="300"
+                  />
                 </div>
               ))}
             </div>
@@ -320,7 +373,7 @@ export default function EventDetails() {
         <div className="wrap">
           <div className="event-registration-card">
             <div className="event-registration-info">
-              <h3>Join {event.title}</h3>
+              <h2>Join {event.title}</h2>
               <p>Ready to participate? Register now or contact our coordinators for further details.</p>
               <div className="event-reg-meta">
                 {event.registrationDeadline && (
@@ -383,7 +436,7 @@ export default function EventDetails() {
             <div className="event-faqs-list">
               {event.faqs.map((faq, idx) => (
                 <div key={idx} className="event-faq-item">
-                  <h4>❓ {faq.question}</h4>
+                  <h3>❓ {faq.question}</h3>
                   <p>{faq.answer}</p>
                 </div>
               ))}
@@ -403,7 +456,7 @@ export default function EventDetails() {
             Don't miss out on Abhyudaya Club's premier experiences, competitions, and technical learning opportunities.
           </p>
           <Link to={event.ctaLink || "/join"} className="event-cta-btn">
-            {event.ctaText || "Explore &amp; Participate →"}
+            {event.ctaText || "Explore & Participate →"}
           </Link>
         </div>
       </section>
