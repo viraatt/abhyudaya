@@ -1,0 +1,16 @@
+/* TEAM */
+Team: Abhyudaya Club Core Team & Technical Domain
+Site: https://www.abhyudayaclub.in
+Location: Maharana Pratap Engineering College (MPEC), Kanpur, UP, India
+
+/* THANKS */
+Faculty Advisor: Dr. Anupama Mathur
+Institute: Maharana Pratap Engineering College (MPEC), Kanpur
+Department: Department of Basic Sciences & Humanities
+
+/* SITE */
+Last update: 2026-08-06
+Standards: HTML5, CSS3, ES2024, JSON-LD Schema
+Components: React 19, Vite, React Router 6, Firebase Firestore
+Software: TipTap, Framer Motion, React Helmet Async
+Hosting: Netlify

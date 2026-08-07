@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { Helmet } from "react-helmet-async";
 import "./Blog.css";
 
 import SearchBar from "../components/blog/SearchBar";
 import CategoryFilter from "../components/blog/CategoryFilter";
 import FeaturedPost from "../components/blog/FeaturedPost";
 import BlogCard from "../components/blog/BlogCard";
+import CollectionPageSchema from "../components/seo/schemas/CollectionPageSchema";
 import { getBlogsPage } from "../Firebase/blogService";
+
+const SITE_URL = "https://www.abhyudayaclub.in";
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
@@ -80,6 +84,35 @@ const Blog = () => {
 
   return (
     <div className="blog-page">
+      {/* ====== SEO ====== */}
+      <Helmet>
+        <title>Blog | Abhyudaya Club — Stories, Insights & Event Reports</title>
+        <meta
+          name="description"
+          content="Read inspiring articles, technical insights, workshop recaps, competition highlights and exciting moments from the Abhyudaya Club community at MPEC Kanpur."
+        />
+        <link rel="canonical" href={`${SITE_URL}/blog`} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Abhyudaya Club" />
+        <meta property="og:title" content="Blog | Abhyudaya Club — Stories, Insights & Event Reports" />
+        <meta property="og:description" content="Discover inspiring articles, technical insights, and exciting moments from Abhyudaya Club at MPEC Kanpur." />
+        <meta property="og:url" content={`${SITE_URL}/blog`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:locale" content="en_IN" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Blog | Abhyudaya Club — Stories, Insights & Event Reports" />
+        <meta name="twitter:description" content="Discover inspiring articles, technical insights, and exciting moments from Abhyudaya Club at MPEC Kanpur." />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+      </Helmet>
+
+      {/* CollectionPage JSON-LD */}
+      <CollectionPageSchema blogs={blogs} />
+
       {/* ---------- HERO ---------- */}
       <section className="blog-header">
         <div className="blog-badge">

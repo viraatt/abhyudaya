@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import { ROLES } from "../config/roles";
 
 export default function ProtectedRoute({
   children,
@@ -7,17 +8,18 @@ export default function ProtectedRoute({
 }) {
   const { currentUser } = useAuth();
 
-  // Wait until AuthContext finishes loading
   if (currentUser === undefined) {
     return <div>Loading...</div>;
   }
 
-  // User is not logged in
   if (!currentUser) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Check role permission
+  if (currentUser.role === ROLES.SUPER_ADMIN) {
+    return children;
+  }
+
   if (
     allowedRoles.length > 0 &&
     !allowedRoles.includes(currentUser.role)

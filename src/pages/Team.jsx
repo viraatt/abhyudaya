@@ -2,12 +2,14 @@ import { useEffect, useState, memo } from 'react'
 import { team as staticTeam } from '../data/club.js'
 import { Helmet } from 'react-helmet-async'
 import PageHero from '../components/PageHero.jsx'
+import BreadcrumbSchema from '../components/seo/schemas/BreadcrumbSchema.jsx'
 import { getTeamMembers } from '../Admin/pages/services/teamService.js'
 import './Team.css'
 
+const SITE_URL = "https://www.abhyudayaclub.in";
+
 /* ----------------------------------------------------------------
    TeamCard — individual person card
-   Replaced inline style props with proper CSS class names
    ---------------------------------------------------------------- */
 const TeamCard = memo(function TeamCard({ person }) {
   const avatarFallback =
@@ -19,10 +21,12 @@ const TeamCard = memo(function TeamCard({ person }) {
     <div className="team-card">
       <img
         src={person.image || avatarFallback}
-        alt={person.name}
+        alt={`${person.name} — ${person.role} at Abhyudaya Club`}
         className="team-card__image"
         loading="lazy"
         decoding="async"
+        width="300"
+        height="300"
         onError={(e) => {
           e.target.src = avatarFallback;
         }}
@@ -46,6 +50,7 @@ const TeamCard = memo(function TeamCard({ person }) {
               target="_blank"
               rel="noopener noreferrer"
               className="team-card__linkedin"
+              aria-label={`${person.name} LinkedIn`}
             >
               LinkedIn
             </a>
@@ -56,6 +61,7 @@ const TeamCard = memo(function TeamCard({ person }) {
               target="_blank"
               rel="noopener noreferrer"
               className="team-card__linkedin"
+              aria-label={`${person.name} GitHub`}
             >
               GitHub
             </a>
@@ -66,15 +72,14 @@ const TeamCard = memo(function TeamCard({ person }) {
   )
 });
 
-/* ----------------------------------------------------------------
-   Team — page component
-   Faculty section uses two-column layout:
-     Left:  Heading + description (section__head)
-     Right: Faculty card
-   ---------------------------------------------------------------- */
 export default function Team() {
   const [dbMembers, setDbMembers] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const breadcrumbItems = [
+    { name: "Home", url: SITE_URL },
+    { name: "Team", url: `${SITE_URL}/team` },
+  ];
 
   useEffect(() => {
     async function loadData() {
@@ -106,15 +111,22 @@ export default function Team() {
       <Helmet>
         <title>Our Team | Abhyudaya Club — Faculty & Student Leaders at MPEC Kanpur</title>
         <meta name="description" content="Meet the Abhyudaya Club team — dedicated faculty advisors and passionate student leaders who organize events, promote innovation, and drive student growth at MPEC Kanpur." />
-        <link rel="canonical" href="https://abhyudayaclub.in/team" />
-        <meta property="og:title" content="Our Team | Abhyudaya Club" />
+        <link rel="canonical" href={`${SITE_URL}/team`} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+
+        <meta property="og:title" content="Our Team | Abhyudaya Club — MPEC Kanpur" />
         <meta property="og:description" content="Meet the faculty advisors and student leaders of Abhyudaya Club at MPEC Kanpur." />
-        <meta property="og:url" content="https://abhyudayaclub.in/team" />
-        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta property="og:url" content={`${SITE_URL}/team`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:locale" content="en_IN" />
+
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Our Team | Abhyudaya Club" />
         <meta name="twitter:description" content="Meet the faculty advisors and student leaders of Abhyudaya Club at MPEC Kanpur." />
-        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
       </Helmet>
+
+      <BreadcrumbSchema items={breadcrumbItems} />
 
       <PageHero
         eyebrow="Meet Our Team"
@@ -125,12 +137,6 @@ export default function Team() {
       {/* ---- FACULTY ADVISOR SECTION ---- */}
       <section className="section">
         <div className="wrap">
-          {/*
-            Two-column layout:
-            Left column  → heading + description
-            Right column → faculty card(s)
-            Collapses to single column on tablet/mobile via CSS
-          */}
           <div className="faculty-layout">
 
             {/* LEFT: heading + description */}

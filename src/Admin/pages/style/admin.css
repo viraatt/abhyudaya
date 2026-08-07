@@ -69,8 +69,7 @@ body{
 /*==============================*/
 
 .sidebar{
-
-  width:270px;
+  width:290px;
 
   background:var(--sidebar);
 
@@ -94,28 +93,31 @@ body{
 
 /*==============================*/
 
-.sidebar-logo{
+/* ==============================
+   Sidebar Header
+============================== */
 
-  margin-bottom:45px;
-
+.sidebar-header{
+  margin-bottom:32px;
+  padding-bottom:24px;
+  border-bottom:1px solid rgba(255,255,255,.08);
 }
 
-.sidebar-logo h2{
-
+.sidebar-title{
+  margin:0;
   font-size:34px;
-
   font-weight:800;
-
   color:#facc15;
-
+  line-height:1.1;
+  letter-spacing:-0.5px;
 }
 
-.sidebar-logo span{
-
-  color:#9ca3af;
-
-  font-size:14px;
-
+.sidebar-role{
+  margin-top:10px;
+  color:#cbd5e1;
+  font-size:15px;
+  font-weight:500;
+  letter-spacing:.3px;
 }
 
 /*==============================*/
@@ -173,8 +175,7 @@ body{
 /*==============================*/
 
 .dashboard-main{
-
-  margin-left:270px;
+  margin-left:290px;
 
   flex:1;
 

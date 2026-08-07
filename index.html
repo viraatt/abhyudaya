@@ -16,28 +16,40 @@
     <!-- Google Search Console verification -->
     <meta name="google-site-verification" content="XlDWMcPEphYC0bh9HaW_4Zk9txkTif1LRjDyHlAajms" />
 
+    <!-- Preconnect & Preload for Core Web Vitals -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
+
     <!-- Default SEO (overridden per-page by react-helmet-async) -->
     <title>Abhyudaya Club | MPEC Kanpur</title>
     <meta
       name="description"
       content="Abhyudaya Club — the Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur, under the Department of Basic Sciences & Humanities."
     />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://abhyudayaclub.in/" />
+    <meta name="author" content="Abhyudaya Club" />
+    <meta name="geo.region" content="IN-UP" />
+    <meta name="geo.placename" content="Kanpur" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link rel="canonical" href="https://www.abhyudayaclub.in/" />
+    <link rel="alternate" type="application/rss+xml" title="Abhyudaya Club Blog RSS Feed" href="https://www.abhyudayaclub.in/feed.xml" />
 
     <!-- Open Graph defaults -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Abhyudaya Club" />
     <meta property="og:title" content="Abhyudaya Club | MPEC Kanpur" />
     <meta property="og:description" content="Abhyudaya Club — the Science & Literary Club of MPEC Kanpur." />
-    <meta property="og:url" content="https://abhyudayaclub.in/" />
-    <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+    <meta property="og:url" content="https://www.abhyudayaclub.in/" />
+    <meta property="og:image" content="https://www.abhyudayaclub.in/og-image.png" />
+    <meta property="og:locale" content="en_IN" />
 
     <!-- Twitter Card defaults -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Abhyudaya Club | MPEC Kanpur" />
     <meta name="twitter:description" content="Abhyudaya Club — the Science & Literary Club of MPEC Kanpur." />
-    <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+    <meta name="twitter:image" content="https://www.abhyudayaclub.in/og-image.png" />
 
     <!-- PWA & Icons -->
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -50,8 +62,6 @@
     <meta name="apple-mobile-web-app-title" content="Abhyudaya" />
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap"
       rel="stylesheet"

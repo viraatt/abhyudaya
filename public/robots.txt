@@ -6,5 +6,12 @@ Disallow: /admin/dashboard
 Disallow: /admin/blogs/
 Disallow: /admin/events
 Disallow: /admin/users
+Disallow: /admin/media
+Disallow: /admin/team
+Disallow: /admin/gallery
+Disallow: /admin/contact
+Disallow: /admin/reviews
 
-Sitemap: https://abhyudayaclub.in/sitemap.xml
+Sitemap: https://www.abhyudayaclub.in/sitemap.xml
+Sitemap: https://www.abhyudayaclub.in/sitemap-images.xml
+Sitemap: https://www.abhyudayaclub.in/sitemap-news.xml

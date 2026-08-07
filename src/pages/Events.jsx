@@ -3,7 +3,10 @@ import { Helmet } from "react-helmet-async";
 import PageHero from "../components/PageHero.jsx";
 import EventCard from "../components/EventCard.jsx";
 import { getEventsPage } from "../Firebase/eventService.js";
+import CollectionPageSchema from "../components/seo/schemas/CollectionPageSchema.jsx";
 import "./Events.css";
+
+const SITE_URL = "https://www.abhyudayaclub.in";
 
 function EventCardSkeleton({ reverse }) {
   return (
@@ -86,21 +89,27 @@ export default function Events() {
   return (
     <>
       <Helmet>
-        <title>Events | Abhyudaya Club — Fests, Workshops &amp; Competitions at MPEC Kanpur</title>
+        <title>Events | Abhyudaya Club — Fests, Workshops & Competitions at MPEC Kanpur</title>
         <meta name="description" content="Explore Abhyudaya Club events — TechBloom, CommuniCraft, Antariksh Spardha, Industrial Visits, Workshops, coding competitions, quizzes, and more at Maharana Pratap Engineering College, Kanpur." />
-        <link rel="canonical" href="https://abhyudayaclub.in/events" />
+        <link rel="canonical" href={`${SITE_URL}/events`} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="Events | Abhyudaya Club — MPEC Kanpur" />
         <meta property="og:description" content="Discover all Abhyudaya Club events: TechBloom, CommuniCraft, Antariksh Spardha, Industrial Visits, Workshops, and student competitions." />
-        <meta property="og:url" content="https://abhyudayaclub.in/events" />
-        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta property="og:url" content={`${SITE_URL}/events`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:locale" content="en_IN" />
+
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Events | Abhyudaya Club — MPEC Kanpur" />
         <meta name="twitter:description" content="TechBloom, CommuniCraft, Antariksh Spardha, Industrial Visits, Workshops, and more at MPEC Kanpur." />
-        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
       </Helmet>
 
       <PageHero
         eyebrow="What We Run"
-        title="Fests, Workshops &amp; Experiences"
+        title="Fests, Workshops & Experiences"
         lede="Discover Abhyudaya Club's flagship festivals, technical workshops, competitions and community initiatives."
       />
 

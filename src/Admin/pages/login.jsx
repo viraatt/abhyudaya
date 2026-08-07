@@ -4,6 +4,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 import { auth, db } from "../../Firebase/firebase";
+import { ROLES } from "../config/roles";
+
 import "./style/login.css";
 
 export default function Login() {
@@ -29,24 +31,32 @@ export default function Login() {
 
       const user = userCredential.user;
 
-      // Read role from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
 
       if (!userDoc.exists()) {
         setError("User record not found.");
+        setLoading(false);
         return;
       }
 
-      const role = userDoc.data().role;
+      const { role } = userDoc.data();
 
-      if (role === "superadmin") {
-        navigate("/admin/dashboard", { replace: true });
-      } else if (role === "admin") {
-        navigate("/admin/blogs", { replace: true });
-      } else {
-        setError("You don't have permission to access this panel.");
+      switch (role) {
+        case ROLES.SUPER_ADMIN:
+          navigate("/admin/dashboard", { replace: true });
+          break;
+
+        case ROLES.BLOG_ADMIN:
+          navigate("/admin/blogs", { replace: true });
+          break;
+
+        case ROLES.EVENT_ADMIN:
+          navigate("/admin/events", { replace: true });
+          break;
+
+        default:
+          setError("You don't have permission to access this panel.");
       }
-
     } catch (err) {
       switch (err.code) {
         case "auth/invalid-credential":

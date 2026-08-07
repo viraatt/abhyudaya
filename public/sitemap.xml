@@ -1,45 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://abhyudayaclub.in/</loc>
+    <loc>https://www.abhyudayaclub.in/</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-
   <url>
-    <loc>https://abhyudayaclub.in/about</loc>
+    <loc>https://www.abhyudayaclub.in/about</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-
   <url>
-    <loc>https://abhyudayaclub.in/events</loc>
+    <loc>https://www.abhyudayaclub.in/events</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.abhyudayaclub.in/blog</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.abhyudayaclub.in/team</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.abhyudayaclub.in/gallery</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-
   <url>
-    <loc>https://abhyudayaclub.in/blog</loc>
+    <loc>https://www.abhyudayaclub.in/contact</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.abhyudayaclub.in/join</loc>
+    <lastmod>2026-08-06T04:35:36.731Z</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-
   <url>
-    <loc>https://abhyudayaclub.in/gallery</loc>
-    <priority>0.8</priority>
+    <loc>https://www.abhyudayaclub.in/blog/techbloom-20-at-mpec-igniting-curiosity-inspiring-innovation-and-shaping-tomorrows</loc>
+    <lastmod>2026-08-06T03:36:54.040Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
-
-  <url>
-    <loc>https://abhyudayaclub.in/team</loc>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://abhyudayaclub.in/contact</loc>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://abhyudayaclub.in/join-club</loc>
-    <priority>0.8</priority>
-  </url>
-
 </urlset>

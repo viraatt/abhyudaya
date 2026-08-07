@@ -2,7 +2,10 @@ import { motion } from "framer-motion";
 import { club } from "../data/club.js";
 import { Helmet } from "react-helmet-async";
 import PageHero from "../components/PageHero.jsx";
+import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import "./About.css";
+
+const SITE_URL = "https://www.abhyudayaclub.in";
 
 const slideFromLeft = {
   hidden: { opacity: 0, x: -50 },
@@ -23,20 +26,49 @@ const slideFromRight = {
 };
 
 export default function About() {
+  const breadcrumbItems = [
+    { name: "Home", url: SITE_URL },
+    { name: "About", url: `${SITE_URL}/about` },
+  ];
+
+  const aboutSchema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "About Abhyudaya Club",
+    description: "Learn about Abhyudaya Club — the Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur, our mission, values, and community.",
+    url: `${SITE_URL}/about`,
+    mainEntity: {
+      "@id": `${SITE_URL}/#organization`,
+    },
+  };
+
   return (
     <>
       <Helmet>
         <title>About Us | Abhyudaya Club — Science & Literary Club of MPEC Kanpur</title>
         <meta name="description" content="Learn about Abhyudaya Club — the Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur, our mission, values, and community." />
-        <link rel="canonical" href="https://abhyudayaclub.in/about" />
+        <link rel="canonical" href={`${SITE_URL}/about`} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="About Abhyudaya Club | MPEC Kanpur" />
         <meta property="og:description" content="Empowering innovation, creativity and leadership at MPEC Kanpur since our founding." />
-        <meta property="og:url" content="https://abhyudayaclub.in/about" />
-        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta property="og:url" content={`${SITE_URL}/about`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:locale" content="en_IN" />
+
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="About Abhyudaya Club | MPEC Kanpur" />
         <meta name="twitter:description" content="Empowering innovation, creativity and leadership at MPEC Kanpur." />
-        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+
+        <script type="application/ld+json">
+          {JSON.stringify(aboutSchema)}
+        </script>
       </Helmet>
+
+      <BreadcrumbSchema items={breadcrumbItems} />
+
       <PageHero
         eyebrow="About Abhyudaya"
         title="Empowering Innovation, Creativity & Leadership"

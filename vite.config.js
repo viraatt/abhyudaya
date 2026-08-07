@@ -16,6 +16,7 @@ export default defineConfig({
   },
 
   build: {
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -32,7 +33,6 @@ export default defineConfig({
         },
       },
     },
-    // Raise warning limit slightly; lazy loading will bring actual chunks well below
     chunkSizeWarningLimit: 600,
   },
 });

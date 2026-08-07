@@ -39,6 +39,11 @@ import {
 
 import { FaXTwitter } from "react-icons/fa6";
 
+import BlogPostingSchema from "../components/seo/schemas/BlogPostingSchema";
+import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema";
+import OrganizationSchema from "../components/seo/schemas/OrganizationSchema";
+import LatestBlogsSidebar from "../components/blog/LatestBlogsSidebar";
+
 function renderBlogContent(content) {
   if (!content) return "";
   if (typeof content === "object") {
@@ -72,7 +77,7 @@ function renderBlogContent(content) {
   return content; // Legacy HTML string fallback
 }
 
-const SITE_URL = "https://abhyudayaclub.in";
+const SITE_URL = "https://www.abhyudayaclub.in";
 const ORG_NAME = "Abhyudaya Club";
 
 export default function BlogDetails() {
@@ -285,11 +290,17 @@ export default function BlogDetails() {
 
         setBlog(currentBlog);
 
-        // Fetch related blogs (exclude current)
+        // Fetch related blogs — prefer same category, exclude current
         try {
-          const blogsSnapshot = await getDocs(
-            query(collection(db, "blogs"), where("status", "==", "Published"))
-          );
+          const relatedQuery = data.category
+            ? query(
+                collection(db, "blogs"),
+                where("status", "==", "Published"),
+                where("category", "==", data.category)
+              )
+            : query(collection(db, "blogs"), where("status", "==", "Published"));
+
+          const blogsSnapshot = await getDocs(relatedQuery);
 
           const related = blogsSnapshot.docs
             .map((d) => ({ id: d.id, ...d.data() }))
@@ -382,18 +393,24 @@ export default function BlogDetails() {
 
   if (!blog) {
     return (
-      <section className="blog-details">
-        <div className="blog-details-container" style={{ textAlign: "center", padding: "60px 20px" }}>
-          <h1 style={{ marginBottom: "16px" }}>Blog Not Found</h1>
-          <p style={{ color: "#64748b", marginBottom: "24px" }}>
-            The requested article could not be found or may have been removed.
-          </p>
-          <Link to="/blog" className="back-btn" style={{ display: "inline-flex" }}>
-            <FiArrowLeft />
-            Back to Blog
-          </Link>
-        </div>
-      </section>
+      <>
+        <Helmet>
+          <title>Blog Not Found | Abhyudaya Club</title>
+          <meta name="robots" content="noindex,follow" />
+        </Helmet>
+        <section className="blog-details">
+          <div className="blog-details-container" style={{ textAlign: "center", padding: "60px 20px" }}>
+            <h1 style={{ marginBottom: "16px" }}>Blog Not Found</h1>
+            <p style={{ color: "#64748b", marginBottom: "24px" }}>
+              The requested article could not be found or may have been removed.
+            </p>
+            <Link to="/blog" className="back-btn" style={{ display: "inline-flex" }}>
+              <FiArrowLeft />
+              Back to Blog
+            </Link>
+          </div>
+        </section>
+      </>
     );
   }
 
@@ -406,109 +423,66 @@ export default function BlogDetails() {
     blog.excerpt ||
     (blog.content || "").replace(/<[^>]+>/g, "").slice(0, 160);
 
-  const ogImage = blog.featuredImage || `${SITE_URL}/favicon.png`;
+  const ogImage = blog.featuredImage || `${SITE_URL}/og-image.png`;
 
-  // JSON-LD structured data
-  const articleSchema = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: blog.title,
-    description: metaDescription,
-    image: ogImage,
-    author: {
-      "@type": "Person",
-      name: blog.author || "Admin",
-    },
-    publisher: {
-      "@type": "Organization",
-      name: ORG_NAME,
-      logo: {
-        "@type": "ImageObject",
-        url: `${SITE_URL}/favicon.png`,
-      },
-    },
-    datePublished: blog.dateISO || undefined,
-    dateModified: blog.updatedDateISO || blog.dateISO || undefined,
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": canonicalUrl,
-    },
-  };
+  const tags = Array.isArray(blog.tags) ? blog.tags : [];
+  const keywords = [
+    blog.category,
+    blog.title,
+    "Abhyudaya Club",
+    "MPEC Kanpur",
+    "MPEC",
+    ...tags,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: SITE_URL,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Blog",
-        item: `${SITE_URL}/blog`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: blog.title,
-        item: canonicalUrl,
-      },
-    ],
-  };
-
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: ORG_NAME,
-    url: SITE_URL,
-    logo: `${SITE_URL}/favicon.png`,
-    sameAs: [
-      "https://www.instagram.com/abhyudayaclub",
-      "https://www.linkedin.com/company/abhyudayaclub",
-    ],
-  };
+  const breadcrumbItems = [
+    { name: "Home", url: SITE_URL },
+    { name: "Blog", url: `${SITE_URL}/blog` },
+    { name: blog.title, url: canonicalUrl },
+  ];
 
   return (
     <>
+      {/* ====== SEO ====== */}
       <Helmet>
         <title>{blog.title} | {ORG_NAME}</title>
         <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={`${blog.category}, ${blog.title}, Abhyudaya Club, MPEC, ${(blog.tags || []).join(", ")}`} />
+        <meta name="keywords" content={keywords} />
+        <meta name="author" content={blog.author || "Abhyudaya Club"} />
         <link rel="canonical" href={canonicalUrl} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
 
         {/* Open Graph */}
         <meta property="og:type" content="article" />
         <meta property="og:title" content={`${blog.title} | ${ORG_NAME}`} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:site_name" content={ORG_NAME} />
+        <meta property="og:locale" content="en_IN" />
         {blog.dateISO && <meta property="article:published_time" content={blog.dateISO} />}
         {blog.updatedDateISO && <meta property="article:modified_time" content={blog.updatedDateISO} />}
-        <meta property="article:author" content={blog.author || "Admin"} />
+        <meta property="article:author" content={blog.author || "Abhyudaya Club"} />
         <meta property="article:section" content={blog.category || "Blog"} />
+        {tags.map((tag) => (
+          <meta key={tag} property="article:tag" content={tag} />
+        ))}
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${blog.title} | ${ORG_NAME}`} />
         <meta name="twitter:description" content={metaDescription} />
         <meta name="twitter:image" content={ogImage} />
-
-        {/* JSON-LD Structured Data */}
-        <script type="application/ld+json">
-          {JSON.stringify(articleSchema)}
-        </script>
-        <script type="application/ld+json">
-          {JSON.stringify(breadcrumbSchema)}
-        </script>
-        <script type="application/ld+json">
-          {JSON.stringify(organizationSchema)}
-        </script>
       </Helmet>
+
+      {/* JSON-LD Structured Data */}
+      <BlogPostingSchema blog={blog} canonicalUrl={canonicalUrl} />
+      <BreadcrumbSchema items={breadcrumbItems} />
+      <OrganizationSchema />
 
       <section className="blog-details">
 
@@ -546,20 +520,24 @@ export default function BlogDetails() {
             </span>
           </div>
 
-          {/* Featured Image */}
+          {/* Featured Image — fetchpriority=high as it is the LCP element */}
           {blog.featuredImage && (
             <img
               src={blog.featuredImage}
-              alt={blog.title}
+              alt={`${blog.title} — featured image`}
               className="details-featured-image"
               loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              width="1200"
+              height="630"
               style={{ width: "100%", borderRadius: "12px", marginBottom: "2rem" }}
             />
           )}
 
           {/* Share Buttons */}
           <div className="share-section">
-            <h3>Share this article</h3>
+            <h2>Share this article</h2>
             <div className="share-buttons">
               <button
                 className="share-btn whatsapp"
@@ -636,7 +614,7 @@ export default function BlogDetails() {
 
             {/* COMMENTS LIST */}
             <div className="comments-list">
-              <h2>Comments ({comments.length})</h2>
+              <h3>Comments ({comments.length})</h3>
 
               {comments.length === 0 ? (
                 <div className="no-comments">
@@ -665,6 +643,9 @@ export default function BlogDetails() {
             </div>
           </div>
 
+          {/* Latest Articles Sidebar — improves internal linking */}
+          <LatestBlogsSidebar currentSlug={blogIdentifier} />
+
           <hr className="blog-divider" />
 
           {/* RELATED ARTICLES */}
@@ -678,11 +659,15 @@ export default function BlogDetails() {
                     key={item.id}
                     to={`/blog/${item.slug || item.id}`}
                     className="related-card"
+                    aria-label={`Read related article: ${item.title}`}
                   >
                     <img
                       src={item.featuredImage || "https://placehold.co/400x250?text=No+Image"}
-                      alt={item.title}
+                      alt={`${item.title} featured image`}
                       loading="lazy"
+                      decoding="async"
+                      width="400"
+                      height="250"
                     />
                     <div className="related-body">
                       <span>{item.category}</span>

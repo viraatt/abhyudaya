@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import { events } from "../data/club.js";
 import PageHero from "../components/PageHero.jsx";
+import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import { CardContainer, CardBody, CardItem } from "../components/ui/3d-card";
 import { getGalleryItems } from "../Admin/pages/services/galleryService.js";
 import "./Gallery.css";
+
+const SITE_URL = "https://www.abhyudayaclub.in";
 
 const PLACEHOLDER = (seed) =>
   `https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&sig=${seed}`;
@@ -97,6 +100,11 @@ export default function Gallery() {
   const [dbItems, setDbItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const breadcrumbItems = [
+    { name: "Home", url: SITE_URL },
+    { name: "Gallery", url: `${SITE_URL}/gallery` },
+  ];
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -143,20 +151,42 @@ export default function Gallery() {
 
   const cards = dbCards.length > 0 ? [...dbCards, ...staticCards] : staticCards;
 
+  const imageGallerySchema = {
+    "@context": "https://schema.org",
+    "@type": "ImageGallery",
+    name: "Abhyudaya Club Photo Gallery",
+    description: "Browse event photos and moments from TechBloom, CommuniCraft, workshops, and student activities at MPEC Kanpur.",
+    url: `${SITE_URL}/gallery`,
+    image: cards.slice(0, 10).map((c) => c.src),
+  };
+
   return (
     <div className="bg-black min-h-screen">
       <Helmet>
         <title>Gallery | Abhyudaya Club — Event Photos & Moments from MPEC Kanpur</title>
         <meta name="description" content="Browse the Abhyudaya Club photo gallery — interactive 3D memories from TechBloom, CommuniCraft, workshops, and other events at MPEC Kanpur." />
-        <link rel="canonical" href="https://abhyudayaclub.in/gallery" />
+        <link rel="canonical" href={`${SITE_URL}/gallery`} />
+        <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+
+        <meta property="og:type" content="website" />
         <meta property="og:title" content="Gallery | Abhyudaya Club — MPEC Kanpur" />
         <meta property="og:description" content="Interactive 3D photo gallery of Abhyudaya Club events at Maharana Pratap Engineering College, Kanpur." />
-        <meta property="og:url" content="https://abhyudayaclub.in/gallery" />
-        <meta property="og:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta property="og:url" content={`${SITE_URL}/gallery`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:locale" content="en_IN" />
+
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Gallery | Abhyudaya Club — MPEC Kanpur" />
         <meta name="twitter:description" content="Interactive 3D photo gallery from Abhyudaya Club events at MPEC Kanpur." />
-        <meta name="twitter:image" content="https://abhyudayaclub.in/favicon.png" />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+
+        <script type="application/ld+json">
+          {JSON.stringify(imageGallerySchema)}
+        </script>
       </Helmet>
+
+      <BreadcrumbSchema items={breadcrumbItems} />
+
       <PageHero
         eyebrow="Moments"
         title="A look inside the club."
@@ -193,6 +223,8 @@ export default function Gallery() {
                           src={card.src}
                           className="rounded-2xl group-hover/card:shadow-emerald-500/20 shadow-xl cursor-pointer gallery-card-img"
                           alt={card.title}
+                          loading="lazy"
+                          decoding="async"
                           onClick={() => setSelected(card)}
                         />
                         {card.photos.length > 1 && (
