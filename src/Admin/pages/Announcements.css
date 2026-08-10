@@ -1,0 +1,380 @@
+/* ==========================================
+   ANNOUNCEMENTS MANAGEMENT PAGE
+   ========================================== */
+
+.ann-page {
+  max-width: 900px;
+}
+
+/* ── Add Button ── */
+
+.ann-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Success message ── */
+
+.ann-success {
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* ── List ── */
+
+.ann-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Card ── */
+
+.ann-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  transition: 0.25s;
+}
+
+.ann-card:hover {
+  transform: translateY(-3px);
+}
+
+.ann-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── Type badge ── */
+
+.ann-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ann-type-general {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.ann-type-event {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.ann-type-important {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.ann-type-deadline {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.ann-type-achievement {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* ── Status badge ── */
+
+.ann-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ann-status-badge.published {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.ann-status-badge.draft {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* ── Card content ── */
+
+.ann-card-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.ann-card-message {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+}
+
+.ann-linked-event {
+  display: inline-flex;
+  align-items: center;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.ann-cta-link {
+  display: inline-block;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  margin-bottom: 14px;
+}
+
+.ann-cta-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Card footer ── */
+
+.ann-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+  flex-wrap: wrap;
+}
+
+.ann-date {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ann-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ann-action-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  transition: 0.2s;
+}
+
+.ann-action-btn:hover {
+  background: #eff6ff;
+}
+
+.ann-action-btn.danger {
+  color: var(--danger);
+}
+
+.ann-action-btn.danger:hover {
+  background: #fee2e2;
+}
+
+/* ── Modal ── */
+
+.ann-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  animation: annFadeIn 0.25s ease;
+}
+
+.ann-modal {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  padding: 28px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: annSlideUp 0.28s ease;
+}
+
+.ann-modal h3 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+
+/* ── Form ── */
+
+.ann-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ann-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ann-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ann-required {
+  color: var(--danger);
+  margin-left: 4px;
+}
+
+.ann-textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.ann-form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Status toggle ── */
+
+.ann-status-toggle {
+  display: flex;
+  gap: 10px;
+}
+
+.ann-status-option {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.ann-status-option.active-draft {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.ann-status-option.active-published {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #15803d;
+}
+
+/* ── Modal actions ── */
+
+.ann-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.ann-delete-modal {
+  max-width: 420px;
+}
+
+.ann-delete-text {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.ann-delete-btn {
+  background: var(--danger);
+}
+
+.ann-delete-btn:hover {
+  background: #dc2626;
+}
+
+/* ── Animations ── */
+
+@keyframes annFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes annSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .ann-form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .ann-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ann-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .ann-modal-actions {
+    flex-direction: column;
+  }
+
+  .ann-modal-actions .btn-primary,
+  .ann-modal-actions .btn-secondary {
+    width: 100%;
+  }
+
+  .ann-status-toggle {
+    flex-direction: column;
+  }
+}

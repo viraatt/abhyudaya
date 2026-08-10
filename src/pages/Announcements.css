@@ -1,0 +1,143 @@
+/* ==========================================
+   PUBLIC ANNOUNCEMENTS PAGE
+   ========================================== */
+
+.announcements-page {
+  padding: 60px 0 80px;
+}
+
+.announcements-loading,
+.announcements-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted, #6b7280);
+  font-size: 16px;
+}
+
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.announcement-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+  padding: 28px;
+  transition: 0.25s;
+}
+
+.announcement-card:hover {
+  transform: translateY(-3px);
+}
+
+.announcement-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.announcement-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.announcement-type-general {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.announcement-type-event {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.announcement-type-important {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.announcement-type-deadline {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.announcement-type-achievement {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.announcement-date {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.announcement-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.announcement-message {
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+}
+
+.announcement-cta {
+  display: inline-block;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.announcement-cta:hover {
+  text-decoration: underline;
+}
+
+.announcement-register-btn {
+  display: inline-flex;
+  align-items: center;
+  background: #2563eb;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.announcement-register-btn:hover {
+  background: #1d4ed8;
+  text-decoration: none;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .announcements-page {
+    padding: 40px 0 60px;
+  }
+
+  .announcement-card {
+    padding: 20px;
+  }
+
+  .announcement-title {
+    font-size: 19px;
+  }
+}

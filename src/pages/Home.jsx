@@ -5,6 +5,7 @@ import { club, events } from '../data/club.js'
 import logo from '../assets/logo-512.png'
 import OrganizationSchema from '../components/seo/schemas/OrganizationSchema.jsx'
 import WebSiteSchema from '../components/seo/schemas/WebSiteSchema.jsx'
+import { getPublishedAnnouncements } from '../Firebase/announcementService.js'
 import './Home.css'
 
 const SITE_URL = 'https://www.abhyudayaclub.in'
@@ -12,9 +13,19 @@ const SITE_URL = 'https://www.abhyudayaclub.in'
 const featured = events.find((e) => e.featured)
 const otherEvents = events.filter((e) => !e.featured).slice(0, 4)
 
+const ANNOUNCEMENT_TYPE_LABELS = {
+  general: '📢 General',
+  event: '🎯 Event',
+  important: '⚠️ Important',
+  deadline: '📅 Deadline',
+  achievement: '🏆 Achievement',
+}
+
 export default function Home() {
   const videoRef = useRef(null)
   const [videoReady, setVideoReady] = useState(false)
+  const [announcements, setAnnouncements] = useState([])
+  const [announcementsLoaded, setAnnouncementsLoaded] = useState(false)
 
   useEffect(() => {
     // Respect reduced-motion preference: never autoplay the video for
@@ -25,6 +36,23 @@ export default function Home() {
       // Autoplay can be blocked by the browser — that's fine, the static
       // gradient background underneath still looks intentional.
     })
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    getPublishedAnnouncements()
+      .then((data) => {
+        if (mounted) setAnnouncements(data.slice(0, 3))
+      })
+      .catch((err) => {
+        console.error('Failed to load announcements:', err)
+      })
+      .finally(() => {
+        if (mounted) setAnnouncementsLoaded(true)
+      })
+    return () => {
+      mounted = false
+    }
   }, [])
 
   return (
@@ -168,6 +196,51 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {announcementsLoaded && announcements.length > 0 && (
+        <section className="section">
+          <div className="wrap">
+            <div className="section__head">
+              <p className="eyebrow">Stay updated</p>
+              <h2>Latest Announcements</h2>
+            </div>
+            <div className="home-announcements">
+              {announcements.map((ann) => (
+                <article className="home-announcement" key={ann.id}>
+                  <span className="home-announcement-type">
+                    {ANNOUNCEMENT_TYPE_LABELS[ann.type] || ANNOUNCEMENT_TYPE_LABELS.general}
+                  </span>
+                  <h3>{ann.title}</h3>
+                  <p>{ann.message}</p>
+                  {ann.type === "event" && ann.linkedEventId && (
+                    <Link
+                      to={`/register/${ann.linkedEventId}`}
+                      className="home-announcement-cta"
+                    >
+                      Start Registration →
+                    </Link>
+                  )}
+                  {ann.ctaText && ann.ctaLink && (
+                    <a
+                      href={ann.ctaLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="home-announcement-cta"
+                    >
+                      {ann.ctaText} →
+                    </a>
+                  )}
+                </article>
+              ))}
+            </div>
+            <div className="home-announcements-more">
+              <Link to="/announcements" className="link-arrow">
+                View all announcements <span aria-hidden="true">&rarr;</span>
+              </Link>
             </div>
           </div>
         </section>

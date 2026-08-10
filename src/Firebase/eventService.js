@@ -98,6 +98,12 @@ function formatEventDoc(snapshotDoc) {
     featured: Boolean(data.featured),
     status: data.status || "Published",
     order: Number(data.order) || 99,
+    venue: data.venue || "",
+    location: data.location || "",
+    eventStartDate: data.eventStartDate || "",
+    eventEndDate: data.eventEndDate || "",
+    registrationDeadline: data.registrationDeadline || "",
+    maxRegistrations: data.maxRegistrations ? Number(data.maxRegistrations) : null,
     createdAt: data.createdAt || null,
     updatedAt: data.updatedAt || null,
   };
@@ -236,6 +242,12 @@ export async function createEvent(eventData, imageFile = null) {
     featured: Boolean(eventData.featured),
     status: eventData.status || "Published",
     order: Number(eventData.order) || 99,
+    venue: (eventData.venue || "").trim(),
+    location: (eventData.location || "").trim(),
+    eventStartDate: eventData.eventStartDate || "",
+    eventEndDate: eventData.eventEndDate || "",
+    registrationDeadline: eventData.registrationDeadline || "",
+    maxRegistrations: eventData.maxRegistrations ? Number(eventData.maxRegistrations) : null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -273,6 +285,12 @@ export async function updateEvent(id, eventData, imageFile = null) {
     featured: Boolean(eventData.featured),
     status: eventData.status || "Published",
     order: Number(eventData.order) || 99,
+    venue: (eventData.venue || "").trim(),
+    location: (eventData.location || "").trim(),
+    eventStartDate: eventData.eventStartDate || "",
+    eventEndDate: eventData.eventEndDate || "",
+    registrationDeadline: eventData.registrationDeadline || "",
+    maxRegistrations: eventData.maxRegistrations ? Number(eventData.maxRegistrations) : null,
     updatedAt: serverTimestamp(),
   };
 
