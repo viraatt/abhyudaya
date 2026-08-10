@@ -1,0 +1,284 @@
+/* ==========================================
+   REGISTRATION OUTREACH PAGE
+   ========================================== */
+
+.ro-page {
+  max-width: 900px;
+}
+
+/* ── Sections ── */
+
+.ro-section {
+  margin-bottom: 25px;
+}
+
+.ro-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Hints / Loading / Empty ── */
+
+.ro-hint {
+  color: var(--muted);
+  font-size: 15px;
+  padding: 8px 0;
+}
+
+/* ── Event Select ── */
+
+.ro-select {
+  max-width: 480px;
+}
+
+.ro-reg-link {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ro-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ro-link-value {
+  color: var(--primary);
+  font-size: 15px;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.ro-link-value:hover {
+  text-decoration: underline;
+}
+
+.ro-warning {
+  color: var(--warning);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Recipients Stats ── */
+
+.ro-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.ro-stat {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 22px;
+  text-align: center;
+}
+
+.ro-stat-value {
+  display: block;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.ro-stat-label {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ro-invalid-note {
+  margin-top: 16px;
+}
+
+/* ── Email Preview ── */
+
+.ro-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.ro-body {
+  min-height: 200px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ── Batch Actions ── */
+
+.ro-recipient-count {
+  color: var(--muted);
+  font-size: 15px;
+  margin-bottom: 18px;
+}
+
+.ro-primary-btn {
+  min-width: 260px;
+}
+
+.ro-prepared-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ro-prepared-box p {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.ro-subnote {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.ro-error-text {
+  margin-top: 14px;
+  white-space: pre-line;
+}
+
+/* ── Error Box ── */
+
+.ro-error-box {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ro-error-box p {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* ── Confirmation Modal ── */
+
+.ro-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  animation: roFadeIn 0.25s ease;
+}
+
+.ro-modal {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  padding: 28px;
+  width: 100%;
+  max-width: 440px;
+  animation: roSlideUp 0.28s ease;
+}
+
+.ro-modal h3 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+
+.ro-modal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 15px;
+}
+
+.ro-modal-label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ro-modal-note {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ro-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+@keyframes roFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes roSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .ro-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ro-stat {
+    padding: 16px;
+  }
+
+  .ro-stat-value {
+    font-size: 26px;
+  }
+
+  .ro-primary-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ro-modal-actions {
+    flex-direction: column;
+  }
+
+  .ro-modal-actions .btn-primary,
+  .ro-modal-actions .btn-secondary {
+    width: 100%;
+  }
+
+  .ro-error-box {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

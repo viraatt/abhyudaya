@@ -9,6 +9,8 @@ export default function Sidebar() {
     super_admin: [
       { name: "Dashboard", path: "/admin/dashboard", icon: "📊" },
       { name: "Events", path: "/admin/events", icon: "📅" },
+      { name: "Students", path: "/admin/students", icon: "👨‍🎓" },
+      { name: "Registration Outreach", path: "/admin/registration-outreach", icon: "📧" },
       { name: "Blogs", path: "/admin/blogs", icon: "📝" },
       { name: "Media Library", path: "/admin/media", icon: "📁" },
       { name: "Team", path: "/admin/team", icon: "👥" },
@@ -25,6 +27,8 @@ export default function Sidebar() {
 
     event_admin: [
       { name: "Events", path: "/admin/events", icon: "📅" },
+      { name: "Students", path: "/admin/students", icon: "👨‍🎓" },
+      { name: "Registration Outreach", path: "/admin/registration-outreach", icon: "📧" },
       { name: "Media Library", path: "/admin/media", icon: "📁" },
     ],
   };
