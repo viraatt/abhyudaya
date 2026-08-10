@@ -42,6 +42,8 @@ const AdminTeam = lazy(() => import("./Admin/pages/Team.jsx"));
 const AdminGallery = lazy(() => import("./Admin/pages/Gallery.jsx"));
 const AdminContact = lazy(() => import("./Admin/pages/Contact.jsx"));
 const AdminReviews = lazy(() => import("./Admin/pages/Reviews.jsx"));
+const RegistrationOutreach = lazy(() => import("./Admin/pages/RegistrationOutreach.jsx"));
+const Students = lazy(() => import("./Admin/pages/Students.jsx"));
 const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrary.jsx"));
 
 NProgress.configure({
@@ -206,6 +208,26 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["super_admin"]}>
                 <AdminReviews />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Students */}
+          <Route
+            path="/admin/students"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                <Students />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Registration Outreach */}
+          <Route
+            path="/admin/registration-outreach"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                <RegistrationOutreach />
               </ProtectedRoute>
             }
           />
