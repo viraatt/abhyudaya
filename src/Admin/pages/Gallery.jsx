@@ -301,10 +301,10 @@ export default function Gallery() {
                   <option value="Campus Life">Campus Life</option>
                 </select>
 
-                <label>Image File (Upload or URL)</label>
+                <label>Media File (Upload Image or Video / URL)</label>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   onChange={handleFileChange}
                 />
                 <input
@@ -312,7 +312,7 @@ export default function Gallery() {
                   name="imageUrl"
                   value={formData.imageUrl}
                   onChange={handleChange}
-                  placeholder="Or paste Direct Image URL"
+                  placeholder="Or paste Direct Image/Video URL"
                   style={{ marginTop: "6px" }}
                 />
 

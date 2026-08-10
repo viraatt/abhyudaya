@@ -1,184 +1,199 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
-import { events } from "../data/club.js";
-import PageHero from "../components/PageHero.jsx";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
-import { CardContainer, CardBody, CardItem } from "../components/ui/3d-card";
-import { getGalleryItems } from "../Admin/pages/services/galleryService.js";
+import GallerySkeleton from "../components/gallery/GallerySkeleton.jsx";
+import InteractiveTiltCard from "../components/gallery/InteractiveTiltCard.jsx";
+import { fetchGalleryImages } from "../services/galleryApi.js";
+import { FaTimes, FaChevronLeft, FaChevronRight, FaSync, FaImages, FaPlay } from "react-icons/fa";
 import "./Gallery.css";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
-const PLACEHOLDER = (seed) =>
-  `https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&sig=${seed}`;
+const CATEGORIES = [
+  "all",
+  "Flagship Fest",
+  "Workshop",
+  "Robotics",
+  "Astronomy",
+  "Quiz",
+  "Entrepreneurship",
+  "Design",
+];
 
-const imageModules = import.meta.glob(
-  "../assets/**/*.{jpg,jpeg,png,gif,webp}",
-  { eager: true },
-);
-
-function getImagePath(imagePath) {
-  if (!imagePath) return PLACEHOLDER(0);
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-    return imagePath;
-  }
-  const modulePath = `../${imagePath}`;
-  return imageModules[modulePath]?.default || imagePath;
-}
-
-/* ─── Expanded Overlay ───────────────────────────────────── */
-function ExpandedOverlay({ selected, onClose }) {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => { setIndex(0); }, [selected]);
-
-  const photos = selected?.photos || [selected?.src];
-
-  const next = (e) => {
-    e.stopPropagation();
-    setIndex((prev) => (prev + 1) % photos.length);
-  };
-
-  const prev = (e) => {
-    e.stopPropagation();
-    setIndex((prev) => (prev - 1 + photos.length) % photos.length);
-  };
-
-  return (
-    <AnimatePresence>
-      {selected && (
-        <>
-          <motion.div
-            className="overlay-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          <motion.div
-            className="overlay-modal"
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          >
-            <img
-              className="overlay-image"
-              src={photos[index]}
-              alt={selected.title}
-            />
-
-            {photos.length > 1 && (
-              <>
-                <button className="overlay-nav-btn overlay-nav-btn--prev" onClick={prev}>←</button>
-                <button className="overlay-nav-btn overlay-nav-btn--next" onClick={next}>→</button>
-                <div className="overlay-counter">
-                  {index + 1} / {photos.length}
-                </div>
-              </>
-            )}
-
-            <div className="overlay-gradient" />
-
-            <div className="overlay-caption">
-              <p className="overlay-caption__title">{selected.title}</p>
-              <span className="overlay-caption__kind">{selected.kind}</span>
-            </div>
-
-            <button className="overlay-close" onClick={onClose}>✕</button>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/* ─── Main Gallery ───────────────────────────────────────── */
 export default function Gallery() {
-  const [selected, setSelected] = useState(null);
-  const [hovered, setHovered] = useState(null);
-  const [dbItems, setDbItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [isLooped, setIsLooped] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [loadedImages, setLoadedImages] = useState({});
+
+  const sentinelRef = useRef(null);
+  const isFetchingRef = useRef(false);
 
   const breadcrumbItems = [
     { name: "Home", url: SITE_URL },
     { name: "Gallery", url: `${SITE_URL}/gallery` },
   ];
 
+  // Load initial batch of images on category change asynchronously
   useEffect(() => {
+    let isMounted = true;
     async function loadData() {
+      setLoadingInitial(true);
+      setPage(1);
+      setIsLooped(false);
+      isFetchingRef.current = true;
+
       try {
-        const data = await getGalleryItems();
-        setDbItems(data);
+        const res = await fetchGalleryImages({ page: 1, limit: 12, category: activeCategory });
+        if (isMounted) {
+          setImages(res.images || []);
+          setIsLooped(res.isLooped || false);
+        }
       } catch (err) {
-        console.error("Error loading gallery photos from Firestore:", err);
+        console.error("Failed to load initial gallery images:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoadingInitial(false);
+          isFetchingRef.current = false;
+        }
       }
     }
+
     loadData();
-  }, []);
-
-  const staticCards = events.map((ev, i) => {
-    let coverSrc;
-    if (ev.photo && ev.photo.trim()) {
-      coverSrc = getImagePath(ev.photo);
-    } else if (ev.photos && ev.photos.length > 0) {
-      coverSrc = getImagePath(ev.photos[0]);
-    } else {
-      coverSrc = PLACEHOLDER(i);
-    }
-
-    const photoList =
-      ev.photos && ev.photos.length > 0
-        ? ev.photos.map(getImagePath)
-        : [coverSrc];
-
-    return {
-      title: ev.name,
-      kind: ev.kind,
-      src: coverSrc,
-      photos: photoList,
+    return () => {
+      isMounted = false;
     };
-  });
+  }, [activeCategory]);
 
-  const dbCards = dbItems.map((item) => ({
-    title: item.title,
-    kind: item.category || "Event",
-    src: getImagePath(item.imageUrl),
-    photos: [getImagePath(item.imageUrl)],
-  }));
+  // Infinite Scroll IntersectionObserver & batch loader
+  const loadNextBatch = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setLoadingMore(true);
 
-  const cards = dbCards.length > 0 ? [...dbCards, ...staticCards] : staticCards;
+    const nextPage = page + 1;
+    try {
+      const res = await fetchGalleryImages({
+        page: nextPage,
+        limit: 8,
+        category: activeCategory,
+      });
+
+      if (res.images && res.images.length > 0) {
+        setImages((prev) => [...prev, ...res.images]);
+        setPage(nextPage);
+        if (res.isLooped) {
+          setIsLooped(true);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch next image batch:", err);
+    } finally {
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }
+  }, [page, activeCategory]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && !isFetchingRef.current && !loadingInitial) {
+          loadNextBatch();
+        }
+      },
+      { rootMargin: "300px 0px 300px 0px", threshold: 0.1 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadNextBatch, loadingInitial]);
+
+  // Image load detection for smooth fade-in
+  const handleImageLoaded = (id) => {
+    setLoadedImages((prev) => ({ ...prev, [id]: true }));
+  };
+
+  // Lightbox navigation
+  const openLightbox = (card) => {
+    setSelectedImage(card);
+  };
+
+  const closeLightbox = () => {
+    setSelectedImage(null);
+  };
+
+  const handlePrevImage = useCallback(
+    (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      if (!selectedImage) return;
+      const currentIndex = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
+      const prevIndex = (currentIndex - 1 + images.length) % images.length;
+      setSelectedImage(images[prevIndex]);
+    },
+    [selectedImage, images]
+  );
+
+  const handleNextImage = useCallback(
+    (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      if (!selectedImage) return;
+      const currentIndex = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
+      const nextIndex = (currentIndex + 1) % images.length;
+      setSelectedImage(images[nextIndex]);
+    },
+    [selectedImage, images]
+  );
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedImage) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") handlePrevImage(e);
+      if (e.key === "ArrowRight") handleNextImage(e);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImage, handlePrevImage, handleNextImage]);
 
   const imageGallerySchema = {
     "@context": "https://schema.org",
     "@type": "ImageGallery",
     name: "Abhyudaya Club Photo Gallery",
-    description: "Browse event photos and moments from TechBloom, CommuniCraft, workshops, and student activities at MPEC Kanpur.",
+    description:
+      "Interactive photo gallery featuring events, workshops, hackathons, and moments from Abhyudaya Club at MPEC Kanpur.",
     url: `${SITE_URL}/gallery`,
-    image: cards.slice(0, 10).map((c) => c.src),
+    image: images.slice(0, 10).map((c) => c.src),
   };
 
   return (
-    <div className="bg-black min-h-screen">
+    <div className="gallery-page">
       <Helmet>
         <title>Gallery | Abhyudaya Club — Event Photos & Moments from MPEC Kanpur</title>
-        <meta name="description" content="Browse the Abhyudaya Club photo gallery — interactive 3D memories from TechBloom, CommuniCraft, workshops, and other events at MPEC Kanpur." />
+        <meta
+          name="description"
+          content="Explore the interactive Pinterest masonry gallery of Abhyudaya Club at MPEC Kanpur — Cloudinary integrated, infinite scrolling event memories."
+        />
         <link rel="canonical" href={`${SITE_URL}/gallery`} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
 
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Gallery | Abhyudaya Club — MPEC Kanpur" />
-        <meta property="og:description" content="Interactive 3D photo gallery of Abhyudaya Club events at Maharana Pratap Engineering College, Kanpur." />
+        <meta
+          property="og:description"
+          content="Interactive photo gallery of Abhyudaya Club events at Maharana Pratap Engineering College, Kanpur."
+        />
         <meta property="og:url" content={`${SITE_URL}/gallery`} />
         <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
-        <meta property="og:locale" content="en_IN" />
-
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Gallery | Abhyudaya Club — MPEC Kanpur" />
-        <meta name="twitter:description" content="Interactive 3D photo gallery from Abhyudaya Club events at MPEC Kanpur." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
 
         <script type="application/ld+json">
           {JSON.stringify(imageGallerySchema)}
@@ -187,70 +202,219 @@ export default function Gallery() {
 
       <BreadcrumbSchema items={breadcrumbItems} />
 
-      <PageHero
-        eyebrow="Moments"
-        title="A look inside the club."
-        lede="Interactive 3D memories. Click any photo to expand."
-      />
+      {/* In-Flow Edge Header (Naturally scrolls off-screen) */}
+      <header className="gallery-header-section">
+        <span className="gallery-header-eyebrow">Visual Memories</span>
+        <h1 className="gallery-header-title">Visual Memories & Events</h1>
+        <p className="gallery-header-subtitle">
+          Explore curated moments, workshops, and flagship fests from Abhyudaya Club at MPEC Kanpur.
+        </p>
 
-      <section className="gallery-section">
-        <div className="gallery-wrap">
-          <div className="gallery-cards-grid">
-            {cards.map((card, index) => (
-              <div
-                key={index}
-                className={`gallery-card-wrapper${
-                  hovered !== null && hovered !== index
-                    ? " gallery-card-wrapper--blurred"
-                    : ""
-                }`}
-                onMouseEnter={() => setHovered(index)}
-                onMouseLeave={() => setHovered(null)}
-              >
-                <CardContainer className="inter-var w-full">
-                  <CardBody className="bg-zinc-900/50 relative group/card border-white/[0.08] w-full h-auto rounded-[2.5rem] p-8 border flex flex-col items-start justify-between">
+        {/* Category Filter Bar */}
+        <div className="gallery-filter-bar" role="tablist" aria-label="Gallery category filters">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              role="tab"
+              aria-selected={activeCategory === cat}
+              className={`gallery-filter-btn ${activeCategory === cat ? "active" : ""}`}
+              onClick={() => setActiveCategory(cat)}
+            >
+              {cat === "all" ? "✨ All Moments" : cat}
+            </button>
+          ))}
+        </div>
+      </header>
 
-                    <CardItem
-                      translateZ="100"
-                      className="text-2xl font-bold text-white mb-6"
-                    >
-                      {card.title}
-                    </CardItem>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Initial Loading Skeleton */}
+        {loadingInitial ? (
+          <GallerySkeleton count={12} />
+        ) : images.length === 0 ? (
+          <div className="text-center py-20 bg-white/60 rounded-3xl border border-slate-200 my-8 shadow-sm">
+            <FaImages className="mx-auto text-5xl text-amber-500/60 mb-4" />
+            <h3 className="text-xl font-bold text-slate-800 mb-2">No Media Found</h3>
+            <p className="text-slate-500 max-w-md mx-auto mb-6">
+              There are no gallery items under this category yet.
+            </p>
+            <button
+              type="button"
+              className="gallery-filter-btn active"
+              onClick={() => setActiveCategory("all")}
+            >
+              View All Photos
+            </button>
+          </div>
+        ) : (
+          /* Pinterest Multi-Column Masonry Grid */
+          <div className="gallery-masonry-grid">
+            {images.map((card) => {
+              const isLoaded = loadedImages[card.uniqueKey];
+              return (
+                <div key={card.uniqueKey} className="gallery-masonry-item">
+                  <InteractiveTiltCard onClick={() => openLightbox(card)}>
+                    <div className="gallery-pinterest-card">
+                      {/* Clean Image / Video Tile */}
+                      <div className="gallery-clean-tile">
+                        {!isLoaded && (
+                          <div className="absolute inset-0 bg-slate-300 animate-pulse rounded-2xl z-0" />
+                        )}
 
-                    <CardItem translateZ="50" className="w-full mb-8">
-                      <div className="gallery-card-img-box">
-                        <img
-                          src={card.src}
-                          className="rounded-2xl group-hover/card:shadow-emerald-500/20 shadow-xl cursor-pointer gallery-card-img"
-                          alt={card.title}
-                          loading="lazy"
-                          decoding="async"
-                          onClick={() => setSelected(card)}
-                        />
-                        {card.photos.length > 1 && (
-                          <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white font-bold">
-                            {card.photos.length} PHOTOS
+                        {card.isVideo ? (
+                          <div className="relative w-full">
+                            <video
+                              src={card.src}
+                              className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
+                              onLoadedData={() => handleImageLoaded(card.uniqueKey)}
+                              muted
+                              playsInline
+                              loop
+                              autoPlay
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                              <div className="bg-amber-400 text-slate-950 p-2.5 rounded-full shadow-md">
+                                <FaPlay className="ml-0.5 text-xs" />
+                              </div>
+                            </div>
                           </div>
+                        ) : (
+                          <img
+                            src={card.src}
+                            alt={card.title || "Club event photo"}
+                            loading="lazy"
+                            decoding="async"
+                            onLoad={() => handleImageLoaded(card.uniqueKey)}
+                            className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
+                          />
                         )}
                       </div>
-                    </CardItem>
 
-                    <CardItem
-                      translateZ="100"
-                      className="text-emerald-500 text-sm font-black uppercase tracking-[0.25em]"
-                    >
-                      {card.kind}
-                    </CardItem>
-
-                  </CardBody>
-                </CardContainer>
-              </div>
-            ))}
+                      {/* Below-Tile Pinterest Caption Typography */}
+                      <div className="gallery-tile-caption">
+                        <h3 className="gallery-tile-title">{card.title}</h3>
+                        <div className="gallery-tile-meta">
+                          <span className="gallery-tile-category">{card.category}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </InteractiveTiltCard>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </section>
+        )}
 
-      <ExpandedOverlay selected={selected} onClose={() => setSelected(null)} />
+        {/* Infinite Scroll Sentinel & Loader */}
+        <div ref={sentinelRef} className="gallery-infinite-sentinel">
+          {loadingMore && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="gallery-loader-spinner" />
+              <span className="text-xs text-amber-700 font-bold tracking-wider uppercase">
+                Loading Gallery Stream...
+              </span>
+            </div>
+          )}
+
+          {isLooped && !loadingMore && images.length > 0 && (
+            <div className="gallery-loop-badge">
+              <FaSync className="animate-spin text-amber-600" />
+              <span>Infinite Stream Active • Recycling Gallery Moments</span>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Expanded Lightbox Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <>
+            <motion.div
+              className="gallery-overlay-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeLightbox}
+            />
+            <motion.div
+              className="gallery-overlay-modal"
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                className="gallery-overlay-close-btn"
+                onClick={closeLightbox}
+                aria-label="Close modal"
+              >
+                <FaTimes />
+              </button>
+
+              {/* Main Media Stage */}
+              <div className="gallery-overlay-image-box">
+                {selectedImage.isVideo ? (
+                  <video
+                    src={selectedImage.src}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="gallery-overlay-img"
+                  />
+                ) : (
+                  <img
+                    src={selectedImage.src}
+                    alt={selectedImage.title}
+                    className="gallery-overlay-img"
+                  />
+                )}
+
+                {/* Left / Right Nav Arrows with 44x44px Touch Targets */}
+                <button
+                  type="button"
+                  className="gallery-overlay-nav-btn absolute left-4 top-1/2 -translate-y-1/2"
+                  onClick={handlePrevImage}
+                  aria-label="Previous media"
+                >
+                  <FaChevronLeft />
+                </button>
+
+                <button
+                  type="button"
+                  className="gallery-overlay-nav-btn absolute right-4 top-1/2 -translate-y-1/2"
+                  onClick={handleNextImage}
+                  aria-label="Next media"
+                >
+                  <FaChevronRight />
+                </button>
+              </div>
+
+              {/* Lightbox Sidebar Info */}
+              <div className="gallery-overlay-sidebar">
+                <div>
+                  <span className="gallery-modal-badge">
+                    {selectedImage.category}
+                  </span>
+
+                  <h2 className="gallery-modal-title">
+                    {selectedImage.title}
+                  </h2>
+
+                  <p className="gallery-modal-desc">
+                    {selectedImage.description || "Abhyudaya Club Event Snapshot at MPEC Kanpur."}
+                  </p>
+                </div>
+
+                <div className="gallery-modal-footer">
+                  <span>Press Esc to close • Use ← → keys to navigate</span>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

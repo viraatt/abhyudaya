@@ -60,8 +60,7 @@ export const getMediaItems = async () => {
       id: docSnap.id,
       ...docSnap.data(),
     }));
-  } catch (err) {
-    console.error("Error fetching media items:", err);
+  } catch {
     return [];
   }
 };
