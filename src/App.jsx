@@ -24,6 +24,8 @@ const Blog = lazy(() => import("./pages/Blog.jsx"));
 const BlogDetails = lazy(() => import("./pages/BlogDetails.jsx"));
 const Contact = lazy(() => import("./pages/Contact.jsx"));
 const JoinClub = lazy(() => import("./pages/JoinClub.jsx"));
+const Announcements = lazy(() => import("./pages/Announcements.jsx"));
+const Register = lazy(() => import("./pages/Register.jsx"));
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 
 // ─────────────────────────────────────────────────────────────
@@ -44,6 +46,7 @@ const AdminContact = lazy(() => import("./Admin/pages/Contact.jsx"));
 const AdminReviews = lazy(() => import("./Admin/pages/Reviews.jsx"));
 const RegistrationOutreach = lazy(() => import("./Admin/pages/RegistrationOutreach.jsx"));
 const Students = lazy(() => import("./Admin/pages/Students.jsx"));
+const AdminAnnouncements = lazy(() => import("./Admin/pages/Announcements.jsx"));
 const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrary.jsx"));
 
 NProgress.configure({
@@ -212,6 +215,16 @@ export default function App() {
             }
           />
 
+          {/* Announcements */}
+          <Route
+            path="/admin/announcements"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                <AdminAnnouncements />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Students */}
           <Route
             path="/admin/students"
@@ -284,6 +297,16 @@ export default function App() {
             <Route
               path="/join"
               element={<JoinClub />}
+            />
+
+            <Route
+              path="/announcements"
+              element={<Announcements />}
+            />
+
+            <Route
+              path="/register/:eventId"
+              element={<Register />}
             />
 
             <Route

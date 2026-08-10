@@ -122,6 +122,9 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
   const [eventStartDate, setEventStartDate] = useState(initialData?.eventStartDate || "");
   const [eventEndDate, setEventEndDate]     = useState(initialData?.eventEndDate || "");
   const [regDeadline, setRegDeadline]       = useState(initialData?.registrationDeadline || "");
+  const [maxRegistrations, setMaxRegistrations] = useState(
+    initialData?.maxRegistrations ? String(initialData.maxRegistrations) : ""
+  );
 
   /* ── Derived slug ── */
   const derivedSlug = slugLocked ? slugManual : generateSlug(title);
@@ -288,6 +291,7 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
       eventStartDate,
       eventEndDate,
       registrationDeadline: regDeadline,
+      maxRegistrations: maxRegistrations ? Number(maxRegistrations) : null,
       image:       bannerUrl,
       banner:      bannerUrl,
       thumbnail:   thumbUrl,
@@ -313,6 +317,7 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
   }, [
     title, derivedSlug, category, tagline, shortDesc, longDesc,
     venue, location, organizer, eventStartDate, eventEndDate, regDeadline,
+    maxRegistrations,
     bannerUrl, thumbUrl, stats, highlights, speakers,
     badgeText, badgeIcon, ctaText, ctaLink, featured,
   ]);
@@ -504,6 +509,22 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
                   className="ae-input"
                   value={regDeadline}
                   onChange={(e) => setRegDeadline(e.target.value)}
+                />
+              </div>
+
+              {/* Max Registrations */}
+              <div className="ae-field ae-field-full">
+                <label className="ae-label" htmlFor="evt-max-reg">
+                  Max Registrations <span style={{ fontSize: 11, color: "#64748b", fontWeight: 400 }}>(leave empty for unlimited)</span>
+                </label>
+                <input
+                  id="evt-max-reg"
+                  type="number"
+                  min="1"
+                  className="ae-input"
+                  value={maxRegistrations}
+                  onChange={(e) => setMaxRegistrations(e.target.value)}
+                  placeholder="e.g. 500"
                 />
               </div>
             </div>
