@@ -8,9 +8,9 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from "firebase/firestore";
+
 import { db } from "./firebase";
 
 const ANNOUNCEMENTS_COLLECTION = "announcements";
@@ -21,6 +21,7 @@ const announcementsRef = collection(db, ANNOUNCEMENTS_COLLECTION);
  */
 function formatAnnouncement(snapshotDoc) {
   const data = snapshotDoc.data();
+
   return {
     id: snapshotDoc.id,
     title: data.title || "",
@@ -29,142 +30,259 @@ function formatAnnouncement(snapshotDoc) {
     ctaText: data.ctaText || "",
     ctaLink: data.ctaLink || "",
     linkedEventId: data.linkedEventId || null,
+
+    // Important:
     status: data.status || "draft",
     published: Boolean(data.published),
+
     createdBy: data.createdBy || "",
     createdAt: data.createdAt || null,
     updatedAt: data.updatedAt || null,
   };
 }
 
+
 /**
- * Fetches all announcements, newest first.
- * Used by the Admin panel.
+ * Converts Firestore Timestamp into milliseconds
+ * for safe sorting.
+ */
+function getTimestampValue(timestamp) {
+  if (!timestamp) return 0;
+
+  if (typeof timestamp.toMillis === "function") {
+    return timestamp.toMillis();
+  }
+
+  if (timestamp.seconds) {
+    return timestamp.seconds * 1000;
+  }
+
+  return 0;
+}
+
+
+/**
+ * Fetches all announcements.
+ * Used by Admin panel.
  *
- * @returns {Promise<Array>}
+ * Only admins should call this function.
  */
 export async function getAnnouncements() {
   try {
-    const q = query(announcementsRef, orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(formatAnnouncement);
-  } catch (err) {
-    console.warn("getAnnouncements fallback query:", err);
     const snapshot = await getDocs(announcementsRef);
-    return snapshot.docs.map(formatAnnouncement);
+
+    const announcements = snapshot.docs.map(formatAnnouncement);
+
+    // Newest first
+    announcements.sort(
+      (a, b) =>
+        getTimestampValue(b.createdAt) -
+        getTimestampValue(a.createdAt)
+    );
+
+    return announcements;
+  } catch (err) {
+    console.error("Failed to load announcements:", err);
+    throw err;
   }
 }
 
+
 /**
- * Fetches only published announcements, newest first.
- * Used by the public site.
+ * Fetches ONLY published announcements.
  *
- * @returns {Promise<Array>}
+ * Used by the PUBLIC website.
+ *
+ * Important:
+ * Firestore Security Rules are not filters.
+ * Therefore the query itself MUST request
+ * only documents allowed to public users.
  */
 export async function getPublishedAnnouncements() {
   try {
     const q = query(
       announcementsRef,
-      where("published", "==", true),
-      orderBy("createdAt", "desc")
+      where("status", "==", "published")
     );
+
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(formatAnnouncement);
+
+    const announcements = snapshot.docs.map(formatAnnouncement);
+
+    // Newest first
+    announcements.sort(
+      (a, b) =>
+        getTimestampValue(b.createdAt) -
+        getTimestampValue(a.createdAt)
+    );
+
+    return announcements;
   } catch (err) {
-    console.warn("getPublishedAnnouncements fallback query:", err);
-    const snapshot = await getDocs(announcementsRef);
-    return snapshot.docs
-      .map(formatAnnouncement)
-      .filter((a) => a.published === true);
+    console.error(
+      "Failed to load published announcements:",
+      err
+    );
+
+    throw err;
   }
 }
 
+
 /**
- * Fetches a single announcement by id.
- *
- * @param {string} id
- * @returns {Promise<object|null>}
+ * Fetches a single announcement by ID.
  */
 export async function getAnnouncementById(id) {
-  const ref = doc(db, ANNOUNCEMENTS_COLLECTION, id);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return null;
-  return formatAnnouncement(snap);
+  try {
+    const ref = doc(
+      db,
+      ANNOUNCEMENTS_COLLECTION,
+      id
+    );
+
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      return null;
+    }
+
+    return formatAnnouncement(snap);
+  } catch (err) {
+    console.error(
+      "Failed to load announcement:",
+      err
+    );
+
+    throw err;
+  }
 }
+
 
 /**
  * Creates a new announcement.
- *
- * @param {object} announcement
- * @param {string} createdBy
- * @returns {Promise<string>} new doc id
  */
-export async function createAnnouncement(announcement, createdBy = "") {
-  const published = Boolean(announcement.published);
+export async function createAnnouncement(
+  announcement,
+  createdBy = ""
+) {
+  const published = Boolean(
+    announcement.published
+  );
+
   const payload = {
     title: (announcement.title || "").trim(),
+
     message: (announcement.message || "").trim(),
+
     type: announcement.type || "general",
+
     ctaText: (announcement.ctaText || "").trim(),
+
     ctaLink: (announcement.ctaLink || "").trim(),
-    linkedEventId: announcement.linkedEventId || null,
-    status: published ? "published" : "draft",
+
+    linkedEventId:
+      announcement.linkedEventId || null,
+
+    // Keep both fields synchronized
+    status: published
+      ? "published"
+      : "draft",
+
     published,
+
     createdBy,
+
     createdAt: serverTimestamp(),
+
     updatedAt: serverTimestamp(),
   };
-  const ref = await addDoc(announcementsRef, payload);
+
+  const ref = await addDoc(
+    announcementsRef,
+    payload
+  );
+
   return ref.id;
 }
 
+
 /**
  * Updates an existing announcement.
- *
- * @param {string} id
- * @param {object} announcement
- * @returns {Promise<void>}
  */
-export async function updateAnnouncement(id, announcement) {
-  const ref = doc(db, ANNOUNCEMENTS_COLLECTION, id);
-  const published = Boolean(announcement.published);
+export async function updateAnnouncement(
+  id,
+  announcement
+) {
+  const ref = doc(
+    db,
+    ANNOUNCEMENTS_COLLECTION,
+    id
+  );
+
+  const published = Boolean(
+    announcement.published
+  );
+
   const payload = {
     title: (announcement.title || "").trim(),
+
     message: (announcement.message || "").trim(),
+
     type: announcement.type || "general",
+
     ctaText: (announcement.ctaText || "").trim(),
+
     ctaLink: (announcement.ctaLink || "").trim(),
-    linkedEventId: announcement.linkedEventId || null,
-    status: published ? "published" : "draft",
+
+    linkedEventId:
+      announcement.linkedEventId || null,
+
+    status: published
+      ? "published"
+      : "draft",
+
     published,
+
     updatedAt: serverTimestamp(),
   };
+
   await updateDoc(ref, payload);
 }
 
+
 /**
  * Publishes or unpublishes an announcement.
- *
- * @param {string} id
- * @param {boolean} published
- * @returns {Promise<void>}
  */
-export async function setAnnouncementPublished(id, published) {
-  const ref = doc(db, ANNOUNCEMENTS_COLLECTION, id);
+export async function setAnnouncementPublished(
+  id,
+  published
+) {
+  const ref = doc(
+    db,
+    ANNOUNCEMENTS_COLLECTION,
+    id
+  );
+
   await updateDoc(ref, {
     published: Boolean(published),
-    status: published ? "published" : "draft",
+
+    status: published
+      ? "published"
+      : "draft",
+
     updatedAt: serverTimestamp(),
   });
 }
 
+
 /**
  * Deletes an announcement.
- *
- * @param {string} id
- * @returns {Promise<void>}
  */
 export async function deleteAnnouncement(id) {
-  const ref = doc(db, ANNOUNCEMENTS_COLLECTION, id);
+  const ref = doc(
+    db,
+    ANNOUNCEMENTS_COLLECTION,
+    id
+  );
+
   await deleteDoc(ref);
 }
