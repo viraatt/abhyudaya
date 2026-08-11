@@ -1,31 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import GallerySkeleton from "../components/gallery/GallerySkeleton.jsx";
 import InteractiveTiltCard from "../components/gallery/InteractiveTiltCard.jsx";
 import { fetchGalleryImages } from "../services/galleryApi.js";
-import { FaTimes, FaChevronLeft, FaChevronRight, FaSync, FaImages, FaPlay } from "react-icons/fa";
+import { FaTimes, FaChevronLeft, FaChevronRight, FaImages, FaPlay } from "react-icons/fa";
 import "./Gallery.css";
-
-/**
- * Splits a flat array of items into N columns for a Pinterest-style masonry layout.
- * This JS-based split is immune to the re-flow glitch caused by CSS column-count
- * when React appends new items during infinite scroll.
- */
-function splitIntoColumns(items, numCols) {
-  const cols = Array.from({ length: numCols }, () => []);
-  items.forEach((item, i) => cols[i % numCols].push(item));
-  return cols;
-}
-
-/** Returns the column count based on current viewport width. */
-function getColumnCount() {
-  if (typeof window === "undefined") return 2;
-  if (window.innerWidth >= 1024) return 4;
-  if (window.innerWidth >= 768) return 3;
-  return 2;
-}
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -41,162 +22,91 @@ const CATEGORIES = [
 ];
 
 export default function Gallery() {
-  const [images, setImages] = useState([]);
-  const [page, setPage] = useState(1);
+  const [allImages, setAllImages] = useState([]);   // full unfiltered pool
+  const [images, setImages] = useState([]);          // filtered view
   const [activeCategory, setActiveCategory] = useState("all");
   const [loadingInitial, setLoadingInitial] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [isLooped, setIsLooped] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [loadedImages, setLoadedImages] = useState({});
-  const [numCols, setNumCols] = useState(() => getColumnCount());
-
-  const sentinelRef = useRef(null);
-  const isFetchingRef = useRef(false);
-
-  // Update column count on resize (debounced)
-  useEffect(() => {
-    let timer;
-    const onResize = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => setNumCols(getColumnCount()), 100);
-    };
-    window.addEventListener("resize", onResize);
-    return () => { window.removeEventListener("resize", onResize); clearTimeout(timer); };
-  }, []);
-
-  // Pre-compute stable columns — only recalculates when images array or numCols changes
-  const columns = useMemo(() => splitIntoColumns(images, numCols), [images, numCols]);
 
   const breadcrumbItems = [
     { name: "Home", url: SITE_URL },
     { name: "Gallery", url: `${SITE_URL}/gallery` },
   ];
 
-  // Load initial batch of images on category change asynchronously
+  // ── Load ALL images once on mount ──────────────────────────────────────
   useEffect(() => {
     let isMounted = true;
-    async function loadData() {
+    async function loadAll() {
       setLoadingInitial(true);
-      setPage(1);
-      setIsLooped(false);
-      isFetchingRef.current = true;
-
       try {
-        const res = await fetchGalleryImages({ page: 1, limit: 12, category: activeCategory });
+        // Large limit so we get everything in one shot
+        const res = await fetchGalleryImages({ page: 1, limit: 200, category: "all" });
         if (isMounted) {
+          setAllImages(res.images || []);
           setImages(res.images || []);
-          setIsLooped(res.isLooped || false);
         }
       } catch (err) {
-        console.error("Failed to load initial gallery images:", err);
+        console.error("Failed to load gallery images:", err);
       } finally {
-        if (isMounted) {
-          setLoadingInitial(false);
-          isFetchingRef.current = false;
-        }
+        if (isMounted) setLoadingInitial(false);
       }
     }
+    loadAll();
+    return () => { isMounted = false; };
+  }, []);
 
-    loadData();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeCategory]);
-
-  // Infinite Scroll IntersectionObserver & batch loader
-  const loadNextBatch = useCallback(async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setLoadingMore(true);
-
-    const nextPage = page + 1;
-    try {
-      const res = await fetchGalleryImages({
-        page: nextPage,
-        limit: 8,
-        category: activeCategory,
-      });
-
-      if (res.images && res.images.length > 0) {
-        setImages((prev) => [...prev, ...res.images]);
-        setPage(nextPage);
-        if (res.isLooped) {
-          setIsLooped(true);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch next image batch:", err);
-    } finally {
-      setLoadingMore(false);
-      isFetchingRef.current = false;
-    }
-  }, [page, activeCategory]);
-
+  // ── Category filter (client-side, instant) ─────────────────────────────
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (activeCategory === "all") {
+      setImages(allImages);
+    } else {
+      setImages(
+        allImages.filter(
+          (img) => img.category?.toLowerCase() === activeCategory.toLowerCase()
+        )
+      );
+    }
+  }, [activeCategory, allImages]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting && !isFetchingRef.current && !loadingInitial) {
-          loadNextBatch();
-        }
-      },
-      { rootMargin: "300px 0px 300px 0px", threshold: 0.1 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadNextBatch, loadingInitial]);
-
-  // Image load detection for smooth fade-in
-  const handleImageLoaded = (id) => {
+  // ── Image fade-in on load ──────────────────────────────────────────────
+  const handleImageLoaded = (id) =>
     setLoadedImages((prev) => ({ ...prev, [id]: true }));
-  };
 
-  // Lightbox navigation
-  const openLightbox = (card) => {
-    setSelectedImage(card);
-  };
-
-  const closeLightbox = () => {
-    setSelectedImage(null);
-  };
+  // ── Lightbox ───────────────────────────────────────────────────────────
+  const openLightbox = (card) => setSelectedImage(card);
+  const closeLightbox = () => setSelectedImage(null);
 
   const handlePrevImage = useCallback(
     (e) => {
-      if (e && e.stopPropagation) e.stopPropagation();
+      if (e?.stopPropagation) e.stopPropagation();
       if (!selectedImage) return;
-      const currentIndex = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
-      const prevIndex = (currentIndex - 1 + images.length) % images.length;
-      setSelectedImage(images[prevIndex]);
+      const idx = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
+      setSelectedImage(images[(idx - 1 + images.length) % images.length]);
     },
     [selectedImage, images]
   );
 
   const handleNextImage = useCallback(
     (e) => {
-      if (e && e.stopPropagation) e.stopPropagation();
+      if (e?.stopPropagation) e.stopPropagation();
       if (!selectedImage) return;
-      const currentIndex = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
-      const nextIndex = (currentIndex + 1) % images.length;
-      setSelectedImage(images[nextIndex]);
+      const idx = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
+      setSelectedImage(images[(idx + 1) % images.length]);
     },
     [selectedImage, images]
   );
 
-  // Keyboard navigation for lightbox
+  // ── Keyboard shortcuts for lightbox ───────────────────────────────────
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const onKey = (e) => {
       if (!selectedImage) return;
       if (e.key === "Escape") closeLightbox();
       if (e.key === "ArrowLeft") handlePrevImage(e);
       if (e.key === "ArrowRight") handleNextImage(e);
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [selectedImage, handlePrevImage, handleNextImage]);
 
   const imageGallerySchema = {
@@ -212,10 +122,10 @@ export default function Gallery() {
   return (
     <div className="gallery-page">
       <Helmet>
-        <title>Gallery | Abhyudaya Club — Event Photos & Moments from MPEC Kanpur</title>
+        <title>Gallery | Abhyudaya Club — Event Photos &amp; Moments from MPEC Kanpur</title>
         <meta
           name="description"
-          content="Explore the interactive Pinterest masonry gallery of Abhyudaya Club at MPEC Kanpur — Cloudinary integrated, infinite scrolling event memories."
+          content="Explore the Pinterest masonry gallery of Abhyudaya Club at MPEC Kanpur — Cloudinary integrated event memories."
         />
         <link rel="canonical" href={`${SITE_URL}/gallery`} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
@@ -236,10 +146,10 @@ export default function Gallery() {
 
       <BreadcrumbSchema items={breadcrumbItems} />
 
-      {/* In-Flow Edge Header (Naturally scrolls off-screen) */}
+      {/* ── In-flow header (scrolls off naturally) ── */}
       <header className="gallery-header-section">
         <span className="gallery-header-eyebrow">Visual Memories</span>
-        <h1 className="gallery-header-title">Visual Memories & Events</h1>
+        <h1 className="gallery-header-title">Visual Memories &amp; Events</h1>
         <p className="gallery-header-subtitle">
           Explore curated moments, workshops, and flagship fests from Abhyudaya Club at MPEC Kanpur.
         </p>
@@ -261,15 +171,15 @@ export default function Gallery() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Initial Loading Skeleton */}
+      <main className="gallery-main">
+        {/* Skeleton while loading */}
         {loadingInitial ? (
           <GallerySkeleton count={12} />
         ) : images.length === 0 ? (
-          <div className="text-center py-20 bg-white/60 rounded-3xl border border-slate-200 my-8 shadow-sm">
-            <FaImages className="mx-auto text-5xl text-amber-500/60 mb-4" />
-            <h3 className="text-xl font-bold text-slate-800 mb-2">No Media Found</h3>
-            <p className="text-slate-500 max-w-md mx-auto mb-6">
+          <div className="gallery-empty-state">
+            <FaImages className="gallery-empty-icon" />
+            <h3 className="gallery-empty-title">No Media Found</h3>
+            <p className="gallery-empty-desc">
               There are no gallery items under this category yet.
             </p>
             <button
@@ -281,89 +191,70 @@ export default function Gallery() {
             </button>
           </div>
         ) : (
-          /* Pinterest Multi-Column JS-Split Masonry Grid */
+          /* ── CSS column-count masonry — stable, no re-flow glitch ── */
           <div className="gallery-masonry-grid">
-            {columns.map((col, colIdx) => (
-              <div key={colIdx} className="gallery-masonry-col">
-                {col.map((card) => {
-                  const isLoaded = loadedImages[card.uniqueKey];
-                  return (
-                    <div key={card.uniqueKey} className="gallery-masonry-item">
-                      <InteractiveTiltCard onClick={() => openLightbox(card)}>
-                        <div className="gallery-pinterest-card">
-                          {/* Clean Image / Video Tile */}
-                          <div className="gallery-clean-tile">
-                            {!isLoaded && (
-                              <div className="gallery-skeleton-shimmer" />
-                            )}
+            {images.map((card) => {
+              const isLoaded = loadedImages[card.uniqueKey];
+              return (
+                <div key={card.uniqueKey} className="gallery-masonry-item">
+                  <InteractiveTiltCard onClick={() => openLightbox(card)}>
+                    <div className="gallery-pinterest-card">
+                      {/* Image / Video tile */}
+                      <div className="gallery-clean-tile">
+                        {/* Shimmer shown until media loaded */}
+                        {!isLoaded && <div className="gallery-skeleton-shimmer" />}
 
-                            {card.isVideo ? (
-                              <div className="relative w-full">
-                                <video
-                                  src={card.src}
-                                  className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
-                                  onLoadedData={() => handleImageLoaded(card.uniqueKey)}
-                                  muted
-                                  playsInline
-                                  loop
-                                  autoPlay
-                                />
-                                <div className="gallery-video-badge">
-                                  <div className="gallery-video-play-btn">
-                                    <FaPlay className="ml-0.5 text-xs" />
-                                  </div>
-                                </div>
+                        {card.isVideo ? (
+                          <div className="gallery-video-wrap">
+                            <video
+                              src={card.src}
+                              className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
+                              onLoadedData={() => handleImageLoaded(card.uniqueKey)}
+                              muted
+                              playsInline
+                              loop
+                              autoPlay
+                            />
+                            <div className="gallery-video-badge">
+                              <div className="gallery-video-play-btn">
+                                <FaPlay />
                               </div>
-                            ) : (
-                              <img
-                                src={card.src}
-                                alt={card.title || "Club event photo"}
-                                loading="lazy"
-                                decoding="async"
-                                onLoad={() => handleImageLoaded(card.uniqueKey)}
-                                className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
-                              />
-                            )}
-                          </div>
-
-                          {/* Below-Tile Pinterest Caption Typography */}
-                          <div className="gallery-tile-caption">
-                            <h3 className="gallery-tile-title">{card.title}</h3>
-                            <div className="gallery-tile-meta">
-                              <span className="gallery-tile-category">{card.category}</span>
                             </div>
                           </div>
+                        ) : (
+                          <img
+                            src={card.src}
+                            alt={card.title || "Club event photo"}
+                            loading="lazy"
+                            decoding="async"
+                            onLoad={() => handleImageLoaded(card.uniqueKey)}
+                            onError={(e) => {
+                              // Show a subtle fallback colour if image breaks
+                              e.currentTarget.style.opacity = "0.4";
+                              handleImageLoaded(card.uniqueKey);
+                            }}
+                            className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
+                          />
+                        )}
+                      </div>
+
+                      {/* Below-tile caption */}
+                      <div className="gallery-tile-caption">
+                        <h3 className="gallery-tile-title">{card.title}</h3>
+                        <div className="gallery-tile-meta">
+                          <span className="gallery-tile-category">{card.category}</span>
                         </div>
-                      </InteractiveTiltCard>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  </InteractiveTiltCard>
+                </div>
+              );
+            })}
           </div>
         )}
-
-        {/* Infinite Scroll Sentinel & Loader */}
-        <div ref={sentinelRef} className="gallery-infinite-sentinel">
-          {loadingMore && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="gallery-loader-spinner" />
-              <span className="text-xs text-amber-700 font-bold tracking-wider uppercase">
-                Loading Gallery Stream...
-              </span>
-            </div>
-          )}
-
-          {isLooped && !loadingMore && images.length > 0 && (
-            <div className="gallery-loop-badge">
-              <FaSync className="animate-spin text-amber-600" />
-              <span>Infinite Stream Active • Recycling Gallery Moments</span>
-            </div>
-          )}
-        </div>
       </main>
 
-      {/* Expanded Lightbox Modal */}
+      {/* ── Lightbox Modal ── */}
       <AnimatePresence>
         {selectedImage && (
           <>
@@ -381,7 +272,7 @@ export default function Gallery() {
               exit={{ opacity: 0, scale: 0.94, y: 15 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
             >
-              {/* Close Button */}
+              {/* Close */}
               <button
                 type="button"
                 className="gallery-overlay-close-btn"
@@ -391,7 +282,7 @@ export default function Gallery() {
                 <FaTimes />
               </button>
 
-              {/* Main Media Stage */}
+              {/* Media stage */}
               <div className="gallery-overlay-image-box">
                 {selectedImage.isVideo ? (
                   <video
@@ -409,19 +300,17 @@ export default function Gallery() {
                   />
                 )}
 
-                {/* Left / Right Nav Arrows with 44x44px Touch Targets */}
                 <button
                   type="button"
-                  className="gallery-overlay-nav-btn absolute left-4 top-1/2 -translate-y-1/2"
+                  className="gallery-overlay-nav-btn gallery-nav-left"
                   onClick={handlePrevImage}
                   aria-label="Previous media"
                 >
                   <FaChevronLeft />
                 </button>
-
                 <button
                   type="button"
-                  className="gallery-overlay-nav-btn absolute right-4 top-1/2 -translate-y-1/2"
+                  className="gallery-overlay-nav-btn gallery-nav-right"
                   onClick={handleNextImage}
                   aria-label="Next media"
                 >
@@ -429,22 +318,15 @@ export default function Gallery() {
                 </button>
               </div>
 
-              {/* Lightbox Sidebar Info */}
+              {/* Sidebar info */}
               <div className="gallery-overlay-sidebar">
                 <div>
-                  <span className="gallery-modal-badge">
-                    {selectedImage.category}
-                  </span>
-
-                  <h2 className="gallery-modal-title">
-                    {selectedImage.title}
-                  </h2>
-
+                  <span className="gallery-modal-badge">{selectedImage.category}</span>
+                  <h2 className="gallery-modal-title">{selectedImage.title}</h2>
                   <p className="gallery-modal-desc">
                     {selectedImage.description || "Abhyudaya Club Event Snapshot at MPEC Kanpur."}
                   </p>
                 </div>
-
                 <div className="gallery-modal-footer">
                   <span>Press Esc to close • Use ← → keys to navigate</span>
                 </div>

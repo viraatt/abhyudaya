@@ -1,137 +1,156 @@
-/* ─── Header ─────────────────────────────────────────────── */
-.header {
+/* ─────────────────────────────────────────────────────────────
+   Abhyudaya Club — Header / Navbar
+   Class names match Header.jsx exactly.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Sticky shell ─────────────────────────────────────────── */
+.navbar {
   position: sticky;
   top: 0;
   z-index: 500;
-  background: rgba(13, 18, 36, 0.72);
-  backdrop-filter: blur(10px);
+  background: rgba(13, 18, 36, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid transparent;
   transition: border-color 0.25s ease, background 0.25s ease;
 }
-
-.header--scrolled {
-  background: rgba(13, 18, 36, 0.92);
-  border-bottom-color: var(--line-on-dark);
+.navbar--scrolled {
+  background: rgba(13, 18, 36, 0.96);
+  border-bottom-color: rgba(251, 244, 232, 0.12);
 }
 
-.header__inner {
+/* ── Inner container ──────────────────────────────────────── */
+.navbar__container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  height: 72px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 76px;
+  gap: 2rem;
 }
 
-/* ─── Brand / Logo ───────────────────────────────────────── */
-.brand {
+/* ── Brand ────────────────────────────────────────────────── */
+.navbar__brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   color: var(--dawn);
-}
-
-.brand__mark {
-  width: 40px;
-  height: 40px;
+  text-decoration: none;
   flex-shrink: 0;
-  border-radius: 50%;
 }
-
-.brand__text {
+.navbar__logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.navbar__brand-text {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   letter-spacing: 0.01em;
   display: flex;
   flex-direction: column;
   line-height: 1.15;
+  color: var(--dawn);
 }
-
-.brand__sub {
+.navbar__brand-sub {
   font-family: var(--font-utility);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 500;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--sun-soft);
 }
 
-/* ─── Desktop Nav ────────────────────────────────────────── */
-.nav {
+/* ── Desktop nav links ────────────────────────────────────── */
+.navbar__links {
   display: flex;
   align-items: center;
-  gap: 1.9rem;
+  gap: 0.25rem;
+  flex: 1;                   /* push actions to the right */
 }
 
-.nav__link {
+.navbar__link {
   font-family: var(--font-utility);
-  font-size: 0.88rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--dawn-dim);
-  position: relative;
-  display: inline-flex;
-  align-items: center;
   text-decoration: none;
-  padding: 0.3rem 0.1rem;
-  transition: color 0.2s ease;
+  position: relative;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  transition: color 0.2s ease, background 0.2s ease;
+  white-space: nowrap;
 }
-
-.nav__link::after {
+.navbar__link::after {
   content: '';
   position: absolute;
-  left: 0;
+  left: 0.5rem;
   right: 100%;
-  bottom: -2px;
+  bottom: 0;
   height: 2px;
   background: var(--sun);
+  border-radius: 2px;
   transition: right 0.25s ease;
 }
-
-.nav__link:hover {
+.navbar__link:hover {
+  color: var(--dawn);
+}
+.navbar__link:hover::after,
+.navbar__link--active::after {
+  right: 0.5rem;
+}
+.navbar__link--active {
   color: var(--dawn);
 }
 
-.nav__link:hover::after,
-.nav__link--active::after {
-  right: 0;
+/* ── Mobile-only actions block (hidden on desktop) ────────── */
+.navbar__mobile-actions {
+  display: none;
 }
 
-.nav__link--active {
-  color: var(--dawn);
+/* ── Desktop action buttons ───────────────────────────────── */
+.navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
 }
 
-/* ─── CTA Buttons ────────────────────────────────────────── */
-.nav__cta {
+/* ── Shared CTA button styles ─────────────────────────────── */
+.navbar__cta {
   font-family: var(--font-utility);
   font-size: 0.82rem;
   font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+  white-space: nowrap;
+}
+.navbar__cta--primary {
   background: var(--sun);
   color: var(--night);
-  padding: 0.55rem 1.1rem;
-  border-radius: 100px;
-  transition: transform 0.2s ease, background 0.2s ease;
 }
-
-.nav__cta:hover {
+.navbar__cta--primary:hover {
   background: var(--sun-soft);
   transform: translateY(-1px);
 }
-
-.nav__admin {
-  margin-left: 10px;
+.navbar__cta--secondary {
   background: #1e3a8a;
   color: #fff;
   border: 2px solid #1e3a8a;
-  transition: all 0.3s ease;
 }
-
-.nav__admin:hover {
+.navbar__cta--secondary:hover {
   background: #2563eb;
   border-color: #2563eb;
-  color: #fff;
+  transform: translateY(-1px);
 }
 
-/* ─── Hamburger Button (hidden on desktop) ───────────────── */
-.menu-btn {
+/* ── Hamburger toggle (hidden on desktop) ─────────────────── */
+.navbar__toggle {
   display: none;
   flex-direction: column;
   justify-content: center;
@@ -142,84 +161,84 @@
   border: none;
   cursor: pointer;
   padding: 0;
+  flex-shrink: 0;
+  margin-left: auto;
 }
-
-.menu-btn span {
+.navbar__toggle span {
   display: block;
   height: 2px;
   background: var(--dawn);
   border-radius: 2px;
   transition: transform 0.25s ease, opacity 0.2s ease;
 }
+.navbar__toggle--open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.navbar__toggle--open span:nth-child(2) { opacity: 0; }
+.navbar__toggle--open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-.menu-btn--open span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-.menu-btn--open span:nth-child(2) {
-  opacity: 0;
-}
-.menu-btn--open span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
-
-/* ─── Mobile Nav (≤ 860px) ───────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   Mobile breakpoint (≤ 860px)
+   ───────────────────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .menu-btn {
+
+  /* Show hamburger */
+  .navbar__toggle {
     display: flex;
     position: relative;
-    z-index: 200;
+    z-index: 600;
   }
 
-  .nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    min-height: 100dvh;
-
-    background: var(--night, #0D1224);
-    flex-direction: column;
-    align-items: flex-start;
-    /* Push links below the sticky header bar */
-    padding: 90px 1.5rem 2.5rem 1.5rem;
-    gap: 0;
-    overflow-y: auto;
-    z-index: 150;
-
-    transform: translateX(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .nav--open {
-    transform: translateX(0);
-  }
-
-  /* Mobile: full-width, large touch-friendly rows */
-  .nav__link {
-    font-size: 1.25rem;
-    padding: 0.9rem 0;
-    width: 100%;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  }
-
-  /* No underline slide animation on mobile */
-  .nav__link::after {
+  /* Hide desktop actions */
+  .navbar__actions {
     display: none;
   }
 
-  /* Full-width CTA buttons on mobile */
-  .nav__cta {
-    margin-top: 1.25rem;
-    width: 100%;
-    text-align: center;
-    padding: 0.85rem 1.1rem;
-    font-size: 1rem;
+  /* Nav links panel — slides in from right */
+  .navbar__links {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 85vw);
+    height: 100%;
+    background: var(--night, #0d1224);
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 88px 1.5rem 2.5rem;
+    gap: 0;
+    z-index: 550;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+  }
+  .navbar__links--open {
+    transform: translateX(0);
   }
 
-  .nav__admin {
-    margin-left: 0;
+  /* Nav links: large, full-width rows */
+  .navbar__link {
+    font-size: 1.1rem;
+    padding: 0.85rem 0.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    border-radius: 0;
+    width: 100%;
+  }
+  .navbar__link::after { display: none; }
+
+  /* Show the mobile-only actions block */
+  .navbar__mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+  }
+
+  /* Mobile CTAs: full-width */
+  .navbar__mobile-actions .navbar__cta {
+    width: 100%;
+    text-align: center;
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
   }
 }
