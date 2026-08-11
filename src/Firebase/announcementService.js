@@ -31,7 +31,6 @@ function formatAnnouncement(snapshotDoc) {
     ctaLink: data.ctaLink || "",
     linkedEventId: data.linkedEventId || null,
 
-    // Important:
     status: data.status || "draft",
     published: Boolean(data.published),
 
@@ -40,7 +39,6 @@ function formatAnnouncement(snapshotDoc) {
     updatedAt: data.updatedAt || null,
   };
 }
-
 
 /**
  * Converts Firestore Timestamp into milliseconds
@@ -59,7 +57,6 @@ function getTimestampValue(timestamp) {
 
   return 0;
 }
-
 
 /**
  * Fetches all announcements.
@@ -87,7 +84,6 @@ export async function getAnnouncements() {
   }
 }
 
-
 /**
  * Fetches ONLY published announcements.
  *
@@ -95,8 +91,8 @@ export async function getAnnouncements() {
  *
  * Important:
  * Firestore Security Rules are not filters.
- * Therefore the query itself MUST request
- * only documents allowed to public users.
+ * Therefore the query itself requests only
+ * published documents.
  */
 export async function getPublishedAnnouncements() {
   try {
@@ -127,7 +123,6 @@ export async function getPublishedAnnouncements() {
   }
 }
 
-
 /**
  * Fetches a single announcement by ID.
  */
@@ -155,7 +150,6 @@ export async function getAnnouncementById(id) {
     throw err;
   }
 }
-
 
 /**
  * Creates a new announcement.
@@ -204,7 +198,6 @@ export async function createAnnouncement(
   return ref.id;
 }
 
-
 /**
  * Updates an existing announcement.
  */
@@ -248,7 +241,6 @@ export async function updateAnnouncement(
   await updateDoc(ref, payload);
 }
 
-
 /**
  * Publishes or unpublishes an announcement.
  */
@@ -272,7 +264,6 @@ export async function setAnnouncementPublished(
     updatedAt: serverTimestamp(),
   });
 }
-
 
 /**
  * Deletes an announcement.

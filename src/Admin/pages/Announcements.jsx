@@ -152,8 +152,15 @@ export default function Announcements() {
       await loadData();
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch (err) {
-      console.error("Save failed:", err);
-      alert("Failed to save announcement.");
+      // Log the real Firebase error for debugging (no credentials exposed)
+      console.error("Save failed - error.code:", err?.code);
+      console.error("Save failed - error.message:", err?.message);
+      console.error("Save failed - full error:", err);
+      alert(
+        `Failed to save announcement. (${
+          err?.code || err?.message || "unknown error"
+        })`
+      );
     } finally {
       setSaving(false);
     }

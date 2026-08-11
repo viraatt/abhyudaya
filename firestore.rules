@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: checks if the authenticated user has an admin role.
+    function isAdmin(roles) {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+    }
+
+    // ============================================================
+    // USERS (admin accounts)
+    // Authenticated users can read their own record.
+    // Only super_admin can manage users.
+    // ============================================================
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if isAdmin(['super_admin']);
+    }
+
+    // ============================================================
+    // EVENTS
+    // Public: read published events only.
+    // Admins (super_admin, event_admin): read ALL (incl. drafts) + write.
+    // ============================================================
+    match /events/{eventId} {
+      allow read: if isAdmin(['super_admin', 'event_admin'])
+        || resource.data.status == 'Published';
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // ============================================================
+    // ANNOUNCEMENTS
+    // Public: read ONLY published announcements.
+    // Admins (super_admin, event_admin): read ALL (incl. drafts) + write.
+    // ============================================================
+    match /announcements/{announcementId} {
+      allow read: if isAdmin(['super_admin', 'event_admin'])
+        || resource.data.published == true;
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // ============================================================
+    // STUDENTS (private)
+    // Admins (super_admin, event_admin) only.
+    // Public: NO access.
+    // ============================================================
+    match /students/{studentId} {
+      allow read, create, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // ============================================================
+    // REGISTRATIONS
+    // Public (unauthenticated OR authenticated non-admin): CREATE only,
+    //   with strict payload validation to prevent arbitrary field injection.
+    // Public: NO read, NO update, NO delete.
+    // Admins (super_admin, event_admin): read/update/delete.
+    // ============================================================
+    match /registrations/{registrationId} {
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'eventId', 'name', 'email', 'phone', 'branch', 'semester',
+          'registrationId', 'createdAt'
+        ])
+        && request.resource.data.eventId is string
+        && request.resource.data.eventId.size() > 0
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 0
+        && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && request.resource.data.registrationId is string
+        && request.resource.data.registrationId.size() > 0
+        && request.resource.data.createdAt is timestamp;
+
+      allow read, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // ============================================================
+    // BLOGS
+    // Public: read published blogs only.
+    // Admins (super_admin, blog_admin): read ALL (incl. drafts) + write.
+    // ============================================================
+    match /blogs/{blogId} {
+      allow read: if isAdmin(['super_admin', 'blog_admin'])
+        || resource.data.status == 'Published';
+      allow create, update, delete: if isAdmin(['super_admin', 'blog_admin']);
+    }
+
+    // ============================================================
+    // BLOG COMMENTS (subcollection)
+    // Public: read + create comments.
+    // Admins (super_admin, blog_admin): update/delete.
+    // ============================================================
+    match /blogs/{blogId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['name', 'message', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0;
+      allow update, delete: if isAdmin(['super_admin', 'blog_admin']);
+    }
+
+    // ============================================================
+    // TEAM
+    // Public: read.
+    // Admins (super_admin): full CRUD.
+    // ============================================================
+    match /team/{memberId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin(['super_admin']);
+    }
+
+    // ============================================================
+    // GALLERY
+    // Public: read.
+    // Admins (super_admin): full CRUD.
+    // ============================================================
+    match /gallery/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin(['super_admin']);
+    }
+
+    // ============================================================
+    // EVENT_REVIEWS
+    // Public: read approved reviews + submit a review (validated).
+    // Admins (super_admin): manage reviews (approve, feature, delete).
+    // ============================================================
+    match /event_reviews/{reviewId} {
+      allow read: if resource.data.status == 'approved';
+      allow create: if request.resource.data.keys().hasOnly([
+        'eventId', 'eventTitle', 'eventSlug', 'name', 'email', 'college',
+        'branch', 'profilePhoto', 'rating', 'title', 'message', 'status',
+        'featured', 'verifiedAttendee', 'createdAt', 'updatedAt'
+      ])
+      && request.resource.data.eventId is string
+      && request.resource.data.name is string
+      && request.resource.data.rating is number;
+      allow update, delete: if isAdmin(['super_admin']);
+    }
+
+    // ============================================================
+    // MEDIA
+    // Public: read.
+    // Admins (super_admin, blog_admin, event_admin): full CRUD.
+    // ============================================================
+    match /media/{mediaId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin(['super_admin', 'blog_admin', 'event_admin']);
+    }
+
+    // ============================================================
+    // CONTACT_MESSAGES
+    // Public: create (contact form submission, validated).
+    // Admins (super_admin): read/update/delete.
+    // ============================================================
+    match /contact_messages/{messageId} {
+      allow create: if request.resource.data.keys().hasOnly([
+        'name', 'email', 'phone', 'subject', 'message', 'status', 'createdAt'
+      ])
+      && request.resource.data.name is string
+      && request.resource.data.email is string
+      && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
+      allow read, update, delete: if isAdmin(['super_admin']);
+    }
+  }
+}

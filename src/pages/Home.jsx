@@ -6,6 +6,9 @@ import logo from '../assets/logo-512.png'
 import OrganizationSchema from '../components/seo/schemas/OrganizationSchema.jsx'
 import WebSiteSchema from '../components/seo/schemas/WebSiteSchema.jsx'
 import { getPublishedAnnouncements } from '../Firebase/announcementService.js'
+import { getEventById } from '../Firebase/eventService.js'
+import { countRegistrations } from '../Firebase/registrationService.js'
+import { getRegistrationStatus, formatDate } from '../utils/registrationStatus.js'
 import './Home.css'
 
 const SITE_URL = 'https://www.abhyudayaclub.in'
@@ -26,6 +29,7 @@ export default function Home() {
   const [videoReady, setVideoReady] = useState(false)
   const [announcements, setAnnouncements] = useState([])
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false)
+  const [homeEventData, setHomeEventData] = useState({})
 
   useEffect(() => {
     // Respect reduced-motion preference: never autoplay the video for
@@ -41,8 +45,32 @@ export default function Home() {
   useEffect(() => {
     let mounted = true
     getPublishedAnnouncements()
-      .then((data) => {
-        if (mounted) setAnnouncements(data.slice(0, 3))
+      .then(async (data) => {
+        if (!mounted) return
+        const sliced = data.slice(0, 3)
+        setAnnouncements(sliced)
+
+        // Fetch linked event + registration count for event-type announcements
+        const linkedEvents = sliced
+          .filter((a) => a.type === 'event' && a.linkedEventId)
+          .map((a) => a.linkedEventId)
+        const unique = [...new Set(linkedEvents)]
+
+        const map = {}
+        await Promise.all(
+          unique.map(async (eventId) => {
+            try {
+              const [event, count] = await Promise.all([
+                getEventById(eventId),
+                countRegistrations(eventId),
+              ])
+              if (event) map[eventId] = { event, count }
+            } catch {
+              // ignore
+            }
+          })
+        )
+        if (mounted) setHomeEventData(map)
       })
       .catch((err) => {
         console.error('Failed to load announcements:', err)
@@ -216,14 +244,61 @@ export default function Home() {
                   </span>
                   <h3>{ann.title}</h3>
                   <p>{ann.message}</p>
-                  {ann.type === "event" && ann.linkedEventId && (
-                    <Link
-                      to={`/register/${ann.linkedEventId}`}
-                      className="home-announcement-cta"
-                    >
-                      Start Registration →
-                    </Link>
-                  )}
+
+                  {ann.type === 'event' &&
+                    ann.linkedEventId &&
+                    homeEventData[ann.linkedEventId] && (
+                      <div className="home-announcement-event">
+                        <div className="home-announcement-event-name">
+                          🎯 {homeEventData[ann.linkedEventId].event.title}
+                        </div>
+                        {(() => {
+                          const { event, count } = homeEventData[ann.linkedEventId]
+                          const status = getRegistrationStatus(event, count)
+                          return (
+                            <>
+                              <div
+                                className="home-announcement-event-status"
+                                style={{ color: status.color }}
+                              >
+                                {status.label}
+                              </div>
+                              <div className="home-announcement-event-count">
+                                <strong>{count}</strong>
+                                {event.maxRegistrations
+                                  ? ` / ${event.maxRegistrations}`
+                                  : ''}{' '}
+                                registered
+                              </div>
+                              {event.maxRegistrations && (
+                                <div className="home-announcement-progress">
+                                  <div
+                                    className="home-announcement-progress-fill"
+                                    style={{
+                                      width: `${Math.min(
+                                        (count / Number(event.maxRegistrations)) * 100,
+                                        100
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              {event.registrationDeadline && (
+                                <div className="home-announcement-deadline">
+                                  Closes: {formatDate(event.registrationDeadline)}
+                                </div>
+                              )}
+                            </>
+                          )
+                        })()}
+                        <Link
+                          to={`/register/${ann.linkedEventId}`}
+                          className="home-announcement-cta"
+                        >
+                          Start Registration →
+                        </Link>
+                      </div>
+                    )}
                   {ann.ctaText && ann.ctaLink && (
                     <a
                       href={ann.ctaLink}
