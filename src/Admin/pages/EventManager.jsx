@@ -15,6 +15,7 @@ import {
   FaRegStar,
   FaCalendarAlt,
   FaArchive,
+  FaClipboardList,
 } from "react-icons/fa";
 import { db } from "../../Firebase/firebase";
 import {
@@ -23,6 +24,7 @@ import {
   deleteEvent,
   createEvent,
 } from "../../Firebase/eventService";
+import { countRegistrations } from "../../Firebase/registrationService";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import SkeletonLoader from "../components/SkeletonLoader";
@@ -92,6 +94,7 @@ export default function EventManager() {
   const [statusFilter, setStatusFilter]   = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [searchQuery, setSearchQuery]     = useState("");
+  const [regCounts, setRegCounts]         = useState({});
 
   /* ── Fetch ── */
   const fetchEvents = useCallback(async () => {
@@ -99,6 +102,19 @@ export default function EventManager() {
     try {
       const data = await getEvents();
       setEvents(data);
+
+      // Fetch registration counts for each event (lightweight)
+      const counts = {};
+      await Promise.all(
+        data.map(async (ev) => {
+          try {
+            counts[ev.id] = await countRegistrations(ev.id);
+          } catch {
+            counts[ev.id] = 0;
+          }
+        })
+      );
+      setRegCounts(counts);
     } catch (err) {
       console.error(err);
       toast.error("Unable to load events.");
@@ -454,6 +470,21 @@ export default function EventManager() {
                             >
                               <FaEye />
                               <span>View</span>
+                            </Link>
+
+                            {/* View Registrations */}
+                            <Link
+                              to={`/admin/registrations?event=${ev.id}`}
+                              className="evt-action-btn btn-registrations"
+                              title="View registrations"
+                              aria-label={`View registrations for ${ev.title}`}
+                            >
+                              <FaClipboardList />
+                              <span>
+                                {regCounts[ev.id] !== undefined
+                                  ? `${regCounts[ev.id]}${ev.maxRegistrations ? ` / ${ev.maxRegistrations}` : ""}`
+                                  : "Regs"}
+                              </span>
                             </Link>
 
                             {/* Edit — disabled for now (UI coming soon) */}

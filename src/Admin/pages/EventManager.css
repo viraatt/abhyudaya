@@ -489,6 +489,17 @@
   border-color: #15803d;
 }
 
+.evt-action-btn.btn-registrations {
+  background: #fefce8;
+  color: #ca8a04;
+  border-color: #fef08a;
+}
+.evt-action-btn.btn-registrations:hover {
+  background: #ca8a04;
+  color: #fff;
+  border-color: #ca8a04;
+}
+
 /* ── Empty states ── */
 .evt-empty-state {
   background: #ffffff;

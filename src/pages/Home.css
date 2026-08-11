@@ -311,6 +311,63 @@
   text-decoration: underline;
 }
 
+/* ── Home announcement event card ── */
+
+.home-announcement-event {
+  background: var(--dawn-dim, #f8fafc);
+  border: 1px solid var(--line-on-light, #e5e7eb);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-announcement-event-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--ink, #111827);
+  line-height: 1.3;
+}
+
+.home-announcement-event-status {
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-announcement-event-count {
+  color: var(--ink-soft, #4b5563);
+  font-size: 0.85rem;
+}
+
+.home-announcement-event-count strong {
+  font-size: 1.1rem;
+  color: var(--ink, #111827);
+}
+
+.home-announcement-progress {
+  height: 7px;
+  background: var(--line, #e5e7eb);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.home-announcement-progress-fill {
+  height: 100%;
+  background: var(--horizon, #2563eb);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.home-announcement-deadline {
+  color: var(--ink-soft, #6b7280);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .home-announcements-more {
   margin-top: 1.5rem;
   text-align: center;

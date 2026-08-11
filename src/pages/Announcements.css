@@ -14,6 +14,49 @@
   font-size: 16px;
 }
 
+.announcements-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.announcements-loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(37, 99, 235, 0.2);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: announcements-spin 0.8s linear infinite;
+}
+
+@keyframes announcements-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.announcements-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.announcements-retry-btn:hover {
+  background: #1d4ed8;
+}
+
 .announcements-list {
   display: flex;
   flex-direction: column;
@@ -23,6 +66,7 @@
 }
 
 .announcement-card {
+  position: relative;
   background: #fff;
   border-radius: 18px;
   box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
@@ -32,6 +76,31 @@
 
 .announcement-card:hover {
   transform: translateY(-3px);
+}
+
+/* Latest announcement is visually prominent */
+.announcement-card--latest {
+  border: 2px solid #2563eb;
+  box-shadow: 0 14px 45px rgba(37, 99, 235, 0.15);
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+}
+
+.announcement-latest-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .announcement-card-top {
@@ -124,6 +193,108 @@
 .announcement-register-btn:hover {
   background: #1d4ed8;
   text-decoration: none;
+}
+
+.announcement-event-details-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border: 1px solid #2563eb;
+  border-radius: 10px;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 14px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.announcement-event-details-btn:hover {
+  background: #eff6ff;
+  text-decoration: none;
+}
+
+/* ── Event card inside announcements ── */
+
+.announcement-event-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.announcement-event-name {
+  font-weight: 800;
+  font-size: 16px;
+  color: #111827;
+}
+
+.announcement-event-status {
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.announcement-event-count {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.announcement-event-count strong {
+  font-size: 18px;
+  color: #111827;
+}
+
+.announcement-progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.announcement-progress-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.announcement-event-deadline {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.announcement-event-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.announcement-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-family: inherit;
+}
+
+.announcement-share-btn:hover {
+  background: #f8fafc;
 }
 
 /* ── Responsive ── */

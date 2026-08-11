@@ -1,0 +1,160 @@
+/* ==========================================
+   ADMIN REGISTRATIONS PAGE
+   ========================================== */
+
+.reg-page {
+  max-width: 1200px;
+}
+
+/* ── Export Button ── */
+
+.reg-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reg-export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Stats ── */
+
+.reg-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.reg-stat {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  text-align: center;
+}
+
+.reg-stat-value {
+  display: block;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.reg-stat-label {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Toolbar ── */
+
+.reg-toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.reg-search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.reg-filter {
+  min-width: 160px;
+  width: auto;
+}
+
+/* ── Table ── */
+
+.reg-table-wrap {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+
+.reg-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.reg-table thead {
+  background: #f8fafc;
+}
+
+.reg-table th {
+  text-align: left;
+  padding: 16px 18px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.reg-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.reg-table tbody tr {
+  transition: 0.2s;
+}
+
+.reg-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.reg-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Registration ID badge ── */
+
+.reg-id-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.3px;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 900px) {
+  .reg-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .reg-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .reg-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reg-filter {
+    width: 100%;
+  }
+}
