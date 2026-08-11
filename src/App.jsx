@@ -61,6 +61,7 @@ export default function App() {
 
   useEffect(() => {
     NProgress.start();
+
     const timer = setTimeout(() => {
       NProgress.done();
     }, 100);
@@ -142,7 +143,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-                    <Route
+
+          <Route
             path="/admin/blogs/add"
             element={
               <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
@@ -260,70 +262,19 @@ export default function App() {
 
           <Route element={<Layout />}>
 
-            <Route
-              path="/"
-              element={<Home />}
-            />
-
-            <Route
-              path="/about"
-              element={<About />}
-            />
-
-            <Route
-              path="/events"
-              element={<Events />}
-            />
-
-            <Route
-              path="/events/:slug"
-              element={<EventDetails />}
-            />
-
-            <Route
-              path="/team"
-              element={<Team />}
-            />
-
-            <Route
-              path="/gallery"
-              element={<Gallery />}
-            />
-
-            <Route
-              path="/blog"
-              element={<Blog />}
-            />
-
-            <Route
-              path="/blog/:slug"
-              element={<BlogDetails />}
-            />
-
-            <Route
-              path="/contact"
-              element={<Contact />}
-            />
-
-            <Route
-              path="/join"
-              element={<JoinClub />}
-            />
-
-            <Route
-              path="/announcements"
-              element={<Announcements />}
-            />
-
-            <Route
-              path="/register/:eventId"
-              element={<Register />}
-            />
-
-            <Route
-              path="*"
-              element={<NotFound />}
-            />
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/events/:slug" element={<EventDetails />} />
+            <Route path="/team" element={<Team />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogDetails />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/join" element={<JoinClub />} />
+            <Route path="/announcements" element={<Announcements />} />
+            <Route path="/register/:eventId" element={<Register />} />
+            <Route path="*" element={<NotFound />} />
 
           </Route>
 

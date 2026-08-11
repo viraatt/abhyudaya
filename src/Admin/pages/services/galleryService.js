@@ -19,9 +19,13 @@ export async function getGalleryItems() {
     const q = query(galleryRef, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-  } catch (err) {
-    const snapshot = await getDocs(galleryRef);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch {
+    try {
+      const snapshot = await getDocs(galleryRef);
+      return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    } catch {
+      return [];
+    }
   }
 }
 
