@@ -28,6 +28,7 @@
   display: flex;
   align-items: center;
   gap: 2rem;
+  position: relative;
 }
 
 /* ── Brand ────────────────────────────────────────────────── */
@@ -175,16 +176,27 @@
 .navbar__toggle--open span:nth-child(2) { opacity: 0; }
 .navbar__toggle--open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* ── Close button inside the mobile panel (hidden on desktop) */
+.navbar__panel-close {
+  display: none;
+}
+
+/* ── Backdrop behind the mobile panel (hidden on desktop) ── */
+.navbar__backdrop {
+  display: none;
+}
+
 /* ─────────────────────────────────────────────────────────────
    Mobile breakpoint (≤ 860px)
    ───────────────────────────────────────────────────────────── */
 @media (max-width: 860px) {
 
-  /* Show hamburger */
+  /* Show hamburger — sits above the panel so it still works as
+     an alternate close control, but the in-panel X is primary */
   .navbar__toggle {
     display: flex;
     position: relative;
-    z-index: 600;
+    z-index: 601;
   }
 
   /* Hide desktop actions */
@@ -192,28 +204,58 @@
     display: none;
   }
 
-  /* Nav links panel — slides in from right */
+  /* Backdrop: dims the page behind the panel, click to close */
+  .navbar__backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 549;
+    animation: navbar-backdrop-in 0.25s ease forwards;
+  }
+  @keyframes navbar-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Nav panel — full-viewport, slides in from the right */
   .navbar__links {
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: min(320px, 85vw);
-    height: 100%;
+    inset: 0;                 /* top/right/bottom/left: 0 → full viewport */
+    width: 100vw;
+    height: 100dvh;           /* falls back to 100vh in browsers without dvh */
+    height: 100vh;
     background: var(--night, #0d1224);
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
     padding: 88px 1.5rem 2.5rem;
     gap: 0;
-    z-index: 550;
+    z-index: 600;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     transform: translateX(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: -8px 0 32px rgba(0,0,0,0.4);
   }
   .navbar__links--open {
     transform: translateX(0);
+  }
+
+  /* In-panel close button, top-right */
+  .navbar__panel-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 16px;
+    right: 1.25rem;
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: none;
+    color: var(--dawn);
+    cursor: pointer;
+    padding: 0;
   }
 
   /* Nav links: large, full-width rows */
