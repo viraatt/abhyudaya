@@ -4,6 +4,9 @@ import { Helmet } from "react-helmet-async";
 import PageHero from "../components/PageHero.jsx";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import { getPublishedAnnouncements } from "../Firebase/announcementService.js";
+import { getEventById } from "../Firebase/eventService.js";
+import { countRegistrations } from "../Firebase/registrationService.js";
+import { getRegistrationStatus, formatDate } from "../utils/registrationStatus.js";
 import "./Announcements.css";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
@@ -16,34 +19,40 @@ const TYPE_LABELS = {
   achievement: "🏆 Achievement",
 };
 
-function formatDate(ts) {
-  if (!ts) return "";
-  if (ts?.seconds) {
-    return new Date(ts.seconds * 1000).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  }
-  const d = new Date(ts);
-  if (isNaN(d)) return "";
-  return d.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export default function Announcements() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [eventData, setEventData] = useState({}); // linkedEventId -> { event, count }
 
   useEffect(() => {
     let mounted = true;
     getPublishedAnnouncements()
-      .then((data) => {
-        if (mounted) setAnnouncements(data);
+      .then(async (data) => {
+        if (!mounted) return;
+        setAnnouncements(data);
+
+        // Fetch linked event + registration count for event-type announcements
+        const linkedEvents = data
+          .filter((a) => a.type === "event" && a.linkedEventId)
+          .map((a) => a.linkedEventId);
+        const unique = [...new Set(linkedEvents)];
+
+        const map = {};
+        await Promise.all(
+          unique.map(async (eventId) => {
+            try {
+              const [event, count] = await Promise.all([
+                getEventById(eventId),
+                countRegistrations(eventId),
+              ]);
+              if (event) map[eventId] = { event, count };
+            } catch {
+              // ignore
+            }
+          })
+        );
+        if (mounted) setEventData(map);
       })
       .catch((err) => {
         console.error("Failed to load announcements:", err);
@@ -112,14 +121,82 @@ export default function Announcements() {
                   <h2 className="announcement-title">{ann.title}</h2>
                   <p className="announcement-message">{ann.message}</p>
 
-                  {ann.type === "event" && ann.linkedEventId && (
-                    <Link
-                      to={`/register/${ann.linkedEventId}`}
-                      className="announcement-cta announcement-register-btn"
-                    >
-                      Start Registration →
-                    </Link>
-                  )}
+                  {ann.type === "event" &&
+                    ann.linkedEventId &&
+                    eventData[ann.linkedEventId] && (
+                      <div className="announcement-event-card">
+                        <div className="announcement-event-name">
+                          🎯 {eventData[ann.linkedEventId].event.title}
+                        </div>
+
+                        {(() => {
+                          const { event, count } = eventData[ann.linkedEventId];
+                          const status = getRegistrationStatus(event, count);
+                          return (
+                            <>
+                              <div className="announcement-event-status" style={{ color: status.color }}>
+                                {status.label}
+                              </div>
+
+                              <div className="announcement-event-count">
+                                <strong>{count}</strong>
+                                {event.maxRegistrations
+                                  ? ` / ${event.maxRegistrations}`
+                                  : ""}{" "}
+                                registered
+                              </div>
+
+                              {event.maxRegistrations && (
+                                <div className="announcement-progress-bar">
+                                  <div
+                                    className="announcement-progress-fill"
+                                    style={{
+                                      width: `${Math.min(
+                                        (count / Number(event.maxRegistrations)) * 100,
+                                        100
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+                              )}
+
+                              {event.registrationDeadline && (
+                                <div className="announcement-event-deadline">
+                                  Closes: {formatDate(event.registrationDeadline)}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+
+                        <div className="announcement-event-actions">
+                          <Link
+                            to={`/register/${ann.linkedEventId}`}
+                            className="announcement-cta announcement-register-btn"
+                          >
+                            Start Registration →
+                          </Link>
+                          <button
+                            type="button"
+                            className="announcement-share-btn"
+                            onClick={() => {
+                              const text = `Register for ${eventData[ann.linkedEventId].event.title} at Abhyudaya Club!\n\n${window.location.origin}/register/${ann.linkedEventId}`;
+                              if (navigator.share) {
+                                navigator.share({
+                                  title: `Register for ${eventData[ann.linkedEventId].event.title}`,
+                                  text,
+                                  url: `${window.location.origin}/register/${ann.linkedEventId}`,
+                                }).catch(() => {});
+                              } else {
+                                navigator.clipboard.writeText(text);
+                              }
+                            }}
+                          >
+                            📤 Share
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                   {ann.ctaText && ann.ctaLink && (
                     <a
