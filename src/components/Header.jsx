@@ -11,7 +11,7 @@ export default function Header() {
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
     onScroll()
-    window.addEventListener('scroll', onScroll)
+    window.addEventListener('scroll', onScroll, { passive: true })
 
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
@@ -19,25 +19,84 @@ export default function Header() {
   const closeMenu = () => setOpen(false)
 
   return (
-    <header className={`header ${scrolled ? 'header--scrolled' : ''}`}>
-      <div className="wrap header__inner">
-        <NavLink to="/" className="brand" onClick={closeMenu}>
+    <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
+      <div className="navbar__container">
+
+        {/* Left: Branding */}
+        <NavLink to="/" className="navbar__brand" onClick={closeMenu} aria-label="Abhyudaya Club – Home">
           <img
             src={logo}
             alt="Abhyudaya Club logo"
-            className="brand__mark"
+            className="navbar__logo"
           />
-
-          <span className="brand__text">
+          <span className="navbar__brand-text">
             Abhyudaya
-            <span className="brand__sub">
+            <span className="navbar__brand-sub">
               Club &middot; MPGI Kanpur
             </span>
           </span>
         </NavLink>
 
+        {/* Center: Navigation Links */}
+        <nav
+          id="primary-nav"
+          className={`navbar__links ${open ? 'navbar__links--open' : ''}`}
+          aria-label="Primary navigation"
+        >
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.to === '/'}
+              className={({ isActive }) =>
+                `navbar__link ${isActive ? 'navbar__link--active' : ''}`
+              }
+              onClick={closeMenu}
+            >
+              {link.label}
+            </NavLink>
+          ))}
+
+          {/* Mobile-only actions (inside the slide-down panel) */}
+          <div className="navbar__mobile-actions">
+            <NavLink
+              to="/join"
+              className="navbar__cta navbar__cta--primary"
+              onClick={closeMenu}
+            >
+              Join the Club
+            </NavLink>
+            <NavLink
+              to="/admin/login"
+              className="navbar__cta navbar__cta--secondary"
+              onClick={closeMenu}
+            >
+              Admin Login
+            </NavLink>
+          </div>
+        </nav>
+
+        {/* Right: Desktop Actions */}
+        <div className="navbar__actions">
+          <NavLink
+            to="/join"
+            className="navbar__cta navbar__cta--primary"
+            onClick={closeMenu}
+          >
+            Join the Club
+          </NavLink>
+          <NavLink
+            to="/admin/login"
+            className="navbar__cta navbar__cta--secondary"
+            onClick={closeMenu}
+          >
+            Admin Login
+          </NavLink>
+        </div>
+
+        {/* Mobile Hamburger */}
         <button
-          className={`menu-btn ${open ? 'menu-btn--open' : ''}`}
+          className={`navbar__toggle ${open ? 'navbar__toggle--open' : ''}`}
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
           aria-controls="primary-nav"
@@ -48,42 +107,6 @@ export default function Header() {
           <span />
         </button>
 
-        <nav
-          id="primary-nav"
-          className={`nav ${open ? 'nav--open' : ''}`}
-        >
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/'}
-              className={({ isActive }) =>
-                `nav__link ${isActive ? 'nav__link--active' : ''}`
-              }
-              onClick={closeMenu}
-            >
-              {link.label}
-            </NavLink>
-          ))}
-
-          {/* Join Club Button */}
-          <NavLink
-            to="/join"
-            className="nav__cta"
-            onClick={closeMenu}
-          >
-            Join the Club
-          </NavLink>
-
-          {/* Admin Login Button */}
-          <NavLink
-            to="/admin/login"
-            className="nav__cta nav__admin"
-            onClick={closeMenu}
-          >
-            Admin Login
-          </NavLink>
-        </nav>
       </div>
     </header>
   )
