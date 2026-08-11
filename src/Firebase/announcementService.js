@@ -65,7 +65,7 @@ export async function getPublishedAnnouncements() {
   try {
     const q = query(
       announcementsRef,
-      where("published", "==", true),
+      where("status", "==", "published"),
       orderBy("createdAt", "desc")
     );
     const snapshot = await getDocs(q);
@@ -75,7 +75,7 @@ export async function getPublishedAnnouncements() {
     const snapshot = await getDocs(announcementsRef);
     return snapshot.docs
       .map(formatAnnouncement)
-      .filter((a) => a.published === true);
+      .filter((a) => a.status === "published" && a.published === true);
   }
 }
 

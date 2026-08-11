@@ -33,6 +33,7 @@ async function generateSitemapsAndFeeds() {
     { url: "/", priority: "1.0", changefreq: "daily" },
     { url: "/about", priority: "0.8", changefreq: "monthly" },
     { url: "/events", priority: "0.9", changefreq: "weekly" },
+    { url: "/announcements", priority: "0.9", changefreq: "daily" },
     { url: "/blog", priority: "0.9", changefreq: "daily" },
     { url: "/team", priority: "0.7", changefreq: "monthly" },
     { url: "/gallery", priority: "0.8", changefreq: "weekly" },
