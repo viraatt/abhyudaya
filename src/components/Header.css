@@ -1,7 +1,7 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 500;
   background: rgba(13, 18, 36, 0.72);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid transparent;
@@ -143,24 +143,31 @@
 @media (max-width: 860px) {
   .menu-btn {
     display: flex;
+    z-index: 200;
+    position: relative;
   }
 
   .nav {
     position: fixed;
-    top: 76px;
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    min-height: 500px;
-    
-    background: var(--night);
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+
+    background: var(--night, #0D1224);
     flex-direction: column;
     align-items: flex-start;
-    padding: 2rem var(--gutter);
-    gap: 1.6rem;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
+    /* Pad top to push links below the header bar */
+    padding: 90px 1.5rem 2.5rem 1.5rem;
+    gap: 0;
     overflow-y: auto;
+    z-index: 150;
+
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .nav--open {
@@ -168,11 +175,23 @@
   }
 
   .nav__link {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
+    padding: 0.9rem 0;
+    width: 100%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .nav__link::after {
+    /* Remove underline animation on mobile — full-width border is clearer */
+    display: none;
   }
 
   .nav__cta {
-    margin-top: 0.5rem;
+    margin-top: 1.25rem;
+    width: 100%;
+    text-align: center;
+    padding: 0.85rem 1.1rem;
+    font-size: 1rem;
   }
 }
 .nav__admin {

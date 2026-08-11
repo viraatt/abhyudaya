@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
@@ -7,6 +7,25 @@ import InteractiveTiltCard from "../components/gallery/InteractiveTiltCard.jsx";
 import { fetchGalleryImages } from "../services/galleryApi.js";
 import { FaTimes, FaChevronLeft, FaChevronRight, FaSync, FaImages, FaPlay } from "react-icons/fa";
 import "./Gallery.css";
+
+/**
+ * Splits a flat array of items into N columns for a Pinterest-style masonry layout.
+ * This JS-based split is immune to the re-flow glitch caused by CSS column-count
+ * when React appends new items during infinite scroll.
+ */
+function splitIntoColumns(items, numCols) {
+  const cols = Array.from({ length: numCols }, () => []);
+  items.forEach((item, i) => cols[i % numCols].push(item));
+  return cols;
+}
+
+/** Returns the column count based on current viewport width. */
+function getColumnCount() {
+  if (typeof window === "undefined") return 2;
+  if (window.innerWidth >= 1024) return 4;
+  if (window.innerWidth >= 768) return 3;
+  return 2;
+}
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -30,9 +49,24 @@ export default function Gallery() {
   const [isLooped, setIsLooped] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [loadedImages, setLoadedImages] = useState({});
+  const [numCols, setNumCols] = useState(() => getColumnCount());
 
   const sentinelRef = useRef(null);
   const isFetchingRef = useRef(false);
+
+  // Update column count on resize (debounced)
+  useEffect(() => {
+    let timer;
+    const onResize = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setNumCols(getColumnCount()), 100);
+    };
+    window.addEventListener("resize", onResize);
+    return () => { window.removeEventListener("resize", onResize); clearTimeout(timer); };
+  }, []);
+
+  // Pre-compute stable columns — only recalculates when images array or numCols changes
+  const columns = useMemo(() => splitIntoColumns(images, numCols), [images, numCols]);
 
   const breadcrumbItems = [
     { name: "Home", url: SITE_URL },
@@ -247,61 +281,65 @@ export default function Gallery() {
             </button>
           </div>
         ) : (
-          /* Pinterest Multi-Column Masonry Grid */
+          /* Pinterest Multi-Column JS-Split Masonry Grid */
           <div className="gallery-masonry-grid">
-            {images.map((card) => {
-              const isLoaded = loadedImages[card.uniqueKey];
-              return (
-                <div key={card.uniqueKey} className="gallery-masonry-item">
-                  <InteractiveTiltCard onClick={() => openLightbox(card)}>
-                    <div className="gallery-pinterest-card">
-                      {/* Clean Image / Video Tile */}
-                      <div className="gallery-clean-tile">
-                        {!isLoaded && (
-                          <div className="absolute inset-0 bg-slate-300 animate-pulse rounded-2xl z-0" />
-                        )}
+            {columns.map((col, colIdx) => (
+              <div key={colIdx} className="gallery-masonry-col">
+                {col.map((card) => {
+                  const isLoaded = loadedImages[card.uniqueKey];
+                  return (
+                    <div key={card.uniqueKey} className="gallery-masonry-item">
+                      <InteractiveTiltCard onClick={() => openLightbox(card)}>
+                        <div className="gallery-pinterest-card">
+                          {/* Clean Image / Video Tile */}
+                          <div className="gallery-clean-tile">
+                            {!isLoaded && (
+                              <div className="gallery-skeleton-shimmer" />
+                            )}
 
-                        {card.isVideo ? (
-                          <div className="relative w-full">
-                            <video
-                              src={card.src}
-                              className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
-                              onLoadedData={() => handleImageLoaded(card.uniqueKey)}
-                              muted
-                              playsInline
-                              loop
-                              autoPlay
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-                              <div className="bg-amber-400 text-slate-950 p-2.5 rounded-full shadow-md">
-                                <FaPlay className="ml-0.5 text-xs" />
+                            {card.isVideo ? (
+                              <div className="relative w-full">
+                                <video
+                                  src={card.src}
+                                  className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
+                                  onLoadedData={() => handleImageLoaded(card.uniqueKey)}
+                                  muted
+                                  playsInline
+                                  loop
+                                  autoPlay
+                                />
+                                <div className="gallery-video-badge">
+                                  <div className="gallery-video-play-btn">
+                                    <FaPlay className="ml-0.5 text-xs" />
+                                  </div>
+                                </div>
                               </div>
+                            ) : (
+                              <img
+                                src={card.src}
+                                alt={card.title || "Club event photo"}
+                                loading="lazy"
+                                decoding="async"
+                                onLoad={() => handleImageLoaded(card.uniqueKey)}
+                                className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
+                              />
+                            )}
+                          </div>
+
+                          {/* Below-Tile Pinterest Caption Typography */}
+                          <div className="gallery-tile-caption">
+                            <h3 className="gallery-tile-title">{card.title}</h3>
+                            <div className="gallery-tile-meta">
+                              <span className="gallery-tile-category">{card.category}</span>
                             </div>
                           </div>
-                        ) : (
-                          <img
-                            src={card.src}
-                            alt={card.title || "Club event photo"}
-                            loading="lazy"
-                            decoding="async"
-                            onLoad={() => handleImageLoaded(card.uniqueKey)}
-                            className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
-                          />
-                        )}
-                      </div>
-
-                      {/* Below-Tile Pinterest Caption Typography */}
-                      <div className="gallery-tile-caption">
-                        <h3 className="gallery-tile-title">{card.title}</h3>
-                        <div className="gallery-tile-meta">
-                          <span className="gallery-tile-category">{card.category}</span>
                         </div>
-                      </div>
+                      </InteractiveTiltCard>
                     </div>
-                  </InteractiveTiltCard>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
 
