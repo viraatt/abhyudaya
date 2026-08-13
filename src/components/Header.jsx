@@ -16,10 +16,43 @@ export default function Header() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Lock body scroll when mobile menu is open, handle ESC key & window resize
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setOpen(false)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [open])
+
   const closeMenu = () => setOpen(false)
 
   return (
     <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
+      {/* Backdrop overlay for mobile drawer */}
+      <div
+        className={`navbar__overlay ${open ? 'navbar__overlay--visible' : ''}`}
+        onClick={closeMenu}
+        aria-hidden="true"
+      />
+
       <div className="navbar__container">
 
         {/* Left: Branding */}
@@ -30,7 +63,7 @@ export default function Header() {
             className="navbar__logo"
           />
           <span className="navbar__brand-text">
-            Abhyudaya
+            <span className="navbar__brand-title">Abhyudaya</span>
             <span className="navbar__brand-sub">
               Club &middot; MPGI Kanpur
             </span>
@@ -57,7 +90,7 @@ export default function Header() {
             </NavLink>
           ))}
 
-          {/* Mobile-only actions (inside the slide-down panel) */}
+          {/* Mobile-only actions (inside mobile drawer) */}
           <div className="navbar__mobile-actions">
             <NavLink
               to="/join"
@@ -94,7 +127,7 @@ export default function Header() {
           </NavLink>
         </div>
 
-        {/* Mobile Hamburger */}
+        {/* Mobile Hamburger Toggle */}
         <button
           className={`navbar__toggle ${open ? 'navbar__toggle--open' : ''}`}
           aria-label={open ? 'Close menu' : 'Open menu'}
