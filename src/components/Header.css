@@ -1,52 +1,60 @@
-/* ─────────────────────────────────────────────────────────────
-   Abhyudaya Club — Header / Navbar
-   Class names match Header.jsx exactly.
-   ───────────────────────────────────────────────────────────── */
+/* ==========================================
+   NAVBAR — premium sticky header
+   Three-part layout: brand | links | actions
+   ========================================== */
 
 /* ── Sticky shell ─────────────────────────────────────────── */
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 500;
-  background: rgba(13, 18, 36, 0.82);
+  z-index: 1000;
+  background: rgba(13, 18, 36, 0.78);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid transparent;
-  transition: border-color 0.25s ease, background 0.25s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .navbar--scrolled {
-  background: rgba(13, 18, 36, 0.96);
-  border-bottom-color: rgba(251, 244, 232, 0.12);
+  background: rgba(13, 18, 36, 0.94);
+  border-bottom-color: var(--line-on-dark);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
 }
 
-/* ── Inner container ──────────────────────────────────────── */
 .navbar__container {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 var(--gutter);
-  height: 72px;
+  padding: 0 28px;
+  height: 74px;
   display: flex;
   align-items: center;
-  gap: 2rem;
-  position: relative;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-/* ── Brand ────────────────────────────────────────────────── */
+/* ── Branding (Left) ── */
+
 .navbar__brand {
   display: flex;
   align-items: center;
   gap: 0.65rem;
   color: var(--dawn);
   text-decoration: none;
-  flex-shrink: 0;
 }
 .navbar__logo {
   width: 42px;
   height: 42px;
   border-radius: 50%;
+  object-fit: cover;
   flex-shrink: 0;
+  border: 1px solid rgba(238, 184, 74, 0.3);
 }
 .navbar__brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.navbar__brand-title {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 1.15rem;
@@ -54,120 +62,139 @@
   display: flex;
   flex-direction: column;
   line-height: 1.15;
-  color: var(--dawn);
 }
 .navbar__brand-sub {
   font-family: var(--font-utility);
   font-size: 0.6rem;
   font-weight: 500;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sun-soft);
+  margin-top: 2px;
 }
 
-/* ── Desktop nav links ────────────────────────────────────── */
+/* ── Navigation Links (Center) ── */
+
 .navbar__links {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  flex: 1;                   /* push actions to the right */
+  gap: 1.4rem;
+  margin: 0 auto; /* centers the links between brand and actions */
 }
 
 .navbar__link {
   font-family: var(--font-utility);
-  font-size: 0.875rem;
+  font-size: 0.875rem; /* 14px */
   font-weight: 500;
   color: var(--dawn-dim);
   text-decoration: none;
   position: relative;
-  padding: 0.35rem 0.5rem;
-  border-radius: 6px;
-  transition: color 0.2s ease, background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.1rem;
   white-space: nowrap;
 }
+
+/* thin gold underline indicator */
 .navbar__link::after {
   content: '';
   position: absolute;
-  left: 0.5rem;
+  left: 0;
   right: 100%;
   bottom: 0;
   height: 2px;
+  border-radius: 99px;
   background: var(--sun);
-  border-radius: 2px;
   transition: right 0.25s ease;
 }
 .navbar__link:hover {
   color: var(--dawn);
 }
+
 .navbar__link:hover::after,
 .navbar__link--active::after {
-  right: 0.5rem;
+  right: 0;
 }
 .navbar__link--active {
   color: var(--dawn);
 }
 
-/* ── Mobile-only actions block (hidden on desktop) ────────── */
-.navbar__mobile-actions {
-  display: none;
-}
+/* ── Actions (Right) ── */
 
-/* ── Desktop action buttons ───────────────────────────────── */
 .navbar__actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
   flex-shrink: 0;
 }
 
 /* ── Shared CTA button styles ─────────────────────────────── */
 .navbar__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 22px;
   font-family: var(--font-utility);
-  font-size: 0.82rem;
+  font-size: 0.875rem; /* 14px */
   font-weight: 600;
   padding: 0.5rem 1.1rem;
   border-radius: 100px;
   text-decoration: none;
   transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
   white-space: nowrap;
+  transition: transform 0.2s ease, background 0.2s ease,
+    color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
+
+/* Primary CTA — gold */
 .navbar__cta--primary {
   background: var(--sun);
   color: var(--night);
+  border: 1px solid var(--sun);
 }
 .navbar__cta--primary:hover {
   background: var(--sun-soft);
+  border-color: var(--sun-soft);
   transform: translateY(-1px);
-}
-.navbar__cta--secondary {
-  background: #1e3a8a;
-  color: #fff;
-  border: 2px solid #1e3a8a;
-}
-.navbar__cta--secondary:hover {
-  background: #2563eb;
-  border-color: #2563eb;
-  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(238, 184, 74, 0.25);
 }
 
-/* ── Hamburger toggle (hidden on desktop) ─────────────────── */
+/* Secondary CTA — subtle outline */
+.navbar__cta--secondary {
+  background: transparent;
+  color: var(--dawn-dim);
+  border: 1.5px solid rgba(251, 244, 232, 0.28);
+}
+.navbar__cta--secondary:hover {
+  color: var(--dawn);
+  border-color: rgba(251, 244, 232, 0.55);
+  background: rgba(251, 244, 232, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Mobile Toggle ── */
+
 .navbar__toggle {
   display: none;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   gap: 5px;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
-  flex-shrink: 0;
-  margin-left: auto;
 }
 .navbar__toggle span {
   display: block;
   height: 2px;
+  width: 22px;
+  margin: 0 auto;
   background: var(--dawn);
   border-radius: 2px;
   transition: transform 0.25s ease, opacity 0.2s ease;
@@ -176,27 +203,22 @@
 .navbar__toggle--open span:nth-child(2) { opacity: 0; }
 .navbar__toggle--open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* ── Close button inside the mobile panel (hidden on desktop) */
-.navbar__panel-close {
+/* Mobile-only actions injected inside the panel */
+.navbar__mobile-actions {
   display: none;
 }
 
-/* ── Backdrop behind the mobile panel (hidden on desktop) ── */
-.navbar__backdrop {
-  display: none;
-}
+/* ── Responsive ── */
 
-/* ─────────────────────────────────────────────────────────────
-   Mobile breakpoint (≤ 860px)
-   ───────────────────────────────────────────────────────────── */
-@media (max-width: 860px) {
+@media (max-width: 1080px) {
+  .navbar__container {
+    height: 68px;
+    padding: 0 20px;
+    gap: 16px;
+  }
 
-  /* Show hamburger — sits above the panel so it still works as
-     an alternate close control, but the in-panel X is primary */
   .navbar__toggle {
     display: flex;
-    position: relative;
-    z-index: 601;
   }
 
   /* Hide desktop actions */
@@ -204,83 +226,77 @@
     display: none;
   }
 
-  /* Backdrop: dims the page behind the panel, click to close */
-  .navbar__backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    z-index: 549;
-    animation: navbar-backdrop-in 0.25s ease forwards;
-  }
-  @keyframes navbar-backdrop-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  /* Nav panel — full-viewport, slides in from the right */
+  /* Slide-down panel */
   .navbar__links {
     position: fixed;
-    inset: 0;                 /* top/right/bottom/left: 0 → full viewport */
-    width: 100vw;
-    height: 100dvh;           /* falls back to 100vh in browsers without dvh */
-    height: 100vh;
-    background: var(--night, #0d1224);
+    top: 68px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 1.5rem 20px 2rem;
+    background: var(--night);
     flex-direction: column;
     align-items: stretch;
-    justify-content: flex-start;
-    padding: 88px 1.5rem 2.5rem;
-    gap: 0;
-    z-index: 600;
+    gap: 0.25rem;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    transform: translateX(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform 0.3s ease, visibility 0s linear 0.3s;
+    z-index: 1000;
   }
   .navbar__links--open {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.3s ease, visibility 0s linear 0s;
   }
 
-  /* In-panel close button, top-right */
-  .navbar__panel-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: 16px;
-    right: 1.25rem;
-    width: 44px;
-    height: 44px;
-    background: none;
-    border: none;
-    color: var(--dawn);
-    cursor: pointer;
-    padding: 0;
-  }
-
-  /* Nav links: large, full-width rows */
   .navbar__link {
-    font-size: 1.1rem;
-    padding: 0.85rem 0.25rem;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    border-radius: 0;
-    width: 100%;
+    font-size: 1.05rem;
+    padding: 0.85rem 0.75rem;
+    border-radius: 10px;
   }
-  .navbar__link::after { display: none; }
 
-  /* Show the mobile-only actions block */
+  .navbar__link::after {
+    display: none; /* pill background indicates active on mobile instead */
+  }
+
+  .navbar__link:hover,
+  .navbar__link--active {
+    background: rgba(238, 184, 74, 0.1);
+    color: var(--dawn);
+  }
+
   .navbar__mobile-actions {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: 1.75rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line-on-dark);
   }
 
   /* Mobile CTAs: full-width */
   .navbar__mobile-actions .navbar__cta {
     width: 100%;
-    text-align: center;
-    padding: 0.85rem 1rem;
-    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar__container {
+    padding: 0 16px;
+  }
+
+  .navbar__logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .navbar__brand-text {
+    font-size: 1.05rem;
+  }
+
+  .navbar__brand-sub {
+    font-size: 0.55rem;
   }
 }

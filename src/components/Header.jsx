@@ -16,31 +16,17 @@ export default function Header() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Lock body scroll while the mobile panel is open
-  useEffect(() => {
-    if (open) {
-      const prevOverflow = document.body.style.overflow
-      document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.overflow = prevOverflow
-      }
-    }
-  }, [open])
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
-
   const closeMenu = () => setOpen(false)
 
   return (
     <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
+      {/* Backdrop overlay for mobile drawer */}
+      <div
+        className={`navbar__overlay ${open ? 'navbar__overlay--visible' : ''}`}
+        onClick={closeMenu}
+        aria-hidden="true"
+      />
+
       <div className="navbar__container">
 
         {/* Left: Branding */}
@@ -51,7 +37,7 @@ export default function Header() {
             className="navbar__logo"
           />
           <span className="navbar__brand-text">
-            Abhyudaya
+            <span className="navbar__brand-title">Abhyudaya</span>
             <span className="navbar__brand-sub">
               Club &middot; MPGI Kanpur
             </span>
@@ -91,7 +77,7 @@ export default function Header() {
             </NavLink>
           ))}
 
-          {/* Mobile-only actions (inside the slide-in panel) */}
+          {/* Mobile-only actions (inside the slide-down panel) */}
           <div className="navbar__mobile-actions">
             <NavLink
               to="/join"
@@ -137,7 +123,7 @@ export default function Header() {
           </NavLink>
         </div>
 
-        {/* Mobile Hamburger */}
+        {/* Mobile Hamburger Toggle */}
         <button
           className={`navbar__toggle ${open ? 'navbar__toggle--open' : ''}`}
           aria-label={open ? 'Close menu' : 'Open menu'}
