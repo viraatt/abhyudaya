@@ -50,18 +50,6 @@ export default function Header() {
           className={`navbar__links ${open ? 'navbar__links--open' : ''}`}
           aria-label="Primary navigation"
         >
-          {/* Close button lives inside the panel, top-right */}
-          <button
-            type="button"
-            className="navbar__panel-close"
-            aria-label="Close menu"
-            onClick={closeMenu}
-          >
-            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-              <line x1="5" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="19" y1="5" x2="5" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
 
           {navLinks.map((link) => (
             <NavLink
