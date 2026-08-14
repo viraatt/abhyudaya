@@ -155,65 +155,143 @@ export default function Certificate() {
       <main className="cert-portal-page">
         <div className="wrap">
 
-          {/* ── 2. CERTIFICATE SEARCH CARD ── */}
-          <div className="cert-search-card">
-            <div className="cert-card-header">
-              <h2 className="cert-search-title">Certificate Search</h2>
-              <p className="cert-search-subtitle">
-                Enter your registered Roll Number and Full Name exactly as provided during event registration.
-              </p>
+          {/* ── 2. CERTIFICATE SEARCH PORTAL ── */}
+          <div className="csp-wrapper">
+            {/* Left decorative panel */}
+            <div className="csp-panel-left" aria-hidden="true">
+              <div className="csp-panel-bg" />
+              <div className="csp-seal-ring csp-seal-ring--outer" />
+              <div className="csp-seal-ring csp-seal-ring--inner" />
+              <svg className="csp-seal-icon" viewBox="0 0 64 64" fill="none">
+                <path d="M32 4L36.5 14.5L48 12L43.5 23L54 28L43.5 33L48 44L36.5 41.5L32 52L27.5 41.5L16 44L20.5 33L10 28L20.5 23L16 12L27.5 14.5L32 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                <circle cx="32" cy="28" r="9" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M28 28L31 31L36 25" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <p className="csp-panel-label">OFFICIAL<br/>CERTIFICATE<br/>PORTAL</p>
+              <div className="csp-panel-divider" />
+              <div className="csp-panel-trust">
+                <div className="csp-trust-row">
+                  <span className="csp-trust-dot" />
+                  <span>Officially Issued</span>
+                </div>
+                <div className="csp-trust-row">
+                  <span className="csp-trust-dot" />
+                  <span>Tamper-Proof</span>
+                </div>
+                <div className="csp-trust-row">
+                  <span className="csp-trust-dot" />
+                  <span>Instantly Downloadable</span>
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={handleSearch} className="cert-search-form">
-              <div className="cert-form-grid">
-                <div className="cert-form-group">
-                  <label htmlFor="rollNo" className="cert-label">
-                    ROLL NUMBER <span className="cert-req">*</span>
-                  </label>
-                  <input
-                    id="rollNo"
-                    type="text"
-                    className="cert-input"
-                    placeholder="e.g. 2301234567"
-                    value={rollNo}
-                    onChange={(e) => setRollNo(e.target.value)}
-                    disabled={loading}
-                    required
-                  />
+            {/* Right search panel */}
+            <div className="csp-panel-right">
+              <div className="csp-right-header">
+                <div className="csp-icon-badge" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
                 </div>
-
-                <div className="cert-form-group">
-                  <label htmlFor="studentName" className="cert-label">
-                    FULL NAME <span className="cert-req">*</span>
-                  </label>
-                  <input
-                    id="studentName"
-                    type="text"
-                    className="cert-input"
-                    placeholder="e.g. Ishan Shukla"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={loading}
-                    required
-                  />
+                <div>
+                  <h2 className="csp-title">Retrieve Your Certificate</h2>
+                  <p className="csp-subtitle">Enter details exactly as provided during registration</p>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="cert-submit-btn"
-                disabled={loading || !rollNo.trim() || !name.trim()}
-              >
-                {loading ? (
-                  <>
-                    <span className="cert-spinner" aria-hidden="true" />
-                    Searching...
-                  </>
-                ) : (
-                  "Find Certificate →"
-                )}
-              </button>
-            </form>
+              <div className="csp-divider" />
+
+              <form onSubmit={handleSearch} className="csp-form" noValidate>
+                <div className="csp-field">
+                  <label htmlFor="rollNo" className="csp-label">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                      <rect x="3" y="4" width="14" height="14" rx="2"/>
+                      <path d="M7 9h6M7 12h4"/>
+                    </svg>
+                    Roll Number
+                    <span className="csp-required" aria-hidden="true">*</span>
+                  </label>
+                  <div className="csp-input-wrap">
+                    <input
+                      id="rollNo"
+                      type="text"
+                      className="csp-input"
+                      placeholder="e.g. 2301234567"
+                      value={rollNo}
+                      onChange={(e) => setRollNo(e.target.value)}
+                      disabled={loading}
+                      required
+                      autoComplete="off"
+                    />
+                    {rollNo.trim() && (
+                      <span className="csp-input-check" aria-hidden="true">✓</span>
+                    )}
+                  </div>
+                  <span className="csp-hint">Your university enrollment number</span>
+                </div>
+
+                <div className="csp-field">
+                  <label htmlFor="studentName" className="csp-label">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                      <circle cx="10" cy="7" r="3"/>
+                      <path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+                    </svg>
+                    Full Name
+                    <span className="csp-required" aria-hidden="true">*</span>
+                  </label>
+                  <div className="csp-input-wrap">
+                    <input
+                      id="studentName"
+                      type="text"
+                      className="csp-input"
+                      placeholder="e.g. Ishan Shukla"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={loading}
+                      required
+                      autoComplete="name"
+                    />
+                    {name.trim() && (
+                      <span className="csp-input-check" aria-hidden="true">✓</span>
+                    )}
+                  </div>
+                  <span className="csp-hint">As registered during the event</span>
+                </div>
+
+                <button
+                  type="submit"
+                  className="csp-submit-btn"
+                  disabled={loading || !rollNo.trim() || !name.trim()}
+                >
+                  <span className="csp-btn-content">
+                    {loading ? (
+                      <>
+                        <span className="csp-spinner" aria-hidden="true" />
+                        <span>Searching Records…</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="9" cy="9" r="5.5"/>
+                          <path d="m14 14 2.5 2.5"/>
+                        </svg>
+                        <span>Find Certificate</span>
+                        <span className="csp-btn-arrow">→</span>
+                      </>
+                    )}
+                  </span>
+                  <span className="csp-btn-shimmer" aria-hidden="true" />
+                </button>
+
+                <p className="csp-form-note">
+                  🔒 Your details are used solely to locate your certificate and are never stored.
+                </p>
+              </form>
+            </div>
           </div>
 
           {/* ── 3. DYNAMIC SEARCH RESULTS SECTION ── */}
