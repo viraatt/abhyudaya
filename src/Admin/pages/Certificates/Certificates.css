@@ -19,22 +19,28 @@
   background: var(--primary, #2563eb);
   color: #ffffff;
   border: 1px solid var(--primary, #2563eb);
-  padding: 0.65rem 1.2rem;
-  border-radius: 8px;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
   font-family: var(--font-utility, sans-serif);
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.admin-btn--primary:hover {
+.admin-btn--primary:hover:not(:disabled) {
   background: var(--primary-dark, #1d4ed8);
   border-color: var(--primary-dark, #1d4ed8);
+  transform: translateY(-1px);
+}
+
+.admin-btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .admin-btn--secondary {
@@ -42,7 +48,7 @@
   color: #f8fafc;
   border: 1px solid #334155;
   padding: 0.65rem 1.2rem;
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: var(--font-utility, sans-serif);
   font-weight: 600;
   font-size: 0.9rem;
@@ -56,17 +62,25 @@
 }
 
 .admin-btn--outline {
-  background: transparent;
+  background: #ffffff;
   color: #334155;
   border: 1px solid #cbd5e1;
-  padding: 0.65rem 1.2rem;
-  border-radius: 8px;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .admin-btn--outline:hover {
-  background: #f1f5f9;
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 /* Stats */
@@ -388,4 +402,464 @@
 
 .tbl-btn--delete:hover {
   background: #fecaca;
+}
+
+/* ============================================================
+   ADD NEW CERTIFICATE — SECTIONED & PREMIUM FORM STYLES
+   ============================================================ */
+
+.cert-add-header {
+  margin-bottom: 0.5rem;
+}
+
+/* Main Form Card Container */
+.cert-form-card {
+  max-width: 880px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2.2rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+/* Alerts & Notifications */
+.cert-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.8rem;
+  font-size: 0.92rem;
+}
+
+.cert-alert p {
+  margin-top: 0.25rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.cert-alert-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cert-alert--error {
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.cert-alert--success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+/* Progress Box */
+.cert-progress-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.8rem;
+}
+
+.cert-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.cert-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #dbeafe;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.cert-progress-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+/* Form Section Cards */
+.cert-form-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.8rem;
+  margin-bottom: 1.8rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.cert-section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cert-section-badge {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: var(--sun, #eeb84a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-utility, sans-serif);
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.cert-section-title {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.2rem;
+}
+
+.cert-section-desc {
+  font-size: 0.86rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Desktop Grid Layout */
+.cert-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+/* Field Group & Labels */
+.cert-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cert-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cert-field-label {
+  display: block;
+  font-family: var(--font-utility, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cert-req {
+  color: #dc2626;
+}
+
+/* Inputs, Selects, and Focus States */
+.cert-field-input {
+  width: 100%;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  font-family: var(--font-body, sans-serif);
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cert-field-input::placeholder {
+  color: #94a3b8;
+}
+
+.cert-field-input:focus {
+  background: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15);
+}
+
+.cert-field-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cert-select-wrap {
+  position: relative;
+}
+
+.cert-field-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%20475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 1.1rem;
+  padding-right: 2.5rem;
+}
+
+/* Auto generate button */
+.cert-autogen-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #1e40af;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-family: var(--font-utility, sans-serif);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cert-autogen-btn:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Drag & Drop Dropzone */
+.cert-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 2.4rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  outline: none;
+}
+
+.cert-dropzone:hover,
+.cert-dropzone:focus-visible,
+.cert-dropzone--active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.cert-dropzone-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.6rem;
+  line-height: 1;
+}
+
+.cert-dropzone-title {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.3rem;
+}
+
+.cert-dropzone-subtitle {
+  font-size: 0.9rem;
+  color: #475569;
+  margin-bottom: 0.4rem;
+}
+
+.cert-dropzone-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.cert-dropzone-subtext {
+  display: inline-block;
+  font-family: var(--font-utility, sans-serif);
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+  background: #e2e8f0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+}
+
+/* Selected File Card */
+.cert-file-card {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cert-file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.cert-file-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.cert-file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cert-file-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #14532d;
+  word-break: break-all;
+}
+
+.cert-file-meta {
+  font-size: 0.82rem;
+  color: #166534;
+  opacity: 0.85;
+}
+
+.cert-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cert-file-status {
+  font-family: var(--font-utility, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.cert-file-remove-btn {
+  background: #ffffff;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  font-family: var(--font-utility, sans-serif);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cert-file-remove-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+/* Form Actions */
+.cert-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.cert-cancel-btn {
+  min-width: 110px;
+}
+
+.cert-submit-btn {
+  min-width: 210px;
+  justify-content: center;
+}
+
+.cert-btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: cert-btn-spin 0.75s linear infinite;
+}
+
+@keyframes cert-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Media Queries */
+@media (max-width: 768px) {
+  .cert-form-card {
+    padding: 1.5rem 1.2rem;
+    border-radius: 12px;
+  }
+
+  .cert-form-section {
+    padding: 1.2rem 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .cert-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .cert-dropzone {
+    padding: 1.8rem 1rem;
+  }
+
+  .cert-file-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cert-file-actions {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #bbf7d0;
+  }
+
+  .cert-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .cert-cancel-btn,
+  .cert-submit-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .cert-form-card {
+    padding: 1.2rem 0.9rem;
+  }
+
+  .cert-section-header {
+    gap: 0.6rem;
+  }
+
+  .cert-section-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .cert-section-title {
+    font-size: 1.05rem;
+  }
 }

@@ -476,16 +476,25 @@ export default function Certificates() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="tbl-btn tbl-btn--view"
-                              title="View PDF"
+                              title="View PDF on Cloudinary"
                             >
                               📄 PDF
                             </a>
 
                             <Link
+                              to={`/admin/certificates/edit/${cert.id}`}
+                              className="tbl-btn tbl-btn--verify"
+                              title="Edit Certificate"
+                            >
+                              ✏️ Edit
+                            </Link>
+
+                            <Link
                               to={`/verify/${cert.certificateId}`}
                               target="_blank"
-                              className="tbl-btn tbl-btn--verify"
-                              title="Verification Link"
+                              className="tbl-btn"
+                              title="Public Verification Link"
+                              style={{ background: "#e0f2fe", color: "#0369a1" }}
                             >
                               🔍 Verify
                             </Link>

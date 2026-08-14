@@ -199,28 +199,7 @@ service cloud.firestore {
       && request.resource.data.name is string
       && request.resource.data.email is string
       && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
-
       allow read, update, delete: if isAdmin(['super_admin']);
-    }
-
-    // ============================================================
-    // CERTIFICATES
-    //
-    // Public: read certificates for certificate search/verification.
-    // Admins (super_admin, event_admin): full CRUD.
-    //
-    // IMPORTANT:
-    // The actual PDF is NOT stored in Firestore.
-    // Firestore stores certificate metadata + Cloudinary URL.
-    // ============================================================
-    match /certificates/{certificateId} {
-
-      // Students/public users can search/read certificates.
-      allow read: if true;
-
-      // Only authorized admins can create, edit, or delete certificates.
-      allow create, update, delete:
-        if isAdmin(['super_admin', 'event_admin']);
     }
   }
 }

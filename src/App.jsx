@@ -53,6 +53,7 @@ const AdminRegistrations = lazy(() => import("./Admin/pages/Registrations.jsx"))
 const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrary.jsx"));
 const Certificates = lazy(() => import("./Admin/pages/Certificates/Certificates.jsx"));
 const AddCertificate = lazy(() => import("./Admin/pages/Certificates/AddCertificate.jsx"));
+const EditCertificate = lazy(() => import("./Admin/pages/Certificates/EditCertificate.jsx"));
 
 NProgress.configure({
   showSpinner: false,
@@ -277,6 +278,15 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
                 <AddCertificate />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/certificates/edit/:id"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                <EditCertificate />
               </ProtectedRoute>
             }
           />
