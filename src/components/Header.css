@@ -161,18 +161,18 @@
   box-shadow: 0 4px 14px rgba(238, 184, 74, 0.25);
 }
 
-/* Secondary CTA — subtle outline */
+/* Secondary CTA — blue */
 .navbar__cta--secondary {
-  background: transparent;
-  color: var(--dawn-dim);
-  border: 1.5px solid rgba(251, 244, 232, 0.28);
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #2563eb;
 }
 .navbar__cta--secondary:hover {
-  color: var(--dawn);
-  border-color: rgba(251, 244, 232, 0.55);
-  background: rgba(251, 244, 232, 0.08);
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
 }
 
 /* ── Mobile Toggle ── */
