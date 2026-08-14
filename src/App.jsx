@@ -26,6 +26,8 @@ const Contact = lazy(() => import("./pages/Contact.jsx"));
 const JoinClub = lazy(() => import("./pages/JoinClub.jsx"));
 const Announcements = lazy(() => import("./pages/Announcements.jsx"));
 const Register = lazy(() => import("./pages/Register.jsx"));
+const Certificate = lazy(() => import("./pages/Certificate/Certificate.jsx"));
+const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate/VerifyCertificate.jsx"));
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 
 // ─────────────────────────────────────────────────────────────
@@ -49,6 +51,8 @@ const Students = lazy(() => import("./Admin/pages/Students.jsx"));
 const AdminAnnouncements = lazy(() => import("./Admin/pages/Announcements.jsx"));
 const AdminRegistrations = lazy(() => import("./Admin/pages/Registrations.jsx"));
 const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrary.jsx"));
+const Certificates = lazy(() => import("./Admin/pages/Certificates/Certificates.jsx"));
+const AddCertificate = lazy(() => import("./Admin/pages/Certificates/AddCertificate.jsx"));
 
 NProgress.configure({
   showSpinner: false,
@@ -258,6 +262,25 @@ export default function App() {
             }
           />
 
+          {/* Certificates Admin */}
+          <Route
+            path="/admin/certificates"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                <Certificates />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/certificates/add"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                <AddCertificate />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ================= PUBLIC ================= */}
 
           <Route element={<Layout />}>
@@ -274,6 +297,8 @@ export default function App() {
             <Route path="/join" element={<JoinClub />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/register/:eventId" element={<Register />} />
+            <Route path="/certificate" element={<Certificate />} />
+            <Route path="/verify/:certificateId" element={<VerifyCertificate />} />
             <Route path="*" element={<NotFound />} />
 
           </Route>

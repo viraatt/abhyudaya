@@ -21,6 +21,7 @@ export const navLinks = [
   { label: "Events", to: "/events" },
   { label: "Announcements", to: "/announcements" },
   { label: "Blog", to: "/blog" },
+  { label: "Certificates", to: "/certificate" },
   { label: "Team", to: "/team" },
   { label: "Gallery", to: "/gallery" },
   { label: "Contact", to: "/contact" },
