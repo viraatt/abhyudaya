@@ -1,28 +1,24 @@
 /* ─────────────────────────────────────────────────────────────
-   Abhyudaya Club Gallery Page Styling (Scoped to .gallery-page)
-   Palette: Soft Cream #FBF4E8 | Accent Gold #FFD166 | Slate #0F172A
-   Authentic Pinterest Mobile 2-Column Grid Layout
+   Abhyudaya Club — Gallery Page  (scoped to .gallery-page)
+   Palette: Cream #FBF4E8 · Gold #FFD166 · Navy #0F172A
    ───────────────────────────────────────────────────────────── */
 
-/* Main Gallery Container Scoped Background & Scrollbar Hide */
+/* ── Page wrapper ─────────────────────────────────────────── */
 .gallery-page {
   background-color: #FBF4E8;
   color: #0F172A;
   min-height: 100vh;
   width: 100%;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.gallery-page::-webkit-scrollbar { display: none; }
 
-.gallery-page::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/Opera */
-}
-
-/* Header Section (Edge-Browser Style: In-flow, naturally scrolls off-screen) */
+/* ── In-flow header ───────────────────────────────────────── */
 .gallery-header-section {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2.5rem 1rem 1.25rem 1rem;
+  padding: 2.5rem 1rem 1.25rem;
   text-align: center;
 }
 
@@ -30,7 +26,7 @@
   display: inline-block;
   padding: 0.3rem 0.9rem;
   border-radius: 9999px;
-  background-color: rgba(255, 209, 102, 0.3);
+  background: rgba(255, 209, 102, 0.3);
   border: 1px solid rgba(245, 158, 11, 0.4);
   color: #B45309;
   font-size: 0.75rem;
@@ -48,22 +44,19 @@
   margin-bottom: 0.5rem;
   line-height: 1.15;
 }
-
 @media (min-width: 768px) {
-  .gallery-header-title {
-    font-size: 3.25rem;
-  }
+  .gallery-header-title { font-size: 3.25rem; }
 }
 
 .gallery-header-subtitle {
   font-size: 0.95rem;
   color: #475569;
   max-width: 600px;
-  margin: 0 auto 1.75rem auto;
+  margin: 0 auto 1.75rem;
   line-height: 1.5;
 }
 
-/* Category Filter Bar */
+/* ── Category filter bar ──────────────────────────────────── */
 .gallery-filter-bar {
   display: flex;
   align-items: center;
@@ -83,115 +76,164 @@
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
 }
-
 .gallery-filter-btn:hover {
   color: #0F172A;
   border-color: #FFD166;
   background: #FFFDF9;
   transform: translateY(-1px);
 }
-
 .gallery-filter-btn.active {
   color: #0F172A;
   background: #FFD166;
   border-color: #F59E0B;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(255, 209, 102, 0.4);
+  box-shadow: 0 4px 12px rgba(255,209,102,0.4);
 }
 
-/* Authentic Pinterest Masonry Columns Grid */
+/* ── Main content area ────────────────────────────────────── */
+.gallery-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem 4rem;
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+.gallery-empty-state {
+  text-align: center;
+  padding: 5rem 1rem;
+  background: rgba(255,255,255,0.6);
+  border-radius: 1.5rem;
+  border: 1px solid #E2E8F0;
+  margin: 1rem 0;
+}
+.gallery-empty-icon {
+  font-size: 3rem;
+  color: rgba(245,158,11,0.5);
+  margin: 0 auto 1rem;
+}
+.gallery-empty-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 0.5rem;
+}
+.gallery-empty-desc {
+  color: #64748B;
+  max-width: 28rem;
+  margin: 0 auto 1.5rem;
+}
+
+/* ── Masonry grid — CSS column-count (stable for static content) ─ */
 .gallery-masonry-grid {
-  width: 100%;
+  column-gap: 1rem;
 }
+@media (min-width: 1024px) { .gallery-masonry-grid { column-count: 4; } }
+@media (min-width: 768px) and (max-width: 1023px) { .gallery-masonry-grid { column-count: 3; } }
+@media (max-width: 767px)  { .gallery-masonry-grid { column-count: 2; column-gap: 0.6rem; } }
 
-/* Breakpoints:
-   Desktop (>= 1024px): 4 Columns, 1rem gap
-   Laptop (768px - 1023px): 3 Columns, 0.85rem gap
-   Mobile / Tablet (< 768px): ALWAYS 2 COLUMNS (Authentic Pinterest mobile view!), 0.6rem gap
-*/
-@media (min-width: 1024px) {
-  .gallery-masonry-grid {
-    column-count: 4;
-    column-gap: 1rem;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .gallery-masonry-grid {
-    column-count: 3;
-    column-gap: 0.85rem;
-  }
-}
-
-@media (max-width: 767px) {
-  .gallery-masonry-grid {
-    column-count: 2;
-    column-gap: 0.6rem;
-  }
-}
-
-/* Masonry Tile Item Box */
+/* ── Masonry tile wrapper ─────────────────────────────────── */
 .gallery-masonry-item {
   break-inside: avoid;
-  page-break-inside: avoid;
   -webkit-column-break-inside: avoid;
-  margin-bottom: 1.25rem;
-  display: inline-block;
+  page-break-inside: avoid;
+  margin-bottom: 1rem;
+  display: inline-block; /* required for column-count to work correctly */
   width: 100%;
 }
+@media (max-width: 767px) { .gallery-masonry-item { margin-bottom: 0.6rem; } }
 
-@media (max-width: 639px) {
-  .gallery-masonry-item {
-    margin-bottom: 0.85rem;
-  }
-}
-
-/* Pinterest Card Container */
+/* ── Pinterest card layout ────────────────────────────────── */
 .gallery-pinterest-card {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-/* Clean Image/Video Container (Rounded 16px, No Overlaid Dark Text Gradients) */
+/* ── Image / video tile container ────────────────────────── */
 .gallery-clean-tile {
   position: relative;
   width: 100%;
+  min-height: 120px;            /* prevents invisible collapsed tiles */
   border-radius: 16px;
   overflow: hidden;
-  background-color: #E2E8F0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background-color: #DDE1EA;   /* visible placeholder even if image breaks */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: box-shadow 0.25s ease;
+}
+.gallery-masonry-item:hover .gallery-clean-tile {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
+/* ── Media element ────────────────────────────────────────── */
 .gallery-clean-media {
   width: 100%;
   height: auto;
   display: block;
   object-fit: cover;
   border-radius: 16px;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.45s ease, transform 0.4s cubic-bezier(0.2,0.8,0.2,1);
   opacity: 0;
+  position: relative;
+  z-index: 1;
+}
+.gallery-clean-media.loaded { opacity: 1; }
+.gallery-masonry-item:hover .gallery-clean-media { transform: scale(1.025); }
+
+/* ── Shimmer skeleton (shown while image loads) ─────────────
+   Must be position:absolute inside gallery-clean-tile (which
+   already has min-height:120px so the shimmer is always visible) */
+.gallery-skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #DDE1EA 25%, #EEF1F6 50%, #DDE1EA 75%);
+  background-size: 200% 100%;
+  animation: galleryShimmer 1.5s ease-in-out infinite;
+  z-index: 0;
+}
+@keyframes galleryShimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-.gallery-clean-media.loaded {
-  opacity: 1;
+/* ── Video wrapper + play badge ───────────────────────────── */
+.gallery-video-wrap {
+  position: relative;
+  width: 100%;
+}
+.gallery-video-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.18);
+  pointer-events: none;
+  border-radius: 16px;
+}
+.gallery-video-play-btn {
+  background: #FFD166;
+  color: #0F172A;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  font-size: 0.85rem;
 }
 
-.gallery-card-3d-viewport:hover .gallery-clean-media {
-  transform: scale(1.03);
-}
-
-/* Below-Image Caption Details (Pinterest Style typography underneath the tile) */
+/* ── Below-tile caption ───────────────────────────────────── */
 .gallery-tile-caption {
-  padding: 0.5rem 0.25rem 0.25rem 0.25rem;
+  padding: 0.5rem 0.25rem 0.2rem;
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
-
 .gallery-tile-title {
   font-size: 0.85rem;
   font-weight: 700;
@@ -203,23 +245,16 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
-@media (min-width: 768px) {
-  .gallery-tile-title {
-    font-size: 0.925rem;
-  }
-}
+@media (min-width: 768px) { .gallery-tile-title { font-size: 0.925rem; } }
 
 .gallery-tile-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   font-size: 0.725rem;
   color: #64748B;
   font-weight: 600;
   margin-top: 0.15rem;
 }
-
 .gallery-tile-category {
   color: #B45309;
   font-weight: 700;
@@ -228,54 +263,16 @@
   letter-spacing: 0.04em;
 }
 
-/* Infinite Scroll Sentinel */
-.gallery-infinite-sentinel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 0 3.5rem 0;
-  width: 100%;
-}
-
-.gallery-loader-spinner {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 3px solid rgba(255, 209, 102, 0.3);
-  border-top-color: #F59E0B;
-  border-radius: 50%;
-  animation: gallerySpin 0.8s linear infinite;
-}
-
-@keyframes gallerySpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.gallery-loop-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.75rem;
-  padding: 0.45rem 1.1rem;
-  border-radius: 9999px;
-  background: rgba(255, 209, 102, 0.25);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  color: #B45309;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-/* Scoped Lightbox Overlay Modal */
+/* ── Lightbox backdrop ────────────────────────────────────── */
 .gallery-overlay-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(15,23,42,0.88);
   backdrop-filter: blur(12px);
   z-index: 99990;
 }
 
+/* ── Lightbox modal ───────────────────────────────────────── */
 .gallery-overlay-modal {
   position: fixed;
   inset: 3%;
@@ -283,15 +280,14 @@
   max-height: 90vh;
   margin: auto;
   background: #0F172A;
-  border: 1px solid rgba(255, 209, 102, 0.25);
+  border: 1px solid rgba(255,209,102,0.25);
   border-radius: 1.5rem;
   overflow: hidden;
   z-index: 99999;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 209, 102, 0.2);
+  box-shadow: 0 25px 60px -15px rgba(0,0,0,0.7), 0 0 30px rgba(255,209,102,0.15);
 }
-
 @media (min-width: 768px) {
   .gallery-overlay-modal {
     display: grid;
@@ -299,6 +295,7 @@
   }
 }
 
+/* ── Lightbox image stage ─────────────────────────────────── */
 .gallery-overlay-image-box {
   position: relative;
   background: #030712;
@@ -309,61 +306,40 @@
   height: 100%;
   min-height: 300px;
 }
-
 .gallery-overlay-img {
   max-width: 100%;
   max-height: 75vh;
   object-fit: contain;
 }
 
-.gallery-overlay-sidebar {
-  padding: 1.75rem;
+/* ── Lightbox nav arrows ──────────────────────────────────── */
+.gallery-overlay-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15,23,42,0.75);
+  border: 1px solid rgba(255,209,102,0.3);
+  color: #FFD166;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background: #1E293B;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.gallery-nav-left  { left:  1rem; }
+.gallery-nav-right { right: 1rem; }
+.gallery-overlay-nav-btn:hover {
+  background: #FFD166;
+  color: #0F172A;
+  border-color: #FFD166;
 }
 
-.gallery-modal-badge {
-  display: inline-block;
-  padding: 0.35rem 0.9rem;
-  background: rgba(255, 209, 102, 0.2);
-  border: 1px solid #FFD166;
-  color: #FFD166 !important;
-  font-size: 0.75rem;
-  font-weight: 800;
-  border-radius: 9999px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.85rem;
-}
-
-.gallery-modal-title {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: #FFFFFF !important;
-  margin-bottom: 0.75rem;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-}
-
-.gallery-modal-desc {
-  font-size: 0.9rem;
-  color: #F1F5F9 !important;
-  line-height: 1.6;
-}
-
-.gallery-modal-footer {
-  padding-top: 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0.775rem;
-  color: #FFD166 !important;
-  font-weight: 600;
-}
-
-/* Close & Control Buttons with 44x44px Minimum Touch Target */
+/* ── Lightbox close button ────────────────────────────────── */
 .gallery-overlay-close-btn {
   position: absolute;
   top: 1rem;
@@ -374,8 +350,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(15,23,42,0.75);
+  border: 1px solid rgba(255,255,255,0.2);
   color: #FFFFFF;
   display: flex;
   align-items: center;
@@ -384,32 +360,52 @@
   font-size: 1.1rem;
   transition: all 0.2s ease;
 }
-
 .gallery-overlay-close-btn:hover {
   background: #EF4444;
   border-color: #EF4444;
-  transform: scale(1.08);
 }
 
-.gallery-overlay-nav-btn {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 209, 102, 0.3);
-  color: #FFD166;
+/* ── Lightbox sidebar ─────────────────────────────────────── */
+.gallery-overlay-sidebar {
+  padding: 1.75rem;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #1E293B;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  color: #FFFFFF;
+  overflow-y: auto;
 }
-
-.gallery-overlay-nav-btn:hover {
-  background: #FFD166;
-  color: #0F172A;
-  border-color: #FFD166;
-  transform: translateY(-50%) scale(1.08);
+.gallery-modal-badge {
+  display: inline-block;
+  padding: 0.35rem 0.9rem;
+  background: rgba(255,209,102,0.15);
+  border: 1px solid #FFD166;
+  color: #FFD166;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.85rem;
+}
+.gallery-modal-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-bottom: 0.75rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.gallery-modal-desc {
+  font-size: 0.9rem;
+  color: #CBD5E1;
+  line-height: 1.6;
+}
+.gallery-modal-footer {
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.775rem;
+  color: #FFD166;
+  font-weight: 600;
 }
