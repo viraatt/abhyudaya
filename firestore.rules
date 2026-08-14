@@ -162,8 +162,18 @@ service cloud.firestore {
       ])
       && request.resource.data.name is string
       && request.resource.data.email is string
-      && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
+      && request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
       allow read, update, delete: if isAdmin(['super_admin']);
+    }
+
+    // ============================================================
+    // CERTIFICATES
+    // Public: read — needed for /certificate search and /verify/:id pages.
+    // Admins (super_admin, event_admin): full CRUD.
+    // ============================================================
+    match /certificates/{certificateId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
     }
   }
 }
