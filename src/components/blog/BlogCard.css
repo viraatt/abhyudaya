@@ -1,173 +1,162 @@
 /* ============================================================
-   BLOG CARD — Individual post card
-   Fixes: unequal heights, weak typography, no flex column layout
-   Design: Clean card with image zoom, smooth hover lift, equal heights
+   BLOG CARD — Premium Editorial Card Design
    ============================================================ */
 
-/* ---- Card container ---- */
 .blog-card {
-  /* Flex column so body can grow to fill card height */
   display: flex;
   flex-direction: column;
-
-  background: #fff;
-  border-radius: 20px;
+  background: #ffffff;
+  border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(20, 23, 43, 0.07);
-
-  /* Layered shadow for depth */
-  box-shadow:
-    0 4px 16px rgba(20, 23, 43, 0.06),
-    0 1px 4px rgba(20, 23, 43, 0.03);
-
-  /* Smooth hover animations */
-  transition: transform 0.28s ease, box-shadow 0.28s ease;
-  cursor: pointer;
-
-  /* Equal card heights in grid rows */
+  border: 1px solid rgba(20, 23, 43, 0.08);
+  box-shadow: 0 2px 8px rgba(20, 23, 43, 0.03);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
   height: 100%;
 }
 
 .blog-card:hover {
-  transform: translateY(-8px);
-  box-shadow:
-    0 20px 50px rgba(20, 23, 43, 0.12),
-    0 4px 12px rgba(20, 23, 43, 0.06);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(20, 23, 43, 0.07);
+  border-color: rgba(238, 184, 74, 0.45);
 }
 
-/* ---- Image section ---- */
 .blog-card-image {
   position: relative;
   overflow: hidden;
-  /* Consistent 16:10 ratio — better than fixed px on all screen sizes */
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   flex-shrink: 0;
+  background: rgba(20, 23, 43, 0.04);
 }
 
 .blog-card-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Smooth zoom on hover */
-  transition: transform 0.50s ease;
+  transition: transform 0.4s ease;
   display: block;
 }
 
 .blog-card:hover .blog-card-image img {
-  transform: scale(1.06);
+  transform: scale(1.03);
 }
 
-/* ---- Category badge on image ---- */
+/* Category Badge — Muted Antique Gold Accent */
 .blog-category {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  background: #1e3a8a;
-  color: #fff;
-  padding: 6px 14px;
-  border-radius: 999px;
+  top: 12px;
+  left: 12px;
+  background: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+  padding: 4px 10px;
+  border-radius: 6px;
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  /* Subtle backdrop so badge is readable over any image */
-  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
-/* ---- Card body ---- */
+/* Card Body */
 .blog-card-body {
-  /* Grow to fill remaining card height — equal bottom alignment */
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px 24px 22px;
+  padding: 20px 20px 18px;
 }
 
-/* ---- Title ---- */
 .blog-card-title {
   font-family: var(--font-display, "Fraunces", serif);
-  font-size: 20px;
+  font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.35;
-  color: #111827;
-  margin: 0 0 12px;
-  /* Prevent overflow on very long titles */
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  color: var(--ink, #14172b);
+  margin: 0 0 10px;
 }
 
-/* ---- Excerpt / description ---- */
+.blog-card-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.blog-card-title a:hover,
+.blog-card:hover .blog-card-title a {
+  color: var(--night, #0d1224);
+}
+
 .blog-card-desc {
   font-family: var(--font-body, "Inter", sans-serif);
-  font-size: 14px;
-  line-height: 1.75;
-  color: #6b7280;
-  /* Clamp to 3 lines for consistent card heights */
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--ink-soft, #4a4f6b);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin: 0 0 20px;
-
-  /* Push meta + button to bottom */
+  margin: 0 0 16px;
   flex: 1;
 }
 
-/* ---- Meta row: author / date / read time ---- */
+.blog-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(20, 23, 43, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .blog-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  color: #9ca3af;
-  font-size: 13px;
+  gap: 12px;
+  color: var(--ink-soft, #4a4f6b);
+  font-size: 0.76rem;
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  margin-bottom: 20px;
 }
 
 .blog-meta span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
-/* ---- Read Article button ---- */
 .blog-read-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #1e3a8a;
+  color: var(--night, #0d1224);
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 600;
   text-decoration: none;
-  letter-spacing: 0.01em;
-  /* Animated underline trick */
-  border-bottom: 1.5px solid transparent;
-  padding-bottom: 1px;
-  transition: gap 0.25s ease, border-color 0.25s ease, color 0.25s ease;
-  /* Align to bottom of card body */
-  margin-top: auto;
-  width: fit-content;
+  transition: gap 0.2s ease, color 0.2s ease;
 }
 
+.btn-arrow {
+  transition: transform 0.2s ease;
+}
+
+.blog-card:hover .blog-read-btn,
 .blog-read-btn:hover {
-  gap: 12px;
-  color: #0d1224;
-  border-bottom-color: #eeb84a;
+  color: var(--sun, #eeb84a);
+  gap: 8px;
 }
 
-/* ============================================================
-   RESPONSIVE — Mobile (≤ 768px)
-   ============================================================ */
-@media (max-width: 768px) {
-  .blog-card-title {
-    font-size: 18px;
+.blog-card:hover .btn-arrow,
+.blog-read-btn:hover .btn-arrow {
+  transform: translateX(3px);
+}
+
+@media (max-width: 640px) {
+  .blog-card-body {
+    padding: 16px 16px 14px;
   }
 
-  .blog-card-body {
-    padding: 20px 18px 18px;
+  .blog-card-title {
+    font-size: 1.08rem;
   }
 }

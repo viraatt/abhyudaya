@@ -14,10 +14,13 @@ export default function CategoryFilter({
   onCategoryChange,
 }) {
   return (
-    <div className="category-wrapper">
+    <div className="category-wrapper" role="tablist" aria-label="Article categories">
       {categories.map((category) => (
         <button
           key={category}
+          type="button"
+          role="tab"
+          aria-selected={activeCategory === category}
           onClick={() => onCategoryChange(category)}
           className={`category-pill ${
             activeCategory === category ? "active" : ""
