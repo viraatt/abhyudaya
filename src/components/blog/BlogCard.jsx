@@ -1,13 +1,7 @@
 import { memo } from "react";
 import "./BlogCard.css";
 import { Link } from "react-router-dom";
-
-import {
-  FiCalendar,
-  FiClock,
-  FiArrowRight,
-  FiUser,
-} from "react-icons/fi";
+import { FiCalendar, FiClock, FiArrowRight, FiUser } from "react-icons/fi";
 
 function BlogCard({ blog }) {
   return (
@@ -22,45 +16,47 @@ function BlogCard({ blog }) {
           loading="lazy"
           decoding="async"
         />
-
         <span className="blog-category">
           {blog.category || "General"}
         </span>
       </div>
 
       <div className="blog-card-body">
-        <h2 className="blog-card-title">
-          {blog.title}
-        </h2>
+        <h3 className="blog-card-title">
+          <Link to={`/blog/${blog.slug}`}>{blog.title}</Link>
+        </h3>
 
         <p className="blog-card-desc">
           {blog.excerpt}
         </p>
 
-        <div className="blog-meta">
-          <span>
-            <FiUser />
-            {blog.author || "Admin"}
-          </span>
+        <div className="blog-card-footer">
+          <div className="blog-meta">
+            {blog.author && (
+              <span>
+                <FiUser />
+                {blog.author}
+              </span>
+            )}
+            {blog.date && (
+              <span>
+                <FiCalendar />
+                {blog.date}
+              </span>
+            )}
+            {blog.readTime && (
+              <span>
+                <FiClock />
+                {blog.readTime}
+              </span>
+            )}
+          </div>
 
-          <span>
-            <FiCalendar />
-            {blog.date || "Recently"}
-          </span>
-
-          <span>
-            <FiClock />
-            {blog.readTime || "5 min read"}
-          </span>
+          <Link to={`/blog/${blog.slug}`} className="blog-read-btn" aria-label={`Read ${blog.title}`}>
+            <span>Read Article</span>
+            <FiArrowRight className="btn-arrow" />
+          </Link>
         </div>
-
-        <Link
-          to={`/blog/${blog.slug}`}
-          className="blog-read-btn"
-        >
-          Read Article
-          <FiArrowRight />
-        </Link>
       </div>
     </article>
   );

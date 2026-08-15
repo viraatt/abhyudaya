@@ -4,7 +4,6 @@ import "./Blog.css";
 
 import SearchBar from "../components/blog/SearchBar";
 import CategoryFilter from "../components/blog/CategoryFilter";
-import FeaturedPost from "../components/blog/FeaturedPost";
 import BlogCard from "../components/blog/BlogCard";
 import CollectionPageSchema from "../components/seo/schemas/CollectionPageSchema";
 import { getBlogsPage } from "../Firebase/blogService";
@@ -25,7 +24,7 @@ const Blog = () => {
     try {
       setLoading(true);
       const res = await getBlogsPage({
-        pageSize: 6,
+        pageSize: 9,
         category: cat,
         onlyPublished: true,
       });
@@ -63,12 +62,7 @@ const Blog = () => {
     }
   };
 
-  const featuredBlog = useMemo(() => {
-    const featured = blogs.find((blog) => blog.featured);
-    return featured || blogs[0];
-  }, [blogs]);
-
-  // Client-side search performed in-memory on loaded data (no Firestore query per keystroke)
+  // Client-side search performed in-memory on loaded data
   const filteredBlogs = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return blogs;
@@ -82,6 +76,11 @@ const Blog = () => {
     });
   }, [blogs, search]);
 
+  const handleResetFilters = () => {
+    setSearch("");
+    setActiveCategory("All");
+  };
+
   return (
     <div className="blog-page">
       {/* ====== SEO ====== */}
@@ -89,7 +88,7 @@ const Blog = () => {
         <title>Blog | Abhyudaya Club — Stories, Insights & Event Reports</title>
         <meta
           name="description"
-          content="Read inspiring articles, technical insights, workshop recaps, competition highlights and exciting moments from the Abhyudaya Club community at MPEC Kanpur."
+          content="Ideas, stories, events, and insights from the Abhyudaya Club community."
         />
         <link rel="canonical" href={`${SITE_URL}/blog`} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
@@ -98,7 +97,7 @@ const Blog = () => {
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Abhyudaya Club" />
         <meta property="og:title" content="Blog | Abhyudaya Club — Stories, Insights & Event Reports" />
-        <meta property="og:description" content="Discover inspiring articles, technical insights, and exciting moments from Abhyudaya Club at MPEC Kanpur." />
+        <meta property="og:description" content="Ideas, stories, events, and insights from the Abhyudaya Club community." />
         <meta property="og:url" content={`${SITE_URL}/blog`} />
         <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
         <meta property="og:locale" content="en_IN" />
@@ -106,93 +105,90 @@ const Blog = () => {
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Blog | Abhyudaya Club — Stories, Insights & Event Reports" />
-        <meta name="twitter:description" content="Discover inspiring articles, technical insights, and exciting moments from Abhyudaya Club at MPEC Kanpur." />
+        <meta name="twitter:description" content="Ideas, stories, events, and insights from the Abhyudaya Club community." />
         <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
       </Helmet>
 
       {/* CollectionPage JSON-LD */}
       <CollectionPageSchema blogs={blogs} />
 
-      {/* ---------- HERO ---------- */}
-      <section className="blog-header">
-        <div className="blog-badge">
-          <svg
-            className="blog-badge-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            {/* Feather pen-nib — signals writing/blogging */}
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-          </svg>
-          <span className="blog-badge-text">Abhyudaya Club</span>
-        </div>
-
-        <h1 className="blog-title">
-          Explore Our <span>Stories</span>
-        </h1>
-
-        <p className="blog-subtitle">
-          Discover inspiring articles, technical insights,
-          workshops, competitions, achievements and exciting
-          moments from the Abhyudaya Club community.
-        </p>
-      </section>
-
-      <SearchBar
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
-      <CategoryFilter
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-      />
-
-      {loading ? (
-        <div className="blog-loading">
-          Loading blogs...
-        </div>
-      ) : (
-        <>
-          {featuredBlog && !search && (
-            <FeaturedPost blog={featuredBlog} />
-          )}
-
-          <div className="blog-grid">
-            {filteredBlogs.length > 0 ? (
-              filteredBlogs.map((blog) => (
-                <BlogCard
-                  key={blog.id}
-                  blog={blog}
-                />
-              ))
-            ) : (
-              <div className="no-blogs">
-                No blogs found.
-              </div>
-            )}
+      <div className="blog-container">
+        {/* ---------- COMPACT EDITORIAL HEADER ---------- */}
+        <header className="blog-header">
+          <div className="blog-eyebrow">
+            <span className="blog-eyebrow-accent" />
+            <span>ABHYUDAYA JOURNAL</span>
           </div>
 
-          {hasMore && !search && (
-            <div className="load-more-container">
-              <button
-                type="button"
-                className="load-more-btn"
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? "Loading..." : "Load More Stories"}
-              </button>
+          <h1 className="blog-title">Blog</h1>
+
+          <p className="blog-subtitle">
+            Ideas, stories, events, and insights from the Abhyudaya community.
+          </p>
+        </header>
+
+        {/* ---------- CONTROLS SECTION ---------- */}
+        <div className="blog-controls">
+          <SearchBar
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
+          />
+
+          <CategoryFilter
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+          />
+        </div>
+
+        {/* ---------- CONTENT GRID ---------- */}
+        {loading ? (
+          <div className="blog-loading">
+            <div className="blog-loading-spinner" />
+            <span>Loading articles...</span>
+          </div>
+        ) : (
+          <>
+            <div className="blog-grid">
+              {filteredBlogs.length > 0 ? (
+                filteredBlogs.map((blog) => (
+                  <BlogCard
+                    key={blog.id}
+                    blog={blog}
+                  />
+                ))
+              ) : (
+                <div className="no-blogs">
+                  <h3>No articles found</h3>
+                  <p>We couldn't find any articles matching your search or category selection.</p>
+                  {(search || activeCategory !== "All") && (
+                    <button
+                      type="button"
+                      className="reset-search-btn"
+                      onClick={handleResetFilters}
+                    >
+                      Clear search & filters
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-        </>
-      )}
+
+            {hasMore && !search && (
+              <div className="load-more-container">
+                <button
+                  type="button"
+                  className="load-more-btn"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? "Loading..." : "Load More Articles"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
