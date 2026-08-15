@@ -1,5 +1,5 @@
 /* ==========================================
-   NAVBAR — premium sticky header
+   NAVBAR — Premium Institutional & Editorial Header
    Three-part layout: brand | links | actions
    ========================================== */
 
@@ -8,8 +8,8 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(13, 18, 36, 0.88);
-  border-bottom: 1px solid transparent;
+  background: var(--night, #0d1224);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -18,31 +18,31 @@
   content: '';
   position: absolute;
   inset: 0;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: -1;
   pointer-events: none;
 }
 
 .navbar--scrolled {
   background: rgba(13, 18, 36, 0.96);
-  border-bottom-color: var(--line-on-dark);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  border-bottom-color: rgba(238, 184, 74, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .navbar__container {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 28px;
-  height: 74px;
+  padding: 0 clamp(20px, 3.5vw, 36px);
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: clamp(12px, 2vw, 28px);
   position: relative;
 }
 
-/* ── Backdrop Overlay ── */
+/* ── Backdrop Overlay for Mobile Drawer ── */
 .navbar__overlay,
 .navbar__backdrop {
   position: fixed;
@@ -63,98 +63,124 @@
   transition: opacity 0.3s ease, visibility 0s linear 0s;
 }
 
-/* ── Branding (Left) ── */
+/* ── Branding (Left Identity Area) ── */
 
 .navbar__brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 1.15rem; /* ~18.5px spacing between logo & text (16-24px target range) */
   color: var(--dawn);
   text-decoration: none;
-  z-index: 10001; /* Stay above overlay */
+  z-index: 10001;
+  margin-right: clamp(1.25rem, 2.5vw, 2.75rem); /* Comfortable breathing room before first nav link */
+  padding-right: clamp(0.4rem, 0.8vw, 1rem);
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.navbar__brand:hover {
+  opacity: 0.95;
 }
 
 .navbar__logo {
-  width: 42px;
-  height: 42px;
+  width: 46px; /* 44-50px target desktop height */
+  height: 46px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  border: 1px solid rgba(238, 184, 74, 0.3);
+  border: 1.5px solid rgba(238, 184, 74, 0.35);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.navbar__brand:hover .navbar__logo {
+  border-color: var(--sun);
+  transform: scale(1.03);
+  box-shadow: 0 3px 12px rgba(238, 184, 74, 0.2);
 }
 
 .navbar__brand-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.15;
+  justify-content: center;
 }
 
 .navbar__brand-title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.15rem;
-  letter-spacing: 0.01em;
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  color: var(--dawn);
+  line-height: 1.1;
 }
 
 .navbar__brand-sub {
   font-family: var(--font-utility);
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-size: 0.63rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--sun-soft);
-  margin-top: 2px;
+  color: var(--sun);
+  opacity: 0.9;
+  margin-top: 3px;
+  line-height: 1;
 }
 
-/* ── Navigation Links (Center) ── */
+/* ── Navigation Links (Center Functional Area) ── */
 
 .navbar__links {
   display: flex;
   align-items: center;
-  gap: 1.4rem;
-  margin: 0 auto; /* centers the links between brand and actions */
+  gap: clamp(0.65rem, 1.15vw, 1.35rem);
+  margin: 0 auto;
 }
 
 .navbar__link {
   font-family: var(--font-utility);
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.865rem;
   font-weight: 500;
   color: var(--dawn-dim);
   text-decoration: none;
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 0.3rem 0.1rem;
+  padding: 0.5rem 0.25rem;
   white-space: nowrap;
+  transition: color 0.25s ease;
 }
 
-/* thin gold underline indicator */
+/* Centered gold underline indicator (30px wide active state) */
 .navbar__link::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 100%;
-  bottom: 0;
+  left: 50%;
+  bottom: -2px;
+  width: 0;
   height: 2px;
-  border-radius: 99px;
   background: var(--sun);
-  transition: right 0.25s ease;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  opacity: 0;
 }
 
 .navbar__link:hover {
-  color: var(--dawn);
+  color: var(--sun);
 }
 
-.navbar__link:hover::after,
-.navbar__link--active::after {
-  right: 0;
+.navbar__link:hover::after {
+  width: 24px;
+  opacity: 0.6;
 }
 
 .navbar__link--active {
-  color: var(--dawn);
+  color: var(--sun);
+  font-weight: 600;
+}
+
+.navbar__link--active::after {
+  width: 30px;
+  opacity: 1;
 }
 
 /* ── Actions (Right) ── */
@@ -171,45 +197,50 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 42px;
-  padding: 0.5rem 1.1rem;
-  border-radius: 100px;
+  height: 40px;
+  padding: 0 1.15rem;
+  border-radius: 9px;
   font-family: var(--font-utility);
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  transition: transform 0.2s ease, background 0.2s ease,
-    color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.25s ease,
+              color 0.25s ease,
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
 }
 
-/* Primary CTA — gold */
+/* Primary CTA — Join the Club (Warm Gold Accent) */
 .navbar__cta--primary {
   background: var(--sun);
   color: var(--night);
   border: 1px solid var(--sun);
+  box-shadow: 0 2px 8px rgba(238, 184, 74, 0.15);
 }
 
 .navbar__cta--primary:hover {
   background: var(--sun-soft);
   border-color: var(--sun-soft);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(238, 184, 74, 0.25);
+  color: var(--night);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(238, 184, 74, 0.3);
 }
 
-/* Secondary CTA — blue */
+/* Secondary CTA — Admin Login (Gold Outline, Gold Hover) */
 .navbar__cta--secondary {
-  background: #2563eb;
-  color: #ffffff;
-  border: 1px solid #2563eb;
+  background: transparent;
+  color: var(--dawn);
+  border: 1px solid rgba(238, 184, 74, 0.5);
 }
 
 .navbar__cta--secondary:hover {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  background: var(--sun);
+  border-color: var(--sun);
+  color: var(--night);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(238, 184, 74, 0.25);
 }
 
 /* ── Mobile Toggle Button ── */
@@ -220,23 +251,39 @@
   justify-content: center;
   align-items: center;
   gap: 5px;
-  width: 42px;
-  height: 42px;
-  background: none;
-  border: none;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   cursor: pointer;
   padding: 0;
-  z-index: 10001; /* Stay above open menu drawer */
+  z-index: 10001;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.navbar__toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(238, 184, 74, 0.4);
 }
 
 .navbar__toggle span {
   display: block;
   height: 2px;
-  width: 22px;
+  width: 20px;
   margin: 0 auto;
   background: var(--dawn);
   border-radius: 2px;
-  transition: transform 0.25s ease, opacity 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.navbar__toggle--open {
+  background: rgba(238, 184, 74, 0.15);
+  border-color: var(--sun);
+}
+
+.navbar__toggle--open span {
+  background: var(--sun);
 }
 
 .navbar__toggle--open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -248,13 +295,23 @@
   display: none;
 }
 
-/* ── Responsive Mobile Media Queries ── */
+/* ── Responsive Mobile & Tablet Media Queries ── */
 
-@media (max-width: 1080px) {
+@media (max-width: 1120px) {
   .navbar__container {
-    height: 68px;
+    height: 72px;
     padding: 0 20px;
-    gap: 16px;
+  }
+
+  .navbar__brand {
+    gap: 0.9rem;
+    margin-right: 0;
+    padding-right: 0;
+  }
+
+  .navbar__logo {
+    width: 42px;
+    height: 42px;
   }
 
   .navbar__toggle {
@@ -269,14 +326,14 @@
   /* Slide-down Mobile Navigation Panel */
   .navbar__links {
     position: fixed;
-    top: 68px;
+    top: 72px;
     left: 0;
     width: 100%;
     width: 100vw;
-    height: calc(100vh - 68px);
-    height: calc(100dvh - 68px);
+    height: calc(100vh - 72px);
+    height: calc(100dvh - 72px);
     margin: 0;
-    padding: 1.5rem 20px 2.5rem;
+    padding: 1.5rem 24px 3rem;
     background: var(--night, #0d1224);
     flex-direction: column;
     align-items: stretch;
@@ -297,60 +354,82 @@
 
   .navbar__link {
     font-size: 1.05rem;
-    padding: 0.85rem 1rem;
-    border-radius: 10px;
+    padding: 0.85rem 1.25rem;
+    border-radius: 8px;
     color: var(--dawn-dim, #f2e8d7);
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    border-left: 2px solid transparent;
   }
 
   .navbar__link::after {
-    display: none; /* Pill background indicates active link on mobile */
+    display: none;
   }
 
-  .navbar__link:hover,
+  .navbar__link:hover {
+    background: rgba(238, 184, 74, 0.08);
+    color: var(--sun, #eeb84a);
+  }
+
   .navbar__link--active {
-    background: rgba(238, 184, 74, 0.12);
+    background: rgba(238, 184, 74, 0.14);
     color: var(--sun, #eeb84a);
     font-weight: 600;
+    border-left-color: var(--sun, #eeb84a);
   }
 
   .navbar__mobile-actions {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 1.25rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--line-on-dark, rgba(251, 244, 232, 0.14));
+    gap: 0.85rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(251, 244, 232, 0.12);
   }
 
   /* Mobile CTAs: full-width */
   .navbar__mobile-actions .navbar__cta {
     width: 100%;
+    height: 44px;
+    font-size: 0.95rem;
     text-align: center;
+    justify-content: center;
   }
 }
 
 @media (max-width: 480px) {
   .navbar__container {
+    height: 68px;
     padding: 0 16px;
   }
 
+  .navbar__brand {
+    gap: 0.75rem;
+  }
+
   .navbar__logo {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
   }
 
   .navbar__brand-title {
-    font-size: 1.05rem;
+    font-size: 1.08rem;
   }
 
   .navbar__brand-sub {
-    font-size: 0.55rem;
+    font-size: 0.58rem;
+  }
+
+  .navbar__links {
+    top: 68px;
+    height: calc(100vh - 68px);
+    height: calc(100dvh - 68px);
+    padding: 1.25rem 18px 2.5rem;
   }
 
   .navbar__link {
-    font-size: 1rem;
-    padding: 0.75rem 0.85rem;
+    font-size: 0.98rem;
+    padding: 0.75rem 1rem;
   }
 }

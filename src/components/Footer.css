@@ -64,10 +64,26 @@
   gap: 0.6rem;
 }
 
+.footer .footer__connect-label,
 .footer__connect-label {
   width: 100%;
+  font-family: var(--font-utility);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   color: var(--sun);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.85rem;
+}
+
+.footer__connect-label::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 2px;
+  background: var(--sun);
+  margin-top: 0.45rem;
+  border-radius: 1px;
 }
 
 .footer__pill {
@@ -81,12 +97,13 @@
   padding: 0.5rem 0.9rem;
   border-radius: 100px;
   border: 1px solid var(--line-on-dark);
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .footer__pill:hover {
   color: var(--sun);
   border-color: var(--sun);
+  background-color: rgba(238, 184, 74, 0.06);
 }
 
 .footer__pill--email {
