@@ -96,3 +96,86 @@ export function formatDateTime(ts) {
     minute: "2-digit",
   });
 }
+
+/**
+ * Determines the event lifecycle status: "completed", "ongoing", or "upcoming".
+ *
+ * @param {object} event
+ * @returns {"completed" | "ongoing" | "upcoming"}
+ */
+export function getEventStatus(event) {
+  if (!event) return "upcoming";
+
+  // 1. Explicit string status override
+  const rawStatus = (
+    event.eventStatus ||
+    event.eventState ||
+    event.lifeCycleStatus ||
+    (event.status && !["published", "draft"].includes(String(event.status).toLowerCase()) ? event.status : "")
+  );
+
+  if (rawStatus) {
+    const s = String(rawStatus).toLowerCase().trim();
+    if (["completed", "past", "finished", "ended", "archived", "closed"].includes(s)) {
+      return "completed";
+    }
+    if (["ongoing", "live", "running", "active"].includes(s)) {
+      return "ongoing";
+    }
+    if (["upcoming", "scheduled"].includes(s)) {
+      return "upcoming";
+    }
+  }
+
+  // 2. Explicit boolean flags
+  if (event.isCompleted || event.completed) return "completed";
+  if (event.isOngoing || event.ongoing) return "ongoing";
+  if (event.isUpcoming || event.upcoming) return "upcoming";
+
+  const now = new Date();
+
+  // 3. Event end date check
+  if (event.eventEndDate) {
+    const endStr = String(event.eventEndDate).trim();
+    const endDate = new Date(endStr.includes("T") ? endStr : `${endStr}T23:59:59`);
+    if (!isNaN(endDate.getTime())) {
+      if (now > endDate) {
+        return "completed";
+      }
+      if (event.eventStartDate) {
+        const startStr = String(event.eventStartDate).trim();
+        const startDate = new Date(startStr.includes("T") ? startStr : `${startStr}T00:00:00`);
+        if (!isNaN(startDate.getTime()) && now >= startDate && now <= endDate) {
+          return "ongoing";
+        }
+      }
+    }
+  }
+
+  // 4. Event start date check
+  if (event.eventStartDate) {
+    const startStr = String(event.eventStartDate).trim();
+    const startDate = new Date(startStr.includes("T") ? startStr : `${startStr}T00:00:00`);
+    if (!isNaN(startDate.getTime())) {
+      if (now < startDate) {
+        return "upcoming";
+      }
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      if (now.getTime() - startDate.getTime() > oneDayMs) {
+        return "completed";
+      }
+      return "ongoing";
+    }
+  }
+
+  // 5. Registration deadline check
+  if (event.registrationDeadline) {
+    const dlStr = String(event.registrationDeadline).trim();
+    const deadline = new Date(dlStr.includes("T") ? dlStr : `${dlStr}T23:59:59`);
+    if (!isNaN(deadline.getTime()) && now > deadline) {
+      return "completed";
+    }
+  }
+
+  return "upcoming";
+}

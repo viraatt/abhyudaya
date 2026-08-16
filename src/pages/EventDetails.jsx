@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { getEventBySlug } from "../Firebase/eventService.js";
+import { getEventBySlug, getEvents } from "../Firebase/eventService.js";
+import { getEventStatus, formatDate } from "../utils/registrationStatus.js";
 import EventReviews from "../components/reviews/EventReviews.jsx";
+import EventCard from "../components/EventCard.jsx";
 import EventSchema from "../components/seo/schemas/EventSchema.jsx";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import "./EventDetails.css";
@@ -14,6 +16,13 @@ export default function EventDetails() {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  /* Lightbox State for Gallery */
+  const [lightboxImg, setLightboxImg] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  /* Related Events State */
+  const [relatedEvents, setRelatedEvents] = useState([]);
 
   useEffect(() => {
     async function fetchEventDetails() {
@@ -34,6 +43,30 @@ export default function EventDetails() {
       fetchEventDetails();
     }
   }, [slug]);
+
+  /* Fetch Related Events */
+  useEffect(() => {
+    async function fetchRelated() {
+      if (!event) return;
+      try {
+        const allEvents = await getEvents({ pageSize: 6, allowFallback: true });
+        if (Array.isArray(allEvents)) {
+          const filtered = allEvents
+            .filter(
+              (item) =>
+                item.slug !== (event.slug || slug) &&
+                String(item.id) !== String(event.id || slug)
+            )
+            .slice(0, 3);
+          setRelatedEvents(filtered);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch related events:", err);
+      }
+    }
+
+    fetchRelated();
+  }, [event, slug]);
 
   if (loading) {
     return (
@@ -88,6 +121,17 @@ export default function EventDetails() {
     { name: event.title, url: canonicalUrl },
   ];
 
+  /* Status handling */
+  const eventStatus = getEventStatus(event);
+  const isCompleted = eventStatus === "completed";
+  const isOngoing = eventStatus === "ongoing";
+  const isUpcoming = eventStatus === "upcoming";
+
+  const openLightbox = (imgUrl, index) => {
+    setLightboxImg(imgUrl);
+    setLightboxIndex(index);
+  };
+
   return (
     <>
       <Helmet>
@@ -128,9 +172,34 @@ export default function EventDetails() {
       >
         <div className="event-hero-overlay">
           <div className="wrap">
-            <span className="hero-chip">
-              {event.icon || "📅"} {event.badgeText || event.subtitle || event.category || "Special Event"}
-            </span>
+            {/* Top Navigation & Status Badges */}
+            <div className="event-top-row">
+              <Link to="/events" className="event-back-link">
+                ← Back to Events
+              </Link>
+            </div>
+
+            <div className="hero-badge-group">
+              <span className="hero-chip">
+                {event.icon || "📅"} {event.badgeText || event.subtitle || event.category || "Special Event"}
+              </span>
+
+              {isCompleted && (
+                <span className="hero-status-badge status-completed">
+                  ✓ Event Completed
+                </span>
+              )}
+              {isOngoing && (
+                <span className="hero-status-badge status-ongoing">
+                  🔴 Live Now
+                </span>
+              )}
+              {isUpcoming && (
+                <span className="hero-status-badge status-upcoming">
+                  🚀 Registration Open
+                </span>
+              )}
+            </div>
 
             <h1>{event.title}</h1>
 
@@ -141,6 +210,23 @@ export default function EventDetails() {
             )}
 
             <p>{event.shortDescription || event.description}</p>
+
+            {/* Date & Location Metadata */}
+            {(event.eventStartDate || event.registrationDeadline || event.venue || event.location) && (
+              <div className="hero-meta-row">
+                {(event.eventStartDate || event.registrationDeadline) && (
+                  <span className="hero-meta-tag">
+                    📅 {formatDate(event.eventStartDate || event.registrationDeadline)}
+                    {event.eventEndDate ? ` – ${formatDate(event.eventEndDate)}` : ""}
+                  </span>
+                )}
+                {(event.venue || event.location) && (
+                  <span className="hero-meta-tag">
+                    📍 {[event.venue, event.location].filter(Boolean).join(", ")}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* HERO STATS */}
             <div className="hero-stats">
@@ -179,12 +265,28 @@ export default function EventDetails() {
                 </div>
               )}
             </div>
+
+            {/* COMPLETED EVENT HERO ACTION BUTTONS */}
+            {isCompleted && (
+              <div className="hero-archive-actions">
+                {event.gallery && event.gallery.length > 0 && (
+                  <a href="#gallery-section" className="hero-action-btn primary">
+                    View Gallery ↓
+                  </a>
+                )}
+                {event.highlights && event.highlights.length > 0 && (
+                  <a href="#highlights-section" className="hero-action-btn secondary">
+                    Explore Highlights ↓
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* 2. ABOUT & HIGHLIGHTS */}
-      <section className="event-section">
+      <section className="event-section" id="highlights-section">
         <div className="wrap">
           <h2>About {event.title}</h2>
 
@@ -347,12 +449,17 @@ export default function EventDetails() {
 
       {/* 7. GALLERY (if available) */}
       {event.gallery && event.gallery.length > 0 && (
-        <section className="event-section alt-bg">
+        <section className="event-section alt-bg" id="gallery-section">
           <div className="wrap">
             <h2>Glimpses &amp; Highlights</h2>
             <div className="event-gallery-grid">
               {event.gallery.map((imgUrl, idx) => (
-                <div key={idx} className="event-gallery-item">
+                <div
+                  key={idx}
+                  className="event-gallery-item"
+                  onClick={() => openLightbox(imgUrl, idx)}
+                  title="Click to expand"
+                >
                   <img
                     src={imgUrl}
                     alt={`${event.title} — glimpse ${idx + 1}`}
@@ -361,6 +468,9 @@ export default function EventDetails() {
                     width="400"
                     height="300"
                   />
+                  <div className="event-gallery-hover-overlay">
+                    <span>🔍 View Image</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -368,40 +478,69 @@ export default function EventDetails() {
         </section>
       )}
 
-      {/* 8. REGISTRATION SECTION */}
+      {/* 8. REGISTRATION / ARCHIVE SHOWCASE SECTION */}
       <section className="event-section">
         <div className="wrap">
-          <div className="event-registration-card">
-            <div className="event-registration-info">
-              <h2>Join {event.title}</h2>
-              <p>Ready to participate? Register now or contact our coordinators for further details.</p>
-              <div className="event-reg-meta">
-                {event.registrationDeadline && (
-                  <div className="event-reg-meta-item">
-                    <span>⏰ Deadline:</span>
-                    <strong>{event.registrationDeadline}</strong>
-                  </div>
+          {isCompleted ? (
+            /* COMPLETED EVENT ARCHIVE SHOWCASE CARD */
+            <div className="event-archive-card">
+              <div className="event-archive-info">
+                <span className="event-archive-chip">✨ Event Concluded</span>
+                <h2>{event.title} Showcase</h2>
+                <p>
+                  This event has successfully concluded. Thank you to all attendees, speakers, and coordinators who contributed to its success!
+                </p>
+              </div>
+              <div className="event-archive-actions-box">
+                {event.gallery && event.gallery.length > 0 && (
+                  <a href="#gallery-section" className="event-archive-action-btn primary">
+                    View Photo Gallery
+                  </a>
                 )}
-                {event.venue && (
-                  <div className="event-reg-meta-item">
-                    <span>📍 Venue:</span>
-                    <strong>{event.venue}</strong>
-                  </div>
-                )}
-                {event.location && (
-                  <div className="event-reg-meta-item">
-                    <span>🏢 Location:</span>
-                    <strong>{event.location}</strong>
-                  </div>
+                {event.highlights && event.highlights.length > 0 && (
+                  <a href="#highlights-section" className="event-archive-action-btn outline">
+                    Explore Highlights
+                  </a>
                 )}
               </div>
             </div>
-            <div>
-              <Link to={event.ctaLink || "/contact"} className="event-reg-btn">
-                {event.ctaText || "Register Now →"}
-              </Link>
+          ) : (
+            /* UPCOMING / ONGOING REGISTRATION CARD */
+            <div className="event-registration-card">
+              <div className="event-registration-info">
+                <h2>Join {event.title}</h2>
+                <p>Ready to participate? Register now or contact our coordinators for further details.</p>
+                <div className="event-reg-meta">
+                  {event.registrationDeadline && (
+                    <div className="event-reg-meta-item">
+                      <span>⏰ Deadline:</span>
+                      <strong>{event.registrationDeadline}</strong>
+                    </div>
+                  )}
+                  {event.venue && (
+                    <div className="event-reg-meta-item">
+                      <span>📍 Venue:</span>
+                      <strong>{event.venue}</strong>
+                    </div>
+                  )}
+                  {event.location && (
+                    <div className="event-reg-meta-item">
+                      <span>🏢 Location:</span>
+                      <strong>{event.location}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <Link
+                  to={event.ctaLink || `/register/${event.slug || event.id}` || "/contact"}
+                  className="event-reg-btn"
+                >
+                  {event.ctaText || "Register Now →"}
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -448,7 +587,24 @@ export default function EventDetails() {
       {/* 11. REVIEWS & FEEDBACK */}
       <EventReviews event={event} />
 
-      {/* 12. CTA BANNER */}
+      {/* 12. RELATED EVENTS */}
+      {relatedEvents && relatedEvents.length > 0 && (
+        <section className="event-section alt-bg related-events-section">
+          <div className="wrap">
+            <div className="related-events-header">
+              <h2>Explore More Events</h2>
+              <p>Discover other flagship festivals, technical workshops, and club experiences.</p>
+            </div>
+            <div className="related-events-grid">
+              {relatedEvents.map((relItem, idx) => (
+                <EventCard key={relItem.id || relItem.slug || idx} event={relItem} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 13. CTA BANNER */}
       <section className="event-cta-banner">
         <div className="wrap">
           <h2>Experience {event.title} Live</h2>
@@ -460,6 +616,48 @@ export default function EventDetails() {
           </Link>
         </div>
       </section>
+
+      {/* GALLERY LIGHTBOX MODAL */}
+      {lightboxImg && (
+        <div className="event-lightbox-overlay" onClick={() => setLightboxImg(null)}>
+          <div className="event-lightbox-dialog" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="event-lightbox-close-btn"
+              onClick={() => setLightboxImg(null)}
+              aria-label="Close lightbox"
+            >
+              ✕
+            </button>
+            <img src={lightboxImg} alt={`${event.title} expanded view`} className="event-lightbox-img" />
+            {event.gallery.length > 1 && (
+              <div className="event-lightbox-controls">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextIdx = (lightboxIndex - 1 + event.gallery.length) % event.gallery.length;
+                    setLightboxIndex(nextIdx);
+                    setLightboxImg(event.gallery[nextIdx]);
+                  }}
+                >
+                  ‹ Prev
+                </button>
+                <span>{lightboxIndex + 1} / {event.gallery.length}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextIdx = (lightboxIndex + 1) % event.gallery.length;
+                    setLightboxIndex(nextIdx);
+                    setLightboxImg(event.gallery[nextIdx]);
+                  }}
+                >
+                  Next ›
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

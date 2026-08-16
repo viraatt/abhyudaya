@@ -6,6 +6,7 @@ import {
 import ReviewSummary from "./ReviewSummary";
 import ReviewCard from "./ReviewCard";
 import ReviewForm from "./ReviewForm";
+import StarRating from "./StarRating";
 import "./Reviews.css";
 
 function ReviewSkeleton() {
@@ -32,6 +33,7 @@ export default function EventReviews({ event }) {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchInitialReviews = useCallback(async () => {
     if (!eventId) {
@@ -84,11 +86,6 @@ export default function EventReviews({ event }) {
   return (
     <section className="event-section alt-bg event-reviews-section">
       <div className="wrap">
-        <div className="event-reviews-header">
-          <h2>Reviews &amp; Feedback</h2>
-          <p>See what attendees are saying about {event?.title}.</p>
-        </div>
-
         {loading ? (
           <div className="event-reviews-layout">
             <div className="review-summary review-summary--skeleton">
@@ -103,8 +100,13 @@ export default function EventReviews({ event }) {
             </div>
           </div>
         ) : (
-          <>
-            {reviews.length > 0 ? (
+          reviews.length > 0 && (
+            <div className="event-reviews-wrapper" style={{ marginBottom: "40px" }}>
+              <div className="event-reviews-header">
+                <h2>Reviews &amp; Feedback</h2>
+                <p>See what attendees are saying about {event?.title}.</p>
+              </div>
+
               <div className="event-reviews-layout">
                 <ReviewSummary stats={stats} />
                 <div className="event-reviews-list">
@@ -125,16 +127,45 @@ export default function EventReviews({ event }) {
                   )}
                 </div>
               </div>
-            ) : (
-              <p className="event-reviews-empty">
-                No approved reviews yet. Be the first to review this event!
-              </p>
-            )}
-
-            <ReviewForm event={event} />
-          </>
+            </div>
+          )
         )}
+
+        {/* COMPACT REVIEW CTA CARD */}
+        <div className="review-compact-card">
+          <h3 className="review-compact-title">Share Your Experience</h3>
+          <p className="review-compact-subtitle">
+            Tell us what you thought about {event?.title || "this event"}.
+          </p>
+          <div className="review-compact-stars">
+            <StarRating value={5} readOnly size="md" />
+          </div>
+          <button
+            type="button"
+            className="review-compact-btn"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Leave a Review
+          </button>
+        </div>
       </div>
+
+      {/* REVIEW FORM MODAL */}
+      {isModalOpen && (
+        <div className="review-modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="review-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="review-modal-close"
+              onClick={() => setIsModalOpen(false)}
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+            <ReviewForm event={event} onSubmitted={() => setIsModalOpen(false)} />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
