@@ -297,7 +297,7 @@ The project comes with SPA-fallback config for several hosts:
   (see `src/Firebase/firebase.js`). **Security comes from `firestore.rules`**,
   not from hiding the project ID.
 - Cloudinary API secrets must stay server-side; the client only uses the public
-  cloud name and unsigned upload presets.
+  cloud name and unsigned upload preset.
 - Any service account kept locally for sitemap/pre-render generation must stay
   out of version control.
 
