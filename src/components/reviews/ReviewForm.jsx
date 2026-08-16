@@ -13,7 +13,7 @@ const INITIAL_FORM = {
   message: "",
 };
 
-export default function ReviewForm({ event }) {
+export default function ReviewForm({ event, onSubmitted }) {
   const toast = useToast();
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
@@ -76,6 +76,9 @@ export default function ReviewForm({ event }) {
 
       toast.success("Thank you! Your review has been submitted and is pending approval.");
       setForm(INITIAL_FORM);
+      if (onSubmitted) {
+        onSubmitted();
+      }
     } catch (err) {
       console.error("Failed to submit review:", err);
       toast.error("Failed to submit review. Please try again.");

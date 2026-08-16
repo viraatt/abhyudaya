@@ -565,3 +565,126 @@
     grid-template-columns: 64px 1fr 24px;
   }
 }
+
+/* ======================================================
+   COMPACT REVIEW CTA CARD & MODAL
+====================================================== */
+
+.review-compact-card {
+  max-width: 580px;
+  margin: 0 auto;
+  padding: 32px 28px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.review-compact-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+.review-compact-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.review-compact-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0 0 16px;
+}
+
+.review-compact-stars {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.review-compact-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 32px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+.review-compact-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+}
+
+/* Modal Overlay */
+.review-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: reviewModalFade 0.25s ease;
+}
+
+.review-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 24px;
+  background: white;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: reviewModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.review-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: none;
+  color: #475569;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.review-modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+@keyframes reviewModalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes reviewModalPop {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
