@@ -1,5 +1,31 @@
 # Abhyudaya Club — Website
 
+## TL;DR
+
+A single-page React + Vite app for the Abhyudaya Club (MPEC Kanpur, Dept. of
+Basic Sciences & Humanities) with two halves:
+
+- **Public site** — brochure pages (home, about, events, team, gallery, blog,
+  contact, join, announcements, event registration, certificate
+  portal/verification).
+- **Admin dashboard** — role-based (`super_admin`, `blog_admin`,
+  `event_admin`) content management for events, blogs, users, media, team,
+  gallery, reviews, announcements, students, registrations, and certificates.
+
+Data lives in **Firestore**, auth via **Firebase Auth**, media via
+**Cloudinary**. Built for **Netlify/Vercel/Firebase** deployment, with
+auto-generated sitemaps/RSS and Puppeteer-based prerendering for SEO.
+
+```bash
+npm install && npm run dev   # local dev
+npm run build                # production build (also builds sitemaps)
+```
+
+Two files are required locally but never committed: `.env` and
+`firebase-service-account.json` (see [Secrets & security](#secrets--security)).
+
+---
+
 Public website + private admin dashboard for the **Abhyudaya Club** (MPEC
 Kanpur, Department of Basic Sciences & Humanities).
 
@@ -175,7 +201,7 @@ Firebase is initialized once in `src/Firebase/firebase.js`, which exports
 `auth`, `db`, and `storage`. Feature helpers live in `src/Firebase/*Service.js`:
 
 | Service                   | Purpose                            |
-| ------------------------- | ---------------------------------- |
+| ------------------------- | ----------------------------------- |
 | `eventService.js`          | Events (list/create/update/publish) |
 | `blogService.js`           | Blogs & posts                       |
 | `registrationService.js`  | Event registrations                 |
