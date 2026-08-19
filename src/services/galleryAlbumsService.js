@@ -429,3 +429,98 @@ export async function getAlbumBySlug(slug) {
     photoCount: optimizedPhotos.length,
   };
 }
+
+/**
+ * Editorial spotlight moments for Section 7: "Moments That Define Us"
+ */
+export const EDITORIAL_MOMENTS = [
+  {
+    id: "moment-1",
+    tagline: "Learning Together",
+    subtitle: "Workshop Series",
+    title: "Hands-on Code & Engineering Labs",
+    albumSlug: "web-dev-workshop",
+    image: webDevCover,
+    description: "Students building fullstack web apps and hardware controllers side-by-side.",
+  },
+  {
+    id: "moment-2",
+    tagline: "Creating Together",
+    subtitle: "TechBloom 2.0",
+    title: "Autonomous Robotics & RC Flight",
+    albumSlug: "techbloom-2",
+    image: techBloomCover,
+    description: "Prototyping, testing, and flying student-built fixed-wing models on college grounds.",
+  },
+  {
+    id: "moment-3",
+    tagline: "Celebrating Together",
+    subtitle: "Antariksh Spardha",
+    title: "Stargazing & Space Discoveries",
+    albumSlug: "antariksh-spardha",
+    image: astronomyCover,
+    description: "Deep sky exploration through high-power telescopes with IIT Kanpur Astro Club.",
+  },
+];
+
+/**
+ * Hero Collage Photographs for the 2-column editorial layout
+ */
+export const HERO_COLLAGE_PHOTOS = [
+  {
+    id: "hero-1",
+    src: techBloomCover,
+    title: "TechBloom 2.0 Opening",
+    category: "Flagship Fest",
+    dominant: true,
+  },
+  {
+    id: "hero-2",
+    src: aeromodellingCover,
+    title: "RC Aircraft Design",
+    category: "Workshop",
+    dominant: false,
+  },
+  {
+    id: "hero-3",
+    src: astronomyCover,
+    title: "Night Sky Observation",
+    category: "Astronomy",
+    dominant: false,
+  },
+  {
+    id: "hero-4",
+    src: webDevCover,
+    title: "Fullstack Lab",
+    category: "Coding",
+    dominant: false,
+  },
+];
+
+/**
+ * Surprise Me: returns a random photo across published albums for instant lightbox opening.
+ */
+export async function getRandomHighlightPhoto() {
+  if (!_albumsCache) {
+    await getGalleryAlbums();
+  }
+  const albums = _albumsCache || STATIC_ALBUMS;
+  const allPhotos = [];
+  albums.forEach(alb => {
+    (alb.photos || []).forEach(p => {
+      allPhotos.push({
+        ...p,
+        albumTitle: alb.title,
+        albumSlug: alb.slug,
+        albumCategory: alb.category,
+        thumbnailSrc: getCloudinaryThumbnail(p.src),
+        fullSrc: getCloudinaryFullImage(p.src),
+      });
+    });
+  });
+
+  if (allPhotos.length === 0) return null;
+  const randomIndex = Math.floor(Math.random() * allPhotos.length);
+  return allPhotos[randomIndex];
+}
+
