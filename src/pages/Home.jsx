@@ -127,7 +127,7 @@ export default function Home() {
             muted
             loop
             playsInline
-            preload="auto"
+            preload="none"
             onCanPlay={() => setVideoReady(true)}
             onError={() => setVideoReady(false)}
           >

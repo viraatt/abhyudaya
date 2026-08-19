@@ -16,20 +16,34 @@ export default defineConfig({
   },
 
   build: {
+    // Target modern browsers — removes unnecessary polyfill bloat
+    target: ["es2020", "edge88", "firefox78", "chrome87", "safari14"],
     cssCodeSplit: true,
+    // Enable minification of CSS
+    cssMinify: true,
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks(id) {
           // Core React runtime
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          // Firebase client
-          "vendor-firebase": ["firebase/app", "firebase/auth", "firebase/firestore", "firebase/storage"],
-          // Rich text editor (heavy)
-          "vendor-tiptap": ["@tiptap/react", "@tiptap/starter-kit", "@tiptap/extension-image"],
-          // Animations
-          "vendor-motion": ["framer-motion"],
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/") || id.includes("node_modules/react-router-dom/")) {
+            return "vendor-react";
+          }
+          // Firebase — split per service so unused ones are treeshaken
+          if (id.includes("node_modules/firebase/")) {
+            return "vendor-firebase";
+          }
+          // Rich text editor (heavy — only loaded in admin)
+          if (id.includes("node_modules/@tiptap/")) {
+            return "vendor-tiptap";
+          }
+          // Animations — large, loaded lazily with pages that use it
+          if (id.includes("node_modules/framer-motion/")) {
+            return "vendor-motion";
+          }
           // Icons
-          "vendor-icons": ["react-icons"],
+          if (id.includes("node_modules/react-icons/")) {
+            return "vendor-icons";
+          }
         },
       },
     },
