@@ -128,7 +128,7 @@ export default function Gallery() {
     }
   };
 
-  const categories = ["All", "TechBloom", "CommuniCraft", "Workshops", "Cultural", "Campus Life"];
+  const categories = ["All", "TechBloom", "CommuniCraft", "Antariksh Spardha", "Workshops", "Cultural", "Campus Life"];
 
   const filteredItems =
     activeCategory === "All"
@@ -146,13 +146,35 @@ export default function Gallery() {
           {/* Header */}
           <div className="events-header">
             <div className="events-title">
-              <h2>🖼️ Gallery Management</h2>
+              <h2>🖼️ Gallery &amp; Event Album Management</h2>
               <p>Upload and organize event photos, fests, and club activities.</p>
             </div>
 
             <button className="add-event-btn" onClick={() => handleOpenDrawer()}>
               + Upload Photo
             </button>
+          </div>
+
+          {/* Cloudinary Free Plan Tip Banner */}
+          <div
+            style={{
+              background: "rgba(59, 130, 246, 0.1)",
+              border: "1px solid rgba(59, 130, 246, 0.3)",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              marginBottom: "20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              color: "#93c5fd",
+              fontSize: "13px",
+              lineHeight: "1.5",
+            }}
+          >
+            <span style={{ fontSize: "20px" }}>💡</span>
+            <div>
+              <strong>Cloudinary Free Plan Optimization:</strong> Recommended photo dimensions are <strong>1600px–2400px</strong> (JPEG/WebP under 2 MB). This conserves your monthly 25 credits while ensuring sharp display on mobile &amp; desktop displays.
+            </div>
           </div>
 
           {/* Category Filter Pills */}
@@ -295,8 +317,10 @@ export default function Gallery() {
                   }}
                 >
                   <option value="TechBloom">TechBloom</option>
+                  <option value="Antariksh Spardha">Antariksh Spardha</option>
                   <option value="CommuniCraft">CommuniCraft</option>
                   <option value="Workshops">Workshops</option>
+                  <option value="Competitions">Competitions</option>
                   <option value="Cultural">Cultural</option>
                   <option value="Campus Life">Campus Life</option>
                 </select>
