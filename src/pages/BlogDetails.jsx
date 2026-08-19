@@ -3,13 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import "./BlogDetails.css";
 
-import { generateHTML } from "@tiptap/html";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import LinkExtension from "@tiptap/extension-link";
-import TextAlign from "@tiptap/extension-text-align";
-import ImageExtension from "@tiptap/extension-image";
-
+// ── Heavy Tiptap modules loaded dynamically — only when a blog post with
+//    Tiptap JSON content is actually viewed (saves ~300 kB on initial load).
+// ──────────────────────────────────────────────────────────────────────────
 import { db } from "../Firebase/firebase";
 
 import {
@@ -44,10 +40,25 @@ import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema";
 import OrganizationSchema from "../components/seo/schemas/OrganizationSchema";
 import LatestBlogsSidebar from "../components/blog/LatestBlogsSidebar";
 
-function renderBlogContent(content) {
+async function renderBlogContent(content) {
   if (!content) return "";
   if (typeof content === "object") {
     try {
+      const [
+        { generateHTML },
+        { default: StarterKit },
+        { default: Underline },
+        { default: LinkExtension },
+        { default: TextAlign },
+        { default: ImageExtension },
+      ] = await Promise.all([
+        import("@tiptap/html"),
+        import("@tiptap/starter-kit"),
+        import("@tiptap/extension-underline"),
+        import("@tiptap/extension-link"),
+        import("@tiptap/extension-text-align"),
+        import("@tiptap/extension-image"),
+      ]);
       return generateHTML(content, [
         StarterKit,
         Underline,
@@ -63,19 +74,14 @@ function renderBlogContent(content) {
   if (typeof content === "string" && content.trim().startsWith("{")) {
     try {
       const json = JSON.parse(content);
-      return generateHTML(json, [
-        StarterKit,
-        Underline,
-        LinkExtension,
-        TextAlign.configure({ types: ["heading", "paragraph"] }),
-        ImageExtension,
-      ]);
-    } catch (e) {
+      return await renderBlogContent(json);
+    } catch {
       return content;
     }
   }
   return content; // Legacy HTML string fallback
 }
+
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 const ORG_NAME = "Abhyudaya Club";

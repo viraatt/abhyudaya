@@ -1,10 +1,17 @@
 import { getGalleryItems } from "../Admin/pages/services/galleryService.js";
 import { getMediaItems } from "../Admin/pages/services/mediaService.js";
 
+// Lazy (non-eager) glob — images are NOT bundled into the JS chunk.
+// Each asset is only fetched if actually referenced at runtime.
 const imageModules = import.meta.glob(
   "../assets/**/*.{jpg,jpeg,png,gif,webp}",
-  { eager: true }
+  { eager: false }
 );
+
+// ── In-memory cache so Firestore is only queried once per session ──────────
+let _galleryCache = null;
+let _cacheTimestamp = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function getImagePath(pathStr) {
   if (!pathStr) return "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800";
@@ -127,6 +134,21 @@ function checkIsVideo(url, format) {
  * Fetch all gallery images & videos by combining Cloudinary API, Firestore database, and fallback data.
  */
 export async function fetchGalleryImages({ page = 1, limit = 8, category = "all" } = {}) {
+  // ── Return cached data if still fresh (avoids 3 Firestore reads on every visit) ─
+  const now = Date.now();
+  if (_galleryCache && now - _cacheTimestamp < CACHE_TTL_MS) {
+    const filteredImages = category && category !== "all"
+      ? _galleryCache.filter(img => img.category.toLowerCase() === category.toLowerCase())
+      : _galleryCache;
+    const total = filteredImages.length;
+    const startIndex = (page - 1) * limit;
+    const sliced = filteredImages.slice(startIndex, startIndex + limit);
+    return {
+      images: sliced.map((img, i) => ({ ...img, uniqueKey: `pg${page}-${img.id}-${i}` })),
+      page, limit, total, hasMore: true, isLooped: false,
+    };
+  }
+
   let fetchedCloudImages = [];
 
   // 1. Try serverless backend /api/gallery
@@ -235,6 +257,10 @@ export async function fetchGalleryImages({ page = 1, limit = 8, category = "all"
   });
 
   const allImages = Array.from(combinedMap.values());
+
+  // ── Store in cache for next call ────────────────────────────────────────
+  _galleryCache = allImages;
+  _cacheTimestamp = Date.now();
 
   // Filter by category if requested
   const filteredImages = category && category !== "all"

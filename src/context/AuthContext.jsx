@@ -12,50 +12,63 @@ import { auth, db } from "../Firebase/firebase";
 
 const AuthContext = createContext();
 
+// Minimal inline spinner shown only during the brief Firebase auth check.
+// Keeps the app from showing a blank screen for 1-3 s on first load.
+function AuthLoadingScreen() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100dvh",
+        background: "#fff",
+      }}
+      aria-label="Initialising…"
+      role="status"
+    >
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          border: "3px solid #e2e8f0",
+          borderTopColor: "#6366f1",
+          borderRadius: "50%",
+          animation: "authSpin 0.65s linear infinite",
+        }}
+      />
+      <style>{`@keyframes authSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(undefined);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        console.log("No user logged in");
         setCurrentUser(null);
         return;
       }
 
       try {
-        console.log("================================");
-        console.log("Logged In UID:", user.uid);
-        console.log("Logged In Email:", user.email);
-
         const userRef = doc(db, "users", user.uid);
-
-        console.log("Reading Firestore:", userRef.path);
-
         const userSnap = await getDoc(userRef);
 
-        console.log("Document Exists:", userSnap.exists());
-
         if (!userSnap.exists()) {
-          console.error("User document not found.");
           setCurrentUser(null);
           return;
         }
 
         const data = userSnap.data();
-
-        console.log("Firestore Data:", data);
-        console.log("Role:", data.role);
-        console.log("================================");
-
         setCurrentUser({
           uid: user.uid,
           email: user.email,
           ...data,
         });
-
       } catch (error) {
-        console.error(error);
+        console.error("[AuthContext] error:", error);
         setCurrentUser(null);
       }
     });
@@ -64,8 +77,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser }}>
-      {currentUser !== undefined && children}
+    <AuthContext.Provider value={{ currentUser, loading: currentUser === undefined }}>
+      {children}
     </AuthContext.Provider>
   );
 }
