@@ -20,6 +20,7 @@ const Events = lazy(() => import("./pages/Events.jsx"));
 const EventDetails = lazy(() => import("./pages/EventDetails.jsx"));
 const Team = lazy(() => import("./pages/Team.jsx"));
 const Gallery = lazy(() => import("./pages/Gallery.jsx"));
+const EventAlbum = lazy(() => import("./pages/EventAlbum.jsx"));
 const Blog = lazy(() => import("./pages/Blog.jsx"));
 const BlogDetails = lazy(() => import("./pages/BlogDetails.jsx"));
 const Contact = lazy(() => import("./pages/Contact.jsx"));
@@ -301,6 +302,7 @@ export default function App() {
             <Route path="/events/:slug" element={<EventDetails />} />
             <Route path="/team" element={<Team />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/gallery/:eventSlug" element={<EventAlbum />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogDetails />} />
             <Route path="/contact" element={<Contact />} />

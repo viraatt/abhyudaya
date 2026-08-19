@@ -1,340 +1,317 @@
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
-import GallerySkeleton from "../components/gallery/GallerySkeleton.jsx";
-import InteractiveTiltCard from "../components/gallery/InteractiveTiltCard.jsx";
-import { fetchGalleryImages } from "../services/galleryApi.js";
-import { FaTimes, FaChevronLeft, FaChevronRight, FaImages, FaPlay } from "react-icons/fa";
+import { getGalleryAlbums } from "../services/galleryAlbumsService.js";
+import { FaSearch, FaFolderOpen, FaImages, FaCalendarAlt, FaLayerGroup } from "react-icons/fa";
 import "./Gallery.css";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
 const CATEGORIES = [
-  "all",
-  "Flagship Fest",
-  "Workshop",
-  "Robotics",
-  "Astronomy",
-  "Quiz",
-  "Entrepreneurship",
-  "Design",
+  { label: "✨ All Albums", value: "all" },
+  { label: "🚩 Flagship Festivals", value: "Festivals" },
+  { label: "🛠️ Hands-on Workshops", value: "Workshops" },
+  { label: "🏆 Competitions & Quizzes", value: "Competitions" },
+  { label: "🚀 Space & Astronomy", value: "Astronomy" },
 ];
 
+const YEARS = ["all", "2026", "2025"];
+
 export default function Gallery() {
-  const [allImages, setAllImages] = useState([]);   // full unfiltered pool
-  const [images, setImages] = useState([]);          // filtered view
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [loadingInitial, setLoadingInitial] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [loadedImages, setLoadedImages] = useState({});
+  const [albums, setAlbums] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
 
   const breadcrumbItems = [
     { name: "Home", url: SITE_URL },
     { name: "Gallery", url: `${SITE_URL}/gallery` },
   ];
 
-  // ── Load ALL images once on mount ──────────────────────────────────────
   useEffect(() => {
     let isMounted = true;
-    async function loadAll() {
-      setLoadingInitial(true);
+    async function loadAlbums() {
       try {
-        // Large limit so we get everything in one shot
-        const res = await fetchGalleryImages({ page: 1, limit: 200, category: "all" });
+        setLoading(true);
+        const data = await getGalleryAlbums({
+          category: selectedCategory,
+          search: searchQuery,
+          year: selectedYear,
+        });
         if (isMounted) {
-          setAllImages(res.images || []);
-          setImages(res.images || []);
+          setAlbums(data);
         }
       } catch (err) {
-        console.error("Failed to load gallery images:", err);
+        console.error("Failed to load gallery albums:", err);
       } finally {
-        if (isMounted) setLoadingInitial(false);
+        if (isMounted) setLoading(false);
       }
     }
-    loadAll();
+    loadAlbums();
     return () => { isMounted = false; };
-  }, []);
+  }, [selectedCategory, searchQuery, selectedYear]);
 
-  // ── Category filter (client-side, instant) ─────────────────────────────
-  useEffect(() => {
-    if (activeCategory === "all") {
-      setImages(allImages);
-    } else {
-      setImages(
-        allImages.filter(
-          (img) => img.category?.toLowerCase() === activeCategory.toLowerCase()
-        )
-      );
-    }
-  }, [activeCategory, allImages]);
+  // Identify featured flagship album for top spotlight banner
+  const featuredAlbum = useMemo(() => {
+    return albums.find((a) => a.featured) || albums[0] || null;
+  }, [albums]);
 
-  // ── Image fade-in on load ──────────────────────────────────────────────
-  const handleImageLoaded = (id) =>
-    setLoadedImages((prev) => ({ ...prev, [id]: true }));
+  const regularAlbums = useMemo(() => {
+    if (!featuredAlbum) return albums;
+    return albums.filter((a) => a.slug !== featuredAlbum.slug);
+  }, [albums, featuredAlbum]);
 
-  // ── Lightbox ───────────────────────────────────────────────────────────
-  const openLightbox = (card) => setSelectedImage(card);
-  const closeLightbox = () => setSelectedImage(null);
+  const totalPhotosCount = useMemo(() => {
+    return albums.reduce((acc, a) => acc + (a.photoCount || 0), 0);
+  }, [albums]);
 
-  const handlePrevImage = useCallback(
-    (e) => {
-      if (e?.stopPropagation) e.stopPropagation();
-      if (!selectedImage) return;
-      const idx = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
-      setSelectedImage(images[(idx - 1 + images.length) % images.length]);
-    },
-    [selectedImage, images]
-  );
-
-  const handleNextImage = useCallback(
-    (e) => {
-      if (e?.stopPropagation) e.stopPropagation();
-      if (!selectedImage) return;
-      const idx = images.findIndex((img) => img.uniqueKey === selectedImage.uniqueKey);
-      setSelectedImage(images[(idx + 1) % images.length]);
-    },
-    [selectedImage, images]
-  );
-
-  // ── Keyboard shortcuts for lightbox ───────────────────────────────────
-  useEffect(() => {
-    const onKey = (e) => {
-      if (!selectedImage) return;
-      if (e.key === "Escape") closeLightbox();
-      if (e.key === "ArrowLeft") handlePrevImage(e);
-      if (e.key === "ArrowRight") handleNextImage(e);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [selectedImage, handlePrevImage, handleNextImage]);
-
-  const imageGallerySchema = {
+  const gallerySchema = {
     "@context": "https://schema.org",
     "@type": "ImageGallery",
-    name: "Abhyudaya Club Photo Gallery",
+    name: "Abhyudaya Club Event Photo Gallery",
     description:
-      "Interactive photo gallery featuring events, workshops, hackathons, and moments from Abhyudaya Club at MPEC Kanpur.",
+      "Curated photography archives, workshops, flagship technical fests, and student memories of Abhyudaya Club at MPEC Kanpur.",
     url: `${SITE_URL}/gallery`,
-    image: images.slice(0, 10).map((c) => c.src),
+    image: albums.slice(0, 5).map((a) => a.coverThumbnail),
   };
 
   return (
     <div className="gallery-page">
       <Helmet>
-        <title>Gallery | Abhyudaya Club — Event Photos &amp; Moments from MPEC Kanpur</title>
+        <title>Event Albums &amp; Photo Gallery | Abhyudaya Club — MPEC Kanpur</title>
         <meta
           name="description"
-          content="Explore the Pinterest masonry gallery of Abhyudaya Club at MPEC Kanpur — Cloudinary integrated event memories."
+          content="Explore high-resolution event albums, flagship festivals, robotics arenas, aeromodelling workshops, and astronomy fests from Abhyudaya Club at MPEC Kanpur."
         />
         <link rel="canonical" href={`${SITE_URL}/gallery`} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
 
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Gallery | Abhyudaya Club — MPEC Kanpur" />
+        <meta property="og:title" content="Event Albums & Photo Gallery | Abhyudaya Club" />
         <meta
           property="og:description"
-          content="Interactive photo gallery of Abhyudaya Club events at Maharana Pratap Engineering College, Kanpur."
+          content="Explore curated event albums, workshops, and flagship fest photography of Abhyudaya Club at MPEC Kanpur."
         />
         <meta property="og:url" content={`${SITE_URL}/gallery`} />
         <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
 
         <script type="application/ld+json">
-          {JSON.stringify(imageGallerySchema)}
+          {JSON.stringify(gallerySchema)}
         </script>
       </Helmet>
 
       <BreadcrumbSchema items={breadcrumbItems} />
 
-      {/* ── In-flow header (scrolls off naturally) ── */}
+      {/* ── GALLERY HEADER & SEARCH BAR ── */}
       <header className="gallery-header-section">
-        <span className="gallery-header-eyebrow">Visual Memories</span>
+        <span className="gallery-header-eyebrow">Photography Archive</span>
         <h1 className="gallery-header-title">Visual Memories &amp; Events</h1>
         <p className="gallery-header-subtitle">
-          Explore curated moments, workshops, and flagship fests from Abhyudaya Club at MPEC Kanpur.
+          Explore curated moments, workshops, hackathons, and flagship festivals captured by Abhyudaya Club at MPEC Kanpur.
         </p>
 
-        {/* Category Filter Bar */}
-        <div className="gallery-filter-bar" role="tablist" aria-label="Gallery category filters">
+        {/* Search & Filter Bar */}
+        <div className="gallery-search-filter-wrapper">
+          <div className="gallery-search-box">
+            <FaSearch className="gallery-search-icon" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search albums, fests, workshops..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="gallery-search-input"
+              aria-label="Search event albums"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="gallery-search-clear"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Year Pills */}
+          <div className="gallery-year-filter">
+            <span className="gallery-filter-label">Year:</span>
+            {YEARS.map((yr) => (
+              <button
+                key={yr}
+                type="button"
+                className={`gallery-pill-btn ${selectedYear === yr ? "active" : ""}`}
+                onClick={() => setSelectedYear(yr)}
+              >
+                {yr === "all" ? "All" : yr}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Category Pills */}
+        <div className="gallery-category-bar" role="tablist" aria-label="Album Categories">
           {CATEGORIES.map((cat) => (
             <button
-              key={cat}
+              key={cat.value}
               type="button"
               role="tab"
-              aria-selected={activeCategory === cat}
-              className={`gallery-filter-btn ${activeCategory === cat ? "active" : ""}`}
-              onClick={() => setActiveCategory(cat)}
+              aria-selected={selectedCategory === cat.value}
+              className={`gallery-category-tab ${selectedCategory === cat.value ? "active" : ""}`}
+              onClick={() => setSelectedCategory(cat.value)}
             >
-              {cat === "all" ? "✨ All Moments" : cat}
+              {cat.label}
             </button>
           ))}
+        </div>
+
+        {/* Gallery Stats Strip */}
+        <div className="gallery-stats-counter">
+          <span>📁 {albums.length} Event {albums.length === 1 ? "Album" : "Albums"}</span>
+          <span>•</span>
+          <span>📸 {totalPhotosCount}+ Captured Moments</span>
         </div>
       </header>
 
       <main className="gallery-main">
-        {/* Skeleton while loading */}
-        {loadingInitial ? (
-          <GallerySkeleton count={12} />
-        ) : images.length === 0 ? (
+        {loading ? (
+          /* SKELETON LOADING STATE */
+          <div className="gallery-albums-grid">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={`skel-alb-${idx}`} className="album-card-skeleton">
+                <div className="album-skel-cover" />
+                <div className="album-skel-body">
+                  <div className="album-skel-badge" />
+                  <div className="album-skel-title" />
+                  <div className="album-skel-text" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : albums.length === 0 ? (
+          /* EMPTY STATE */
           <div className="gallery-empty-state">
             <FaImages className="gallery-empty-icon" />
-            <h3 className="gallery-empty-title">No Media Found</h3>
+            <h3 className="gallery-empty-title">No Event Albums Found</h3>
             <p className="gallery-empty-desc">
-              There are no gallery items under this category yet.
+              No albums matched your current search or category filter. Try clearing your filters.
             </p>
             <button
               type="button"
-              className="gallery-filter-btn active"
-              onClick={() => setActiveCategory("all")}
+              className="gallery-pill-btn active"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("all");
+                setSelectedYear("all");
+              }}
             >
-              View All Photos
+              Reset All Filters
             </button>
           </div>
         ) : (
-          /* ── CSS column-count masonry — stable, no re-flow glitch ── */
-          <div className="gallery-masonry-grid">
-            {images.map((card) => {
-              const isLoaded = loadedImages[card.uniqueKey];
-              return (
-                <div key={card.uniqueKey} className="gallery-masonry-item">
-                  <InteractiveTiltCard onClick={() => openLightbox(card)}>
-                    <div className="gallery-pinterest-card">
-                      {/* Image / Video tile */}
-                      <div className="gallery-clean-tile">
-                        {/* Shimmer shown until media loaded */}
-                        {!isLoaded && <div className="gallery-skeleton-shimmer" />}
+          <div className="gallery-albums-container">
+            {/* ── FEATURED SPOTLIGHT ALBUM BANNER ── */}
+            {featuredAlbum && selectedCategory === "all" && !searchQuery && (
+              <div className="gallery-spotlight-section">
+                <div className="gallery-spotlight-card">
+                  <div className="spotlight-media-wrapper">
+                    <img
+                      src={featuredAlbum.coverThumbnail}
+                      alt={featuredAlbum.title}
+                      className="spotlight-image"
+                      loading="eager"
+                      fetchpriority="high"
+                      decoding="async"
+                    />
+                    <div className="spotlight-badge-floating">
+                      <span className="spotlight-chip">⭐ Featured Festival</span>
+                      <span className="spotlight-photo-count">
+                        <FaImages /> {featuredAlbum.photoCount} Photos
+                      </span>
+                    </div>
+                  </div>
 
-                        {card.isVideo ? (
-                          <div className="gallery-video-wrap">
-                            <video
-                              src={card.src}
-                              className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
-                              onLoadedData={() => handleImageLoaded(card.uniqueKey)}
-                              muted
-                              playsInline
-                              loop
-                              autoPlay
-                            />
-                            <div className="gallery-video-badge">
-                              <div className="gallery-video-play-btn">
-                                <FaPlay />
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <img
-                            src={card.src}
-                            alt={card.title || "Club event photo"}
-                            loading="lazy"
-                            decoding="async"
-                            onLoad={() => handleImageLoaded(card.uniqueKey)}
-                            onError={(e) => {
-                              // Show a subtle fallback colour if image breaks
-                              e.currentTarget.style.opacity = "0.4";
-                              handleImageLoaded(card.uniqueKey);
-                            }}
-                            className={`gallery-clean-media ${isLoaded ? "loaded" : ""}`}
-                          />
+                  <div className="spotlight-content">
+                    <span className="album-category-badge">{featuredAlbum.category}</span>
+                    <h2 className="spotlight-title">{featuredAlbum.title}</h2>
+                    <p className="spotlight-date">
+                      <FaCalendarAlt /> {featuredAlbum.date}
+                    </p>
+                    <p className="spotlight-desc">{featuredAlbum.description}</p>
+                    <Link
+                      to={`/gallery/${featuredAlbum.slug}`}
+                      className="spotlight-cta-btn"
+                    >
+                      <FaFolderOpen /> Explore Album ({featuredAlbum.photoCount} Photos) →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── ALL EVENT ALBUMS GRID ── */}
+            <div className="gallery-section-heading">
+              <h2 className="gallery-grid-title">
+                <FaLayerGroup /> {selectedCategory === "all" ? "All Event Albums" : `${selectedCategory} Albums`}
+              </h2>
+              <span className="gallery-grid-count">{albums.length} {albums.length === 1 ? "Album" : "Albums"}</span>
+            </div>
+
+            <div className="gallery-albums-grid">
+              {(selectedCategory === "all" && !searchQuery ? regularAlbums : albums).map((album) => (
+                <article key={album.slug} className="album-card">
+                  <Link to={`/gallery/${album.slug}`} className="album-card-link" aria-label={`View ${album.title} album`}>
+                    <div className="album-card-cover-wrap">
+                      <img
+                        src={album.coverThumbnail}
+                        alt={`${album.title} album cover`}
+                        loading="lazy"
+                        decoding="async"
+                        className="album-card-cover"
+                        onError={(e) => {
+                          // Graceful fallback if Cloudinary or external image fails
+                          e.currentTarget.style.opacity = "0.7";
+                        }}
+                      />
+                      <div className="album-card-overlay">
+                        <span className="album-hover-explore">
+                          <FaFolderOpen /> Open Album →
+                        </span>
+                      </div>
+                      <span className="album-count-badge">
+                        <FaImages /> {album.photoCount}
+                      </span>
+                    </div>
+
+                    <div className="album-card-info">
+                      <div className="album-meta-top">
+                        <span className="album-category-chip">{album.category}</span>
+                        {album.date && (
+                          <span className="album-date-label">
+                            {album.date.split(" ").slice(-2).join(" ")}
+                          </span>
                         )}
                       </div>
 
-                      {/* Below-tile caption */}
-                      <div className="gallery-tile-caption">
-                        <h3 className="gallery-tile-title">{card.title}</h3>
-                        <div className="gallery-tile-meta">
-                          <span className="gallery-tile-category">{card.category}</span>
-                        </div>
+                      <h3 className="album-card-title">{album.title}</h3>
+                      <p className="album-card-desc">{album.description}</p>
+
+                      <div className="album-card-footer">
+                        <span className="album-view-action">
+                          View Album →
+                        </span>
                       </div>
                     </div>
-                  </InteractiveTiltCard>
-                </div>
-              );
-            })}
+                  </Link>
+                </article>
+              ))}
+            </div>
           </div>
         )}
       </main>
-
-      {/* ── Lightbox Modal ── */}
-      <AnimatePresence>
-        {selectedImage && (
-          <>
-            <motion.div
-              className="gallery-overlay-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeLightbox}
-            />
-            <motion.div
-              className="gallery-overlay-modal"
-              initial={{ opacity: 0, scale: 0.94, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            >
-              {/* Close */}
-              <button
-                type="button"
-                className="gallery-overlay-close-btn"
-                onClick={closeLightbox}
-                aria-label="Close modal"
-              >
-                <FaTimes />
-              </button>
-
-              {/* Media stage */}
-              <div className="gallery-overlay-image-box">
-                {selectedImage.isVideo ? (
-                  <video
-                    src={selectedImage.src}
-                    controls
-                    autoPlay
-                    playsInline
-                    className="gallery-overlay-img"
-                  />
-                ) : (
-                  <img
-                    src={selectedImage.src}
-                    alt={selectedImage.title}
-                    className="gallery-overlay-img"
-                  />
-                )}
-
-                <button
-                  type="button"
-                  className="gallery-overlay-nav-btn gallery-nav-left"
-                  onClick={handlePrevImage}
-                  aria-label="Previous media"
-                >
-                  <FaChevronLeft />
-                </button>
-                <button
-                  type="button"
-                  className="gallery-overlay-nav-btn gallery-nav-right"
-                  onClick={handleNextImage}
-                  aria-label="Next media"
-                >
-                  <FaChevronRight />
-                </button>
-              </div>
-
-              {/* Sidebar info */}
-              <div className="gallery-overlay-sidebar">
-                <div>
-                  <span className="gallery-modal-badge">{selectedImage.category}</span>
-                  <h2 className="gallery-modal-title">{selectedImage.title}</h2>
-                  <p className="gallery-modal-desc">
-                    {selectedImage.description || "Abhyudaya Club Event Snapshot at MPEC Kanpur."}
-                  </p>
-                </div>
-                <div className="gallery-modal-footer">
-                  <span>Press Esc to close • Use ← → keys to navigate</span>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

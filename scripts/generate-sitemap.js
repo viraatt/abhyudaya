@@ -184,6 +184,27 @@ async function generateSitemapsAndFeeds() {
     }
   }
 
+  // Build Event Gallery Album Sitemaps
+  const galleryAlbums = [
+    { slug: "techbloom-2", title: "TechBloom 2.0 Flagship Fest Photo Album" },
+    { slug: "antariksh-spardha", title: "Antariksh Spardha Astronomy Fest Photo Album" },
+    { slug: "aeromodelling-workshop", title: "Aeromodelling & RC Flying Workshop Photo Album" },
+    { slug: "web-dev-workshop", title: "Fullstack Web Development Boot Camp Photo Album" },
+    { slug: "communicraft-summit", title: "CommuniCraft Leadership Summit Photo Album" },
+    { slug: "poster-verse", title: "Poster Verse Art Exhibition Photo Album" },
+  ];
+
+  for (const alb of galleryAlbums) {
+    const albUrl = `${BASE_URL}/gallery/${alb.slug}`;
+    mainSitemapUrls += `
+  <url>
+    <loc>${albUrl}</loc>
+    <lastmod>${nowISO}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+  }
+
   // 1. Write Main Sitemap.xml
   const mainSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
