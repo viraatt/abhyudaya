@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { getEventBySlug, getEvents } from "../Firebase/eventService.js";
 import { getEventStatus, formatDate } from "../utils/registrationStatus.js";
+import { normalizeEvent } from "../utils/eventNormalizer.js";
+import EventStatistics from "../components/EventStatistics.jsx";
 import EventReviews from "../components/reviews/EventReviews.jsx";
 import EventCard from "../components/EventCard.jsx";
 import EventSchema from "../components/seo/schemas/EventSchema.jsx";
@@ -13,9 +15,12 @@ const SITE_URL = "https://www.abhyudayaclub.in";
 
 export default function EventDetails() {
   const { slug } = useParams();
-  const [event, setEvent] = useState(null);
+  const [rawEvent, setRawEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  /* Normalize event data */
+  const event = useMemo(() => normalizeEvent(rawEvent), [rawEvent]);
 
   /* Lightbox State for Gallery */
   const [lightboxImg, setLightboxImg] = useState(null);
@@ -30,7 +35,7 @@ export default function EventDetails() {
         setLoading(true);
         setError(null);
         const data = await getEventBySlug(slug);
-        setEvent(data);
+        setRawEvent(data);
       } catch (err) {
         console.error("Error loading event details:", err);
         setError("Failed to load event details.");
@@ -111,9 +116,18 @@ export default function EventDetails() {
     );
   }
 
-  const heroImage = event.image || event.banner || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400";
-  const canonicalUrl = `${SITE_URL}/events/${event.slug || slug}`;
-  const metaDescription = event.shortDescription || event.description || `${event.title} organized by Abhyudaya Club at MPEC Kanpur.`;
+  const { isUpcoming, isOngoing, isCompleted } = getEventStatus(event);
+
+  const heroImage =
+    event.banner ||
+    event.image ||
+    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400";
+
+  const canonicalUrl = `${SITE_URL}/events/${event.slug || event.id}`;
+  const metaDescription =
+    event.shortDescription ||
+    event.description ||
+    `Explore ${event.title} organized by Abhyudaya Club at MPEC Kanpur.`;
 
   const breadcrumbItems = [
     { name: "Home", url: SITE_URL },
@@ -121,23 +135,16 @@ export default function EventDetails() {
     { name: event.title, url: canonicalUrl },
   ];
 
-  /* Status handling */
-  const eventStatus = getEventStatus(event);
-  const isCompleted = eventStatus === "completed";
-  const isOngoing = eventStatus === "ongoing";
-  const isUpcoming = eventStatus === "upcoming";
-
   const openLightbox = (imgUrl, index) => {
     setLightboxImg(imgUrl);
     setLightboxIndex(index);
   };
 
   return (
-    <>
+    <div className="event-details-page">
       <Helmet>
-        <title>{`${event.title} | Abhyudaya Club — MPEC Kanpur`}</title>
+        <title>{`${event.title} | Abhyudaya Club`}</title>
         <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={`${event.title}, Abhyudaya Club, MPEC Kanpur, ${event.subtitle || ""}, student event Kanpur`} />
         <link rel="canonical" href={canonicalUrl} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
 
@@ -186,30 +193,29 @@ export default function EventDetails() {
 
               {isCompleted && (
                 <span className="hero-status-badge status-completed">
-                  ✓ Event Completed
+                  ✓ Completed
                 </span>
               )}
               {isOngoing && (
                 <span className="hero-status-badge status-ongoing">
-                  🔴 Live Now
+                  ● Live Now
                 </span>
               )}
               {isUpcoming && (
                 <span className="hero-status-badge status-upcoming">
-                  🚀 Registration Open
+                  ● Registration Open
                 </span>
               )}
             </div>
 
             <h1>{event.title}</h1>
 
-            {event.tagline && (
-              <p style={{ fontSize: "1.25rem", color: "#60a5fa", fontWeight: 700, marginBottom: "12px" }}>
-                {event.tagline}
+            {/* Short Editorial Description (15-20 words max) */}
+            {event.shortDescription && (
+              <p className="hero-short-description">
+                {event.shortDescription}
               </p>
             )}
-
-            <p>{event.shortDescription || event.description}</p>
 
             {/* Date & Location Metadata */}
             {(event.eventStartDate || event.registrationDeadline || event.venue || event.location) && (
@@ -228,43 +234,8 @@ export default function EventDetails() {
               </div>
             )}
 
-            {/* HERO STATS */}
-            <div className="hero-stats">
-              {event.since && (
-                <div>
-                  <strong>{event.since}</strong>
-                  <span>Since</span>
-                </div>
-              )}
-
-              {event.participants && (
-                <div>
-                  <strong>{event.participants}</strong>
-                  <span>{event.participantsLabel || "Participants"}</span>
-                </div>
-              )}
-
-              {event.events && (
-                <div>
-                  <strong>{event.events}</strong>
-                  <span>{event.eventsLabel || "Activities"}</span>
-                </div>
-              )}
-
-              {event.editions && (
-                <div>
-                  <strong>{event.editions}</strong>
-                  <span>{event.editionsLabel || "Editions"}</span>
-                </div>
-              )}
-
-              {event.competitions && (
-                <div>
-                  <strong>{event.competitions}</strong>
-                  <span>{event.competitionsLabel || "Competitions"}</span>
-                </div>
-              )}
-            </div>
+            {/* HERO STATS (Dynamic Component) */}
+            <EventStatistics stats={event.statistics} layout="hero" />
 
             {/* COMPLETED EVENT HERO ACTION BUTTONS */}
             {isCompleted && (
@@ -327,41 +298,12 @@ export default function EventDetails() {
       )}
 
       {/* 4. DEDICATED STATISTICS SECTION */}
-      {(event.participants || event.events || event.editions || event.competitions || event.years) && (
+      {event.hasStats && (
         <section className="event-section">
           <div className="wrap">
             <h2>Key Impact &amp; Metrics</h2>
-            <div className="hero-stats" style={{ marginTop: "20px" }}>
-              {event.participants && (
-                <div style={{ background: "white", borderColor: "#e2e8f0" }}>
-                  <strong style={{ color: "#2563eb" }}>{event.participants}</strong>
-                  <span style={{ color: "#64748b" }}>{event.participantsLabel || "Participants"}</span>
-                </div>
-              )}
-              {event.events && (
-                <div style={{ background: "white", borderColor: "#e2e8f0" }}>
-                  <strong style={{ color: "#2563eb" }}>{event.events}</strong>
-                  <span style={{ color: "#64748b" }}>{event.eventsLabel || "Activities"}</span>
-                </div>
-              )}
-              {event.editions && (
-                <div style={{ background: "white", borderColor: "#e2e8f0" }}>
-                  <strong style={{ color: "#2563eb" }}>{event.editions}</strong>
-                  <span style={{ color: "#64748b" }}>{event.editionsLabel || "Editions"}</span>
-                </div>
-              )}
-              {event.competitions && (
-                <div style={{ background: "white", borderColor: "#e2e8f0" }}>
-                  <strong style={{ color: "#2563eb" }}>{event.competitions}</strong>
-                  <span style={{ color: "#64748b" }}>{event.competitionsLabel || "Competitions"}</span>
-                </div>
-              )}
-              {event.years && (
-                <div style={{ background: "white", borderColor: "#e2e8f0" }}>
-                  <strong style={{ color: "#2563eb" }}>{event.years}</strong>
-                  <span style={{ color: "#64748b" }}>{event.yearsLabel || "Years Active"}</span>
-                </div>
-              )}
+            <div style={{ marginTop: "20px" }}>
+              <EventStatistics stats={event.statistics} layout="section" />
             </div>
           </div>
         </section>
@@ -658,6 +600,6 @@ export default function EventDetails() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

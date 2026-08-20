@@ -1,14 +1,35 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../../Firebase/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../../../Firebase/firebase";
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const [user, setUser] = useState(undefined);
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        setUser(null);
+        setRole(null);
+        return;
+      }
+
       setUser(currentUser);
+
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setRole(userSnap.data().role || null);
+        } else {
+          setRole(null);
+        }
+      } catch (err) {
+        console.error("[ProtectedRoute] role fetch error:", err);
+        setRole(null);
+      }
     });
 
     return () => unsubscribe();
@@ -37,6 +58,12 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Login hai to page dikhao
+  // Role check: if allowedRoles is specified, enforce it
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    // Authenticated but unauthorized → safe redirect to dashboard
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Login hai aur role allowed hai to page dikhao
   return children;
 }

@@ -128,11 +128,13 @@ service cloud.firestore {
 
     // ============================================================
     // GALLERY
-    // Public: read.
-    // Admins: full CRUD.
+    // Public: read published albums only.
+    // Admins (super_admin): read ALL + write.
     // ============================================================
     match /gallery/{itemId} {
-      allow read: if true;
+      allow read: if isAdmin(['super_admin'])
+        || resource.data.status == 'Published';
+
       allow create, update, delete: if isAdmin(['super_admin']);
     }
 
