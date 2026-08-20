@@ -129,13 +129,13 @@ service cloud.firestore {
     // ============================================================
     // GALLERY
     // Public: read published albums only.
-    // Admins (super_admin): read ALL + write.
+    // Admins (super_admin, event_admin, blog_admin): read ALL + write.
     // ============================================================
     match /gallery/{itemId} {
-      allow read: if isAdmin(['super_admin'])
+      allow read: if isAdmin(['super_admin', 'event_admin', 'blog_admin'])
         || resource.data.status == 'Published';
 
-      allow create, update, delete: if isAdmin(['super_admin']);
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin', 'blog_admin']);
     }
 
     // ============================================================

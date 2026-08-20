@@ -25,6 +25,7 @@ export default function Sidebar() {
 
     blog_admin: [
       { name: "Blogs", path: "/admin/blogs", icon: "📝" },
+      { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
       { name: "Media Library", path: "/admin/media", icon: "📁" },
     ],
 
@@ -35,6 +36,7 @@ export default function Sidebar() {
       { name: "Announcements", path: "/admin/announcements", icon: "📢" },
       { name: "Students", path: "/admin/students", icon: "👨‍🎓" },
       { name: "Registration Outreach", path: "/admin/registration-outreach", icon: "📧" },
+      { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
       { name: "Media Library", path: "/admin/media", icon: "📁" },
     ],
   };
