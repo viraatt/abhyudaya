@@ -198,7 +198,13 @@ export default function App() {
           <Route
             path="/admin/gallery"
             element={
-              <ProtectedRoute allowedRoles={["super_admin"]}>
+              <ProtectedRoute
+                allowedRoles={[
+                  "super_admin",
+                  "event_admin",
+                  "blog_admin",
+                ]}
+              >
                 <AdminGallery />
               </ProtectedRoute>
             }
