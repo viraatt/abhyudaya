@@ -2,13 +2,28 @@ import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import "./style/admin.css";
-
 import {
   getGalleryItems,
   addGalleryItem,
   updateGalleryItem,
   deleteGalleryItem,
 } from "./services/galleryService";
+import { invalidateGalleryCache } from "../../services/galleryAlbumsService";
+import { GALLERY_CATEGORIES, slugify, yearFromDate } from "../../utils/galleryConstants";
+
+const EMPTY_FORM = {
+  title: "",
+  subtitle: "",
+  category: "Festivals",
+  date: new Date().toISOString().split("T")[0],
+  year: new Date().getFullYear(),
+  description: "",
+  slug: "",
+  featured: false,
+  status: "Published",
+  coverImage: "",
+  yearManuallySet: false,
+};
 
 export default function Gallery() {
   const [items, setItems] = useState([]);
@@ -16,16 +31,12 @@ export default function Gallery() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeStatus, setActiveStatus] = useState("All");
 
-  const [formData, setFormData] = useState({
-    title: "",
-    category: "Events",
-    imageUrl: "",
-    date: new Date().toISOString().split("T")[0],
-    description: "",
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [photos, setPhotos] = useState([]); // [{ file?, src?, title, description, preview? }]
+  const [slugTouched, setSlugTouched] = useState(false);
 
   const loadItems = async () => {
     try {
@@ -34,7 +45,7 @@ export default function Gallery() {
       setItems(data);
     } catch (err) {
       console.error(err);
-      alert("Failed to load gallery items.");
+      alert("Failed to load gallery albums.");
     } finally {
       setLoading(false);
     }
@@ -45,15 +56,10 @@ export default function Gallery() {
   }, []);
 
   const resetForm = () => {
-    setFormData({
-      title: "",
-      category: "Events",
-      imageUrl: "",
-      date: new Date().toISOString().split("T")[0],
-      description: "",
-    });
-    setSelectedFile(null);
+    setFormData(EMPTY_FORM);
+    setPhotos([]);
     setEditingItem(null);
+    setSlugTouched(false);
   };
 
   const handleOpenDrawer = (item = null) => {
@@ -61,11 +67,27 @@ export default function Gallery() {
       setEditingItem(item);
       setFormData({
         title: item.title || "",
-        category: item.category || "Events",
-        imageUrl: item.imageUrl || "",
+        subtitle: item.subtitle || "",
+        category: item.category || "Festivals",
         date: item.date || new Date().toISOString().split("T")[0],
+        year: item.year || yearFromDate(item.date),
         description: item.description || "",
+        slug: item.slug || "",
+        featured: Boolean(item.featured),
+        status: item.status || "Published",
+        coverImage: item.coverImage || "",
+        yearManuallySet: true,
       });
+      setPhotos(
+        (item.photos || []).map((p) => ({
+          id: p.id,
+          src: p.src || p.rawSrc || "",
+          title: p.title || "",
+          description: p.description || "",
+          preview: p.src || p.rawSrc || "",
+        }))
+      );
+      setSlugTouched(true);
     } else {
       resetForm();
     }
@@ -73,54 +95,131 @@ export default function Gallery() {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
+    const { name, value, type, checked } = e.target;
+    const newValue = type === "checkbox" ? checked : value;
+
+    setFormData((prev) => {
+      const next = { ...prev, [name]: newValue };
+
+      // Auto-generate slug from title unless user has manually edited it
+      if (name === "title" && !slugTouched) {
+        next.slug = slugify(value);
+      }
+
+      // Keep year in sync with date unless user manually changed year
+      if (name === "date" && !prev.yearManuallySet) {
+        next.year = yearFromDate(value);
+      }
+
+      return next;
     });
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
+  const handleSlugChange = (e) => {
+    setSlugTouched(true);
+    setFormData((prev) => ({
+      ...prev,
+      slug: slugify(e.target.value),
+    }));
+  };
+
+  const handleYearChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      year: Number(e.target.value) || new Date().getFullYear(),
+      yearManuallySet: true,
+    }));
+  };
+
+  const handlePhotoFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    const newPhotos = files.map((file) => ({
+      file,
+      title: file.name.replace(/\.[^.]+$/, ""),
+      description: "",
+      preview: URL.createObjectURL(file),
+    }));
+    setPhotos((prev) => [...prev, ...newPhotos]);
+    e.target.value = "";
+  };
+
+  const handlePhotoChange = (index, field, value) => {
+    setPhotos((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
+    );
+  };
+
+  const handleRemovePhoto = (index) => {
+    setPhotos((prev) => {
+      const next = [...prev];
+      if (next[index]?.preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(next[index].preview);
+      }
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
+  const handleSetCover = (index) => {
+    const photo = photos[index];
+    if (!photo) return;
+    setFormData((prev) => ({
+      ...prev,
+      coverImage: photo.src || photo.preview || "",
+      coverImageIndex: index,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
-      alert("Title is required.");
+      alert("Album title is required.");
       return;
     }
 
-    if (!selectedFile && !formData.imageUrl) {
-      alert("Please choose an image file or provide an image URL.");
+    if (photos.length === 0) {
+      alert("Please add at least one photo to the album.");
       return;
     }
 
     setSaving(true);
     try {
+      const payload = {
+        ...formData,
+        coverImageIndex: formData.coverImageIndex ?? 0,
+        photos: photos.map((p) => ({
+          file: p.file || undefined,
+          src: p.src || p.preview || "",
+          title: p.title || "",
+          description: p.description || "",
+        })),
+      };
+
       if (editingItem) {
-        await updateGalleryItem(editingItem.id, formData, selectedFile);
-        alert("Gallery photo updated!");
+        await updateGalleryItem(editingItem.id, payload);
+        alert("Album updated!");
       } else {
-        await addGalleryItem(formData, selectedFile);
-        alert("Gallery photo added successfully!");
+        await addGalleryItem(payload);
+        alert("Album created successfully!");
       }
+
+      invalidateGalleryCache();
       setShowDrawer(false);
       resetForm();
       await loadItems();
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to save gallery photo.");
+      alert(err.message || "Failed to save album.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Delete photo "${item.title}"?`)) return;
+    if (!window.confirm(`Delete album "${item.title}"? This cannot be undone.`)) return;
     try {
       await deleteGalleryItem(item.id);
+      invalidateGalleryCache();
       await loadItems();
     } catch (err) {
       console.error(err);
@@ -128,12 +227,14 @@ export default function Gallery() {
     }
   };
 
-  const categories = ["All", "TechBloom", "CommuniCraft", "Antariksh Spardha", "Workshops", "Cultural", "Campus Life"];
+  const categories = ["All", ...GALLERY_CATEGORIES];
+  const statuses = ["All", "Published", "Draft"];
 
-  const filteredItems =
-    activeCategory === "All"
-      ? items
-      : items.filter((item) => item.category === activeCategory);
+  const filteredItems = items.filter((item) => {
+    const catMatch = activeCategory === "All" || item.category === activeCategory;
+    const statusMatch = activeStatus === "All" || item.status === activeStatus;
+    return catMatch && statusMatch;
+  });
 
   return (
     <div className="dashboard-layout">
@@ -146,12 +247,12 @@ export default function Gallery() {
           {/* Header */}
           <div className="events-header">
             <div className="events-title">
-              <h2>🖼️ Gallery &amp; Event Album Management</h2>
-              <p>Upload and organize event photos, fests, and club activities.</p>
+              <h2>🖼️ Gallery Album Management</h2>
+              <p>Create and manage photo albums for the public gallery.</p>
             </div>
 
             <button className="add-event-btn" onClick={() => handleOpenDrawer()}>
-              + Upload Photo
+              + Create Album
             </button>
           </div>
 
@@ -173,7 +274,7 @@ export default function Gallery() {
           >
             <span style={{ fontSize: "20px" }}>💡</span>
             <div>
-              <strong>Cloudinary Free Plan Optimization:</strong> Recommended photo dimensions are <strong>1600px–2400px</strong> (JPEG/WebP under 2 MB). This conserves your monthly 25 credits while ensuring sharp display on mobile &amp; desktop displays.
+              <strong>Cloudinary Free Plan Optimization:</strong> Recommended photo dimensions are <strong>1600px–2400px</strong> (JPEG/WebP under 2 MB). This conserves your monthly 25 credits while ensuring sharp display on mobile & desktop displays.
             </div>
           </div>
 
@@ -198,18 +299,39 @@ export default function Gallery() {
             ))}
           </div>
 
+          {/* Status Filter Pills */}
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px" }}>
+            {statuses.map((st) => (
+              <button
+                key={st}
+                className="filter-btn"
+                style={{
+                  background: activeStatus === st ? "#10b981" : "#1e293b",
+                  color: "#fff",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: "20px",
+                  cursor: "pointer",
+                }}
+                onClick={() => setActiveStatus(st)}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+
           {/* Gallery Items Grid */}
           {loading ? (
             <div className="empty-card">
-              <h3>Loading Gallery Photos...</h3>
+              <h3>Loading Gallery Albums...</h3>
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="empty-card">
               <div style={{ fontSize: "70px" }}>🖼️</div>
-              <h3>No Photos Found</h3>
-              <p>Upload event photos to showcase in the public gallery.</p>
+              <h3>No Albums Found</h3>
+              <p>Create photo albums to showcase in the public gallery.</p>
               <button className="add-event-btn" onClick={() => handleOpenDrawer()}>
-                + Upload Photo
+                + Create Album
               </button>
             </div>
           ) : (
@@ -217,32 +339,62 @@ export default function Gallery() {
               {filteredItems.map((item) => (
                 <div className="event-card" key={item.id}>
                   <img
-                    src={item.imageUrl}
+                    src={item.coverImage || (item.photos?.[0]?.src) || ""}
                     alt={item.title}
                     className="event-image"
                     style={{ height: "220px", objectFit: "cover" }}
                   />
 
                   <div className="event-body">
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        background: "rgba(59, 130, 246, 0.15)",
-                        color: "#60a5fa",
-                        padding: "3px 8px",
-                        borderRadius: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {item.category}
-                    </span>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          background: "rgba(59, 130, 246, 0.15)",
+                          color: "#60a5fa",
+                          padding: "3px 8px",
+                          borderRadius: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {item.category}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          background: item.status === "Published" ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                          color: item.status === "Published" ? "#34d399" : "#fbbf24",
+                          padding: "3px 8px",
+                          borderRadius: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {item.status}
+                      </span>
+                      {item.featured && (
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            background: "rgba(245, 158, 11, 0.15)",
+                            color: "#fbbf24",
+                            padding: "3px 8px",
+                            borderRadius: "12px",
+                            fontWeight: "600",
+                          }}
+                        >
+                          ⭐ Featured
+                        </span>
+                      )}
+                    </div>
 
                     <h3 style={{ marginTop: "10px", marginBottom: "4px" }}>
                       {item.title}
                     </h3>
 
                     {item.date && (
-                      <small style={{ color: "#94a3b8" }}>{item.date}</small>
+                      <small style={{ color: "#94a3b8" }}>
+                        {item.date} • {item.photos?.length || 0} photos
+                      </small>
                     )}
 
                     {item.description && (
@@ -273,7 +425,7 @@ export default function Gallery() {
           )}
         </div>
 
-        {/* Upload Drawer */}
+        {/* Album Drawer */}
         {showDrawer && (
           <>
             <div
@@ -281,9 +433,9 @@ export default function Gallery() {
               onClick={() => setShowDrawer(false)}
             />
 
-            <div className="event-drawer">
+            <div className="event-drawer" style={{ width: "min(720px, 100%)" }}>
               <div className="drawer-header">
-                <h2>{editingItem ? "Edit Photo" : "Upload Gallery Photo"}</h2>
+                <h2>{editingItem ? "Edit Album" : "Create Album"}</h2>
                 <button
                   className="close-btn"
                   onClick={() => setShowDrawer(false)}
@@ -293,15 +445,37 @@ export default function Gallery() {
               </div>
 
               <form className="drawer-form" onSubmit={handleSubmit}>
-                <label>Photo Title *</label>
+                {/* Album Information */}
+                <label>Album Title *</label>
                 <input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
-                  placeholder="e.g. Annual Hackathon 2026 Opening"
+                  placeholder="e.g. TechBloom 2.0"
                   required
                 />
+
+                <label>Subtitle</label>
+                <input
+                  type="text"
+                  name="subtitle"
+                  value={formData.subtitle}
+                  onChange={handleChange}
+                  placeholder="e.g. Flagship Technical Festival"
+                />
+
+                <label>Slug</label>
+                <input
+                  type="text"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={handleSlugChange}
+                  placeholder="auto-generated from title"
+                />
+                <small style={{ color: "#64748b", marginTop: "-8px", display: "block" }}>
+                  URL: /gallery/{formData.slug || "..."}
+                </small>
 
                 <label>Category</label>
                 <select
@@ -316,57 +490,157 @@ export default function Gallery() {
                     color: "#fff",
                   }}
                 >
-                  <option value="TechBloom">TechBloom</option>
-                  <option value="Antariksh Spardha">Antariksh Spardha</option>
-                  <option value="CommuniCraft">CommuniCraft</option>
-                  <option value="Workshops">Workshops</option>
-                  <option value="Competitions">Competitions</option>
-                  <option value="Cultural">Cultural</option>
-                  <option value="Campus Life">Campus Life</option>
+                  {GALLERY_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
                 </select>
 
-                <label>Media File (Upload Image or Video / URL)</label>
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={handleFileChange}
-                />
-                <input
-                  type="url"
-                  name="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={handleChange}
-                  placeholder="Or paste Direct Image/Video URL"
-                  style={{ marginTop: "6px" }}
-                />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={formData.date}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <label>Year</label>
+                    <input
+                      type="number"
+                      name="year"
+                      value={formData.year}
+                      onChange={handleYearChange}
+                      min="2000"
+                      max="2100"
+                    />
+                  </div>
+                </div>
 
-                <label>Event Date</label>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                />
-
-                <label>Short Description (Optional)</label>
+                <label>Description</label>
                 <textarea
                   rows="3"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Details about this picture or event"
+                  placeholder="Details about this event album"
                 />
+
+                <div style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      name="featured"
+                      checked={formData.featured}
+                      onChange={handleChange}
+                    />
+                    ⭐ Featured Album
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      name="status"
+                      checked={formData.status === "Published"}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          status: e.target.checked ? "Published" : "Draft",
+                        }))
+                      }
+                    />
+                    Published
+                  </label>
+                </div>
+
+                {/* Photos */}
+                <label style={{ marginTop: "20px" }}>Photos *</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoFiles}
+                />
+                <small style={{ color: "#64748b", marginTop: "-8px", display: "block" }}>
+                  You can select multiple images at once. Images only.
+                </small>
+
+                {photos.length > 0 && (
+                  <div style={{ marginTop: "15px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {photos.map((photo, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          gap: "12px",
+                          background: "#0f172a",
+                          border: "1px solid #334155",
+                          borderRadius: "8px",
+                          padding: "10px",
+                          alignItems: "center",
+                        }}
+                      >
+                        <img
+                          src={photo.preview || photo.src}
+                          alt={photo.title || `Photo ${index + 1}`}
+                          style={{ width: "80px", height: "60px", objectFit: "cover", borderRadius: "6px" }}
+                        />
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <input
+                            type="text"
+                            value={photo.title}
+                            onChange={(e) => handlePhotoChange(index, "title", e.target.value)}
+                            placeholder="Photo title"
+                            style={{ padding: "6px", background: "#1e293b", border: "1px solid #334155", borderRadius: "6px", color: "#fff" }}
+                          />
+                          <input
+                            type="text"
+                            value={photo.description}
+                            onChange={(e) => handlePhotoChange(index, "description", e.target.value)}
+                            placeholder="Photo description (optional)"
+                            style={{ padding: "6px", background: "#1e293b", border: "1px solid #334155", borderRadius: "6px", color: "#fff" }}
+                          />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <button
+                            type="button"
+                            className="filter-btn"
+                            style={{
+                              background: formData.coverImage === (photo.src || photo.preview) ? "#10b981" : "#1e293b",
+                              color: "#fff",
+                              fontSize: "11px",
+                              padding: "4px 8px",
+                            }}
+                            onClick={() => handleSetCover(index)}
+                          >
+                            {formData.coverImage === (photo.src || photo.preview) ? "✓ Cover" : "Set Cover"}
+                          </button>
+                          <button
+                            type="button"
+                            className="filter-btn"
+                            style={{ background: "#ef4444", color: "#fff", fontSize: "11px", padding: "4px 8px" }}
+                            onClick={() => handleRemovePhoto(index)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <button
                   className="add-event-btn"
                   type="submit"
                   disabled={saving}
+                  style={{ marginTop: "20px" }}
                 >
                   {saving
                     ? "Saving..."
                     : editingItem
-                    ? "Update Photo"
-                    : "Upload Photo"}
+                    ? "Update Album"
+                    : "Create Album"}
                 </button>
               </form>
             </div>

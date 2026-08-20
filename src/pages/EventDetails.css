@@ -18,13 +18,13 @@
     width:100%;
 
     background:linear-gradient(
-        to top,
-        rgba(15,23,42,.95),
-        rgba(15,23,42,.75),
-        rgba(15,23,42,.30)
+        to right,
+        rgba(15,23,42,.94) 0%,
+        rgba(15,23,42,.80) 50%,
+        rgba(15,23,42,.45) 100%
     );
 
-    padding:120px 0 80px;
+    padding:100px 0 70px;
 
 }
 
@@ -41,7 +41,7 @@
     align-items:center;
     gap:8px;
 
-    padding:10px 20px;
+    padding:8px 16px;
 
     border-radius:999px;
 
@@ -51,7 +51,7 @@
 
     color:white;
 
-    font-size:.9rem;
+    font-size:.85rem;
     font-weight:600;
 
 }
@@ -60,12 +60,20 @@
 
     color:white;
 
-    font-size:4rem;
+    font-size:3.8rem;
 
-    margin:25px 0 18px;
+    margin:14px 0 8px;
 
-    line-height:1.1;
+    line-height:1.12;
 
+}
+
+.hero-short-description {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.88);
+    max-width: 680px;
+    margin: 8px 0 14px;
 }
 
 .event-hero p{
@@ -84,15 +92,16 @@
 
     display:flex;
 
-    gap:30px;
+    gap:20px;
 
-    margin-top:45px;
+    margin-top:28px;
 
     flex-wrap:wrap;
 
 }
 
-.hero-stats div{
+.hero-stats div,
+.hero-stat-card {
 
     background:rgba(255,255,255,.08);
 
@@ -100,28 +109,65 @@
 
     border:1px solid rgba(255,255,255,.12);
 
-    border-radius:18px;
+    border-radius:16px;
 
-    padding:20px 26px;
+    padding:16px 22px;
 
-    min-width:180px;
+    min-width:160px;
 
 }
 
-.hero-stats strong{
+.hero-stats strong,
+.hero-stat-card strong{
 
     display:block;
 
     color:white;
 
     font-size:1.5rem;
+    font-weight:800;
 
 }
 
-.hero-stats span{
+.hero-stats span,
+.hero-stat-card span{
 
     color:rgba(255,255,255,.75);
+    font-size:0.85rem;
+    font-weight:500;
 
+}
+
+/* Dedicated Statistics Section Grid */
+.event-stats-section-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.event-stat-card.light {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px 28px;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.event-stat-card.light strong {
+    display: block;
+    color: #0f172a;
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.event-stat-card.light span {
+    display: block;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 4px;
 }
 
 /* ======================================================
@@ -679,37 +725,38 @@ font-size:2rem;
 .hero-status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
+  gap: 5px;
+  padding: 5px 13px;
   border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
 }
 
 .hero-status-badge.status-completed {
-  background: rgba(16, 185, 129, 0.18);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
 }
 
 .hero-status-badge.status-ongoing {
-  background: rgba(239, 68, 68, 0.18);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
 }
 
 .hero-status-badge.status-upcoming {
-  background: rgba(37, 99, 235, 0.18);
-  border: 1px solid rgba(37, 99, 235, 0.4);
-  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
 }
 
 .hero-meta-row {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-top: 18px;
+  margin-top: 14px;
 }
 
 .hero-meta-tag {

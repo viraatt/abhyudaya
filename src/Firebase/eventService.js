@@ -73,28 +73,42 @@ export async function uploadEventImage(file) {
    2. DATA HELPER / FORMATTER
    ============================================================================ */
 
+import { normalizeEvent } from "../utils/eventNormalizer";
+
 function formatEventDoc(snapshotDoc) {
   const data = snapshotDoc.data();
-  const rawImage = data.image || data.banner || "";
+  const rawImage = data.image || data.banner || data.thumbnail || "";
 
-  return {
+  const baseEvent = {
     id: snapshotDoc.id,
     slug: data.slug || snapshotDoc.id,
     title: data.title || "Untitled Event",
-    subtitle: data.subtitle || "Abhyudaya Event",
+    subtitle: data.subtitle || data.category || "Abhyudaya Event",
+    category: data.category || data.subtitle || "Events",
     icon: data.icon || "📅",
     tagline: data.tagline || "",
-    description: data.description || "",
+    description: data.description || data.shortDescription || data.longDescription || "",
+    shortDescription: data.shortDescription || "",
+    longDescription: data.longDescription || data.description || "",
     image: rawImage,
     banner: rawImage,
-    since: data.since || "",
-    participants: data.participants || "",
-    participantsLabel: data.participantsLabel || "Participants",
-    events: data.events || "",
-    eventsLabel: data.eventsLabel || "Activities",
-    editions: data.editions || "",
-    editionsLabel: data.editionsLabel || "Editions",
+    thumbnail: data.thumbnail || rawImage,
+    since: data.since || data.stats?.since || data.statistics?.since || "",
+    participants: data.participants || data.stats?.participants || data.statistics?.participants || "",
+    participantsLabel: data.participantsLabel || data.stats?.participantsLabel || data.statistics?.participantsLabel || "Participants",
+    events: data.events || data.activities || data.stats?.events || data.stats?.activities || data.statistics?.events || data.statistics?.activities || "",
+    eventsLabel: data.eventsLabel || data.activitiesLabel || data.stats?.eventsLabel || data.stats?.activitiesLabel || data.statistics?.eventsLabel || data.statistics?.activitiesLabel || "Activities",
+    editions: data.editions || data.stats?.editions || data.statistics?.editions || "",
+    editionsLabel: data.editionsLabel || data.stats?.editionsLabel || data.statistics?.editionsLabel || "Editions",
+    years: data.years || data.stats?.years || data.statistics?.years || "",
+    yearsLabel: data.yearsLabel || data.stats?.yearsLabel || data.statistics?.yearsLabel || "Years Active",
+    competitions: data.competitions || data.stats?.competitions || data.statistics?.competitions || "",
+    competitionsLabel: data.competitionsLabel || data.stats?.competitionsLabel || data.statistics?.competitionsLabel || "Competitions",
     highlights: Array.isArray(data.highlights) ? data.highlights : [],
+    speakers: Array.isArray(data.speakers) ? data.speakers : [],
+    badgeText: data.badgeText || "",
+    ctaText: data.ctaText || "Explore Event →",
+    ctaLink: data.ctaLink || "",
     featured: Boolean(data.featured),
     status: data.status || "Published",
     order: Number(data.order) || 99,
@@ -107,6 +121,8 @@ function formatEventDoc(snapshotDoc) {
     createdAt: data.createdAt || null,
     updatedAt: data.updatedAt || null,
   };
+
+  return normalizeEvent(baseEvent);
 }
 
 /* ============================================================================
@@ -191,7 +207,7 @@ export async function getEventBySlug(slug) {
   const staticMatch = eventCategories.find(
     (item) => item.slug === slug || String(item.id) === slug
   );
-  return staticMatch || null;
+  return staticMatch ? normalizeEvent(staticMatch) : null;
 }
 
 export async function getEventById(id) {
@@ -225,12 +241,16 @@ export async function createEvent(eventData, imageFile = null) {
   const payload = {
     title: (eventData.title || "").trim(),
     slug: (eventData.slug || "").trim() || (eventData.title || "").toLowerCase().replace(/\s+/g, "-"),
-    subtitle: (eventData.subtitle || "").trim(),
+    subtitle: (eventData.subtitle || eventData.category || "").trim(),
+    category: (eventData.category || eventData.subtitle || "Events").trim(),
     icon: (eventData.icon || "").trim() || "📅",
     tagline: (eventData.tagline || "").trim(),
-    description: (eventData.description || "").trim(),
+    description: (eventData.description || eventData.longDescription || eventData.shortDescription || "").trim(),
+    shortDescription: (eventData.shortDescription || "").trim(),
+    longDescription: (eventData.longDescription || eventData.description || "").trim(),
     image: imageUrl,
     banner: imageUrl,
+    thumbnail: eventData.thumbnail || imageUrl,
     since: (eventData.since || "").trim(),
     participants: (eventData.participants || "").trim(),
     participantsLabel: (eventData.participantsLabel || "Participants").trim(),
@@ -238,7 +258,15 @@ export async function createEvent(eventData, imageFile = null) {
     eventsLabel: (eventData.eventsLabel || "Activities").trim(),
     editions: (eventData.editions || "").trim(),
     editionsLabel: (eventData.editionsLabel || "Editions").trim(),
+    years: (eventData.years || "").trim(),
+    yearsLabel: (eventData.yearsLabel || "Years Active").trim(),
+    competitions: (eventData.competitions || "").trim(),
+    competitionsLabel: (eventData.competitionsLabel || "Competitions").trim(),
     highlights: Array.isArray(eventData.highlights) ? eventData.highlights : [],
+    speakers: Array.isArray(eventData.speakers) ? eventData.speakers : [],
+    badgeText: (eventData.badgeText || "").trim(),
+    ctaText: (eventData.ctaText || "Explore Event →").trim(),
+    ctaLink: (eventData.ctaLink || "").trim(),
     featured: Boolean(eventData.featured),
     status: eventData.status || "Published",
     order: Number(eventData.order) || 99,
@@ -268,12 +296,16 @@ export async function updateEvent(id, eventData, imageFile = null) {
   const payload = {
     title: (eventData.title || "").trim(),
     slug: (eventData.slug || "").trim(),
-    subtitle: (eventData.subtitle || "").trim(),
+    subtitle: (eventData.subtitle || eventData.category || "").trim(),
+    category: (eventData.category || eventData.subtitle || "Events").trim(),
     icon: (eventData.icon || "").trim() || "📅",
     tagline: (eventData.tagline || "").trim(),
-    description: (eventData.description || "").trim(),
+    description: (eventData.description || eventData.longDescription || eventData.shortDescription || "").trim(),
+    shortDescription: (eventData.shortDescription || "").trim(),
+    longDescription: (eventData.longDescription || eventData.description || "").trim(),
     image: imageUrl,
     banner: imageUrl,
+    thumbnail: eventData.thumbnail || imageUrl,
     since: (eventData.since || "").trim(),
     participants: (eventData.participants || "").trim(),
     participantsLabel: (eventData.participantsLabel || "Participants").trim(),
@@ -281,7 +313,15 @@ export async function updateEvent(id, eventData, imageFile = null) {
     eventsLabel: (eventData.eventsLabel || "Activities").trim(),
     editions: (eventData.editions || "").trim(),
     editionsLabel: (eventData.editionsLabel || "Editions").trim(),
+    years: (eventData.years || "").trim(),
+    yearsLabel: (eventData.yearsLabel || "Years Active").trim(),
+    competitions: (eventData.competitions || "").trim(),
+    competitionsLabel: (eventData.competitionsLabel || "Competitions").trim(),
     highlights: Array.isArray(eventData.highlights) ? eventData.highlights : [],
+    speakers: Array.isArray(eventData.speakers) ? eventData.speakers : [],
+    badgeText: (eventData.badgeText || "").trim(),
+    ctaText: (eventData.ctaText || "Explore Event →").trim(),
+    ctaLink: (eventData.ctaLink || "").trim(),
     featured: Boolean(eventData.featured),
     status: eventData.status || "Published",
     order: Number(eventData.order) || 99,

@@ -1,9 +1,9 @@
 /* ==========================================
-   NAVBAR — Premium Institutional & Editorial Header
-   Three-part layout: brand | links | actions
+   NAVBAR — Premium Institutional Header
+   Layout: Full-Width (Brand | Nav Links | Action Buttons)
    ========================================== */
 
-/* ── Sticky shell ─────────────────────────────────────────── */
+/* ── Sticky Shell ─────────────────────────────────────────── */
 .navbar {
   position: sticky;
   top: 0;
@@ -13,7 +13,7 @@
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Move backdrop-filter to pseudo-element so .navbar doesn't trap position: fixed children */
+/* Pseudo-element for glassmorphic backdrop without trapping fixed modals/drawers */
 .navbar::before {
   content: '';
   position: absolute;
@@ -26,23 +26,25 @@
 
 .navbar--scrolled {
   background: rgba(13, 18, 36, 0.96);
-  border-bottom-color: rgba(238, 184, 74, 0.15);
+  border-bottom-color: rgba(238, 184, 74, 0.18);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
+/* ── Full-Width Container ─────────────────────────────────── */
 .navbar__container {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 clamp(20px, 3.5vw, 36px);
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 40px;
   height: 80px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: clamp(12px, 2vw, 28px);
   position: relative;
+  box-sizing: border-box;
 }
 
-/* ── Backdrop Overlay for Mobile Drawer ── */
+/* ── Backdrop Overlay for Mobile Drawer ───────────────────── */
 .navbar__overlay,
 .navbar__backdrop {
   position: fixed;
@@ -63,40 +65,37 @@
   transition: opacity 0.3s ease, visibility 0s linear 0s;
 }
 
-/* ── Branding (Left Identity Area) ── */
-
+/* ── 1. Logo / Brand Section (Left) ───────────────────────── */
 .navbar__brand {
   display: flex;
   align-items: center;
-  gap: 1.15rem; /* ~18.5px spacing between logo & text (16-24px target range) */
-  color: var(--dawn);
+  gap: 12px;
+  color: var(--dawn, #fbf4e8);
   text-decoration: none;
   z-index: 10001;
-  margin-right: clamp(1.25rem, 2.5vw, 2.75rem); /* Comfortable breathing room before first nav link */
-  padding-right: clamp(0.4rem, 0.8vw, 1rem);
   flex-shrink: 0;
   transition: opacity 0.2s ease;
 }
 
 .navbar__brand:hover {
-  opacity: 0.95;
+  opacity: 0.92;
 }
 
 .navbar__logo {
-  width: 46px; /* 44-50px target desktop height */
-  height: 46px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   flex-shrink: 0;
   border: 1.5px solid rgba(238, 184, 74, 0.35);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .navbar__brand:hover .navbar__logo {
-  border-color: var(--sun);
-  transform: scale(1.03);
-  box-shadow: 0 3px 12px rgba(238, 184, 74, 0.2);
+  border-color: var(--sun, #eeb84a);
+  transform: scale(1.02);
+  box-shadow: 0 3px 10px rgba(238, 184, 74, 0.25);
 }
 
 .navbar__brand-text {
@@ -106,145 +105,146 @@
 }
 
 .navbar__brand-title {
-  font-family: var(--font-display);
+  font-family: var(--font-display, "Fraunces", Georgia, serif);
   font-weight: 600;
-  font-size: 1.25rem;
+  font-size: 21px;
   letter-spacing: -0.01em;
-  color: var(--dawn);
+  color: var(--dawn, #fbf4e8);
   line-height: 1.1;
 }
 
 .navbar__brand-sub {
-  font-family: var(--font-utility);
-  font-size: 0.63rem;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--sun);
-  opacity: 0.9;
+  color: var(--sun, #eeb84a);
+  opacity: 0.92;
   margin-top: 3px;
   line-height: 1;
 }
 
-/* ── Navigation Links (Center Functional Area) ── */
-
+/* ── 2. Navigation Links Section (Center) ─────────────────── */
 .navbar__links {
   display: flex;
   align-items: center;
-  gap: clamp(0.65rem, 1.15vw, 1.35rem);
-  margin: 0 auto;
+  justify-content: center;
+  gap: clamp(14px, 1.8vw, 28px);
+  flex: 1;
+  margin: 0;
+  padding: 0 16px;
 }
 
 .navbar__link {
-  font-family: var(--font-utility);
-  font-size: 0.865rem;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 0.875rem;
   font-weight: 500;
-  color: var(--dawn-dim);
+  color: var(--dawn-dim, #f2e8d7);
   text-decoration: none;
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 0.5rem 0.25rem;
+  padding: 8px 2px;
   white-space: nowrap;
-  transition: color 0.25s ease;
+  transition: color 0.2s ease;
 }
 
-/* Centered gold underline indicator (30px wide active state) */
+/* Active / hover gold underline indicator */
 .navbar__link::after {
   content: '';
   position: absolute;
-  left: 50%;
-  bottom: -2px;
-  width: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
   height: 2px;
-  background: var(--sun);
+  background: var(--sun, #eeb84a);
   border-radius: 2px;
-  transform: translateX(-50%);
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
   opacity: 0;
 }
 
 .navbar__link:hover {
-  color: var(--sun);
+  color: var(--sun, #eeb84a);
 }
 
 .navbar__link:hover::after {
-  width: 24px;
+  transform: scaleX(0.7);
   opacity: 0.6;
 }
 
 .navbar__link--active {
-  color: var(--sun);
+  color: var(--sun, #eeb84a);
   font-weight: 600;
 }
 
 .navbar__link--active::after {
-  width: 30px;
+  transform: scaleX(1);
   opacity: 1;
 }
 
-/* ── Actions (Right) ── */
-
+/* ── 3. Action Buttons Section (Right) ────────────────────── */
 .navbar__actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
   flex-shrink: 0;
 }
 
-/* ── Shared CTA button styles ─────────────────────────────── */
 .navbar__cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-  padding: 0 1.15rem;
-  border-radius: 9px;
-  font-family: var(--font-utility);
+  height: 44px;
+  border-radius: 11px;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              background 0.25s ease,
-              color 0.25s ease,
-              box-shadow 0.25s ease,
-              border-color 0.25s ease;
+  box-sizing: border-box;
+  padding: 0 20px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
 }
 
-/* Primary CTA — Join the Club (Warm Gold Accent) */
+/* Primary CTA — Join the Club */
 .navbar__cta--primary {
-  background: var(--sun);
-  color: var(--night);
-  border: 1px solid var(--sun);
+  background: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+  border: 1px solid var(--sun, #eeb84a);
   box-shadow: 0 2px 8px rgba(238, 184, 74, 0.15);
 }
 
 .navbar__cta--primary:hover {
-  background: var(--sun-soft);
-  border-color: var(--sun-soft);
-  color: var(--night);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(238, 184, 74, 0.3);
+  background: var(--sun-soft, #f7d189);
+  border-color: var(--sun-soft, #f7d189);
+  color: var(--night, #0d1224);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(238, 184, 74, 0.3);
 }
 
-/* Secondary CTA — Admin Login (Gold Outline, Gold Hover) */
+/* Secondary CTA — Admin Login */
 .navbar__cta--secondary {
   background: transparent;
-  color: var(--dawn);
-  border: 1px solid rgba(238, 184, 74, 0.5);
+  color: var(--dawn, #fbf4e8);
+  border: 1px solid rgba(238, 184, 74, 0.45);
 }
 
 .navbar__cta--secondary:hover {
-  background: var(--sun);
-  border-color: var(--sun);
-  color: var(--night);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(238, 184, 74, 0.25);
+  background: var(--sun, #eeb84a);
+  border-color: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(238, 184, 74, 0.25);
 }
 
-/* ── Mobile Toggle Button ── */
-
+/* ── Mobile Hamburger Toggle ──────────────────────────────── */
 .navbar__toggle {
   display: none;
   flex-direction: column;
@@ -272,53 +272,71 @@
   height: 2px;
   width: 20px;
   margin: 0 auto;
-  background: var(--dawn);
+  background: var(--dawn, #fbf4e8);
   border-radius: 2px;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, background-color 0.2s ease;
 }
 
 .navbar__toggle--open {
   background: rgba(238, 184, 74, 0.15);
-  border-color: var(--sun);
+  border-color: var(--sun, #eeb84a);
 }
 
 .navbar__toggle--open span {
-  background: var(--sun);
+  background: var(--sun, #eeb84a);
 }
 
 .navbar__toggle--open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .navbar__toggle--open span:nth-child(2) { opacity: 0; }
 .navbar__toggle--open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* Mobile-only actions injected inside the panel */
+/* Mobile-only actions container */
 .navbar__mobile-actions {
   display: none;
 }
 
-/* ── Responsive Mobile & Tablet Media Queries ── */
-
-@media (max-width: 1120px) {
+/* ── Responsive: Large screens — reduce padding slightly ──── */
+@media (max-width: 1440px) {
   .navbar__container {
-    height: 72px;
+    padding: 0 32px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .navbar__container {
+    padding: 0 28px;
+  }
+
+  .navbar__links {
+    gap: clamp(10px, 1.4vw, 22px);
+  }
+}
+
+/* ── Responsive: Collapse to hamburger at 1080px and below ── */
+@media (max-width: 1080px) {
+  .navbar__container {
+    height: 74px;
     padding: 0 20px;
   }
 
   .navbar__brand {
-    gap: 0.9rem;
-    margin-right: 0;
-    padding-right: 0;
+    gap: 10px;
   }
 
   .navbar__logo {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .navbar__brand-title {
+    font-size: 1.2rem;
   }
 
   .navbar__toggle {
     display: flex;
   }
 
-  /* Hide desktop actions container */
+  /* Hide desktop actions */
   .navbar__actions {
     display: none;
   }
@@ -326,17 +344,17 @@
   /* Slide-down Mobile Navigation Panel */
   .navbar__links {
     position: fixed;
-    top: 72px;
+    top: 74px;
     left: 0;
-    width: 100%;
     width: 100vw;
-    height: calc(100vh - 72px);
-    height: calc(100dvh - 72px);
+    height: calc(100vh - 74px);
+    height: calc(100dvh - 74px);
     margin: 0;
     padding: 1.5rem 24px 3rem;
     background: var(--night, #0d1224);
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
     gap: 0.35rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -382,19 +400,17 @@
   .navbar__mobile-actions {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 12px;
     margin-top: 1.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid rgba(251, 244, 232, 0.12);
   }
 
-  /* Mobile CTAs: full-width */
   .navbar__mobile-actions .navbar__cta {
     width: 100%;
     height: 44px;
     font-size: 0.95rem;
-    text-align: center;
-    justify-content: center;
+    border-radius: 11px;
   }
 }
 
@@ -405,20 +421,20 @@
   }
 
   .navbar__brand {
-    gap: 0.75rem;
+    gap: 8px;
   }
 
   .navbar__logo {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
   }
 
   .navbar__brand-title {
-    font-size: 1.08rem;
+    font-size: 1.1rem;
   }
 
   .navbar__brand-sub {
-    font-size: 0.58rem;
+    font-size: 8.5px;
   }
 
   .navbar__links {

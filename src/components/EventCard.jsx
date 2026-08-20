@@ -1,18 +1,21 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { normalizeEvent } from "../utils/eventNormalizer";
+import EventStatistics from "./EventStatistics";
 
-function EventCard({ event, reverse }) {
-  const image        = event.image || event.banner || "";
-  const icon         = event.icon  || "📅";
-  const subtitle     = event.subtitle || event.category || "";
-  const title        = event.title || "";
-  const tagline      = event.tagline || "";
-  const description  = event.shortDescription || event.description || "";
-  const participants = event.participants || "";
-  const activities   = event.events || "";
-  const editions     = event.editions || "";
-  const ctaText      = event.ctaText || "Explore Event →";
-  const ctaLink      = event.ctaLink || `/events/${event.slug || event.id}`;
+function EventCard({ event: rawEvent, reverse }) {
+  const event = useMemo(() => normalizeEvent(rawEvent), [rawEvent]);
+
+  if (!event) return null;
+
+  const image       = event.image || event.banner || "";
+  const icon        = event.icon  || "📅";
+  const subtitle    = event.subtitle || event.category || "Special Event";
+  const title       = event.title || "";
+  const tagline     = event.tagline || "";
+  const description = event.shortDescription || event.description || "";
+  const ctaText     = event.ctaText || "Explore Event →";
+  const ctaLink     = event.ctaLink || `/events/${event.slug || event.id}`;
 
   return (
     <section className={`event-showcase ${reverse ? "reverse" : ""}`}>
@@ -41,28 +44,8 @@ function EventCard({ event, reverse }) {
           <p className="event-description">{description}</p>
         )}
 
-        <div className="event-metrics">
-          {participants && (
-            <div>
-              <strong>{participants}</strong>
-              <span>{event.participantsLabel || "Participants"}</span>
-            </div>
-          )}
-
-          {activities && (
-            <div>
-              <strong>{activities}</strong>
-              <span>{event.eventsLabel || "Activities"}</span>
-            </div>
-          )}
-
-          {editions && (
-            <div>
-              <strong>{editions}</strong>
-              <span>{event.editionsLabel || "Editions"}</span>
-            </div>
-          )}
-        </div>
+        {/* Dynamic Statistics Component */}
+        <EventStatistics stats={event.statistics} layout="compact" />
 
         {ctaLink.startsWith("http") ? (
           <a

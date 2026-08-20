@@ -1,5 +1,14 @@
-import { getGalleryItems } from "../Admin/pages/services/galleryService.js";
-import { getCloudinaryThumbnail, getCloudinaryFullImage, FALLBACK_IMAGE } from "../utils/cloudinaryOptimized.js";
+import { getPublishedGalleryItems } from "../Admin/pages/services/galleryService.js";
+import {
+  getCloudinaryThumbnail,
+  getCloudinaryFullImage,
+  FALLBACK_IMAGE,
+} from "../utils/cloudinaryOptimized.js";
+import {
+  normalizeCategory,
+  formatDisplayDate,
+  yearFromDate,
+} from "../utils/galleryConstants.js";
 
 // Vite asset imports for local images to guarantee zero broken relative URLs
 import techBloomCover from "../assets/9ae3f21a-b6bf-4115-8c6b-a44b01f95bf9.jpg";
@@ -9,7 +18,8 @@ import astronomyCover from "../assets/cover2.jpg";
 
 /**
  * Curated Event Albums with rich photography collections.
- * Cloudinary URLs used for high-speed CDN delivery and responsive resolution scaling.
+ * Used ONLY as a fallback when Firestore has zero gallery documents.
+ * Once Firestore contains albums, Firestore is the single source of truth.
  */
 export const STATIC_ALBUMS = [
   {
@@ -104,7 +114,7 @@ export const STATIC_ALBUMS = [
     slug: "antariksh-spardha",
     title: "Antariksh Spardha Astronomy Fest",
     subtitle: "Space Exploration & Observation",
-    category: "Astronomy",
+    category: "Talks",
     date: "10 November 2025",
     year: "2025",
     description: "3-day astronomy festival featuring telescope night sky observation, deep-sky astro-photography, and guest lectures in partnership with IIT Kanpur Astro Club.",
@@ -284,14 +294,71 @@ export const STATIC_ALBUMS = [
   }
 ];
 
-// In-memory cache for albums metadata to avoid unnecessary repeat reads
+// In-memory cache for albums metadata to avoid unnecessary repeat reads.
+// Reduced to 30 seconds so Admin → Public updates appear quickly.
 let _albumsCache = null;
 let _albumsCacheTimestamp = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 30 * 1000; // 30 seconds
+
+/**
+ * Invalidates the in-memory album cache.
+ * Called after create/update/delete so the public Gallery reflects changes immediately.
+ */
+export function invalidateGalleryCache() {
+  _albumsCache = null;
+  _albumsCacheTimestamp = 0;
+}
+
+/**
+ * Normalizes a Firestore album document into the public album card shape.
+ * `doc` is a plain object: { id, ...data } as returned by getGalleryItems().
+ */
+function normalizeFirestoreAlbum(doc) {
+  const data = doc || {};
+  const id = data.id || data.slug || "";
+  const photos = Array.isArray(data.photos) ? data.photos : [];
+  const coverImage = data.coverImage || (photos.length > 0 ? photos[0].src : "") || FALLBACK_IMAGE;
+
+  return {
+    id,
+    slug: data.slug || id,
+    title: data.title || "Untitled Album",
+    subtitle: data.subtitle || "",
+    category: normalizeCategory(data.category),
+    date: formatDisplayDate(data.date),
+    year: data.year || yearFromDate(data.date),
+    description: data.description || "",
+    coverImage,
+    featured: Boolean(data.featured),
+    photoCount: photos.length,
+    status: data.status || "Published",
+    photos,
+  };
+}
+
+/**
+ * Fetches published albums from Firestore.
+ * Falls back to STATIC_ALBUMS ONLY when Firestore has zero documents.
+ */
+async function fetchPublishedAlbums() {
+  const dbItems = await getPublishedGalleryItems();
+
+  // Firestore has albums → Firestore is the source of truth
+  if (Array.isArray(dbItems) && dbItems.length > 0) {
+    return dbItems.map(normalizeFirestoreAlbum);
+  }
+
+  // Firestore has zero albums → optional STATIC_ALBUMS fallback
+  return STATIC_ALBUMS.map((album) => ({
+    ...album,
+    category: normalizeCategory(album.category),
+    date: formatDisplayDate(album.date),
+  }));
+}
 
 /**
  * Fetches lightweight Album metadata for the Gallery homepage.
- * Returns only: { id, slug, title, subtitle, category, date, year, description, coverImage, photoCount, featured }
+ * Returns only: { id, slug, title, subtitle, category, date, year, description, coverThumbnail, coverImage, photoCount, featured }
  * Does NOT download all event photos upfront!
  */
 export async function getGalleryAlbums({ category = "all", search = "", year = "all" } = {}) {
@@ -300,54 +367,10 @@ export async function getGalleryAlbums({ category = "all", search = "", year = "
 
   if (!albums || now - _albumsCacheTimestamp > CACHE_TTL_MS) {
     try {
-      const dbPhotos = await getGalleryItems();
-      
-      // If Firestore contains photos grouped by category or album
-      if (Array.isArray(dbPhotos) && dbPhotos.length > 0) {
-        // Group Firestore photos into dynamic albums if needed
-        const dynamicMap = new Map();
-        
-        // Start with static albums
-        STATIC_ALBUMS.forEach(alb => {
-          dynamicMap.set(alb.slug, { ...alb, photos: [...alb.photos] });
-        });
-
-        // Merge any user-uploaded Firestore photos into corresponding albums
-        dbPhotos.forEach((photo) => {
-          const catKey = (photo.category || "Events").toLowerCase().replace(/\s+/g, "-");
-          let targetSlug = "techbloom-2";
-          
-          if (catKey.includes("astro") || catKey.includes("antariksh")) targetSlug = "antariksh-spardha";
-          else if (catKey.includes("aero") || catKey.includes("rc")) targetSlug = "aeromodelling-workshop";
-          else if (catKey.includes("web") || catKey.includes("code")) targetSlug = "web-dev-workshop";
-          else if (catKey.includes("communi") || catKey.includes("debate")) targetSlug = "communicraft-summit";
-          else if (catKey.includes("poster") || catKey.includes("art")) targetSlug = "poster-verse";
-
-          if (dynamicMap.has(targetSlug)) {
-            const alb = dynamicMap.get(targetSlug);
-            const exists = alb.photos.some(p => p.src === photo.imageUrl || p.id === photo.id);
-            if (!exists) {
-              alb.photos.push({
-                id: photo.id || `db-${Math.random()}`,
-                title: photo.title || alb.title,
-                description: photo.description || "",
-                src: photo.imageUrl,
-                width: 1200,
-                height: 800,
-                aspectRatio: "3/2",
-              });
-              alb.photoCount = alb.photos.length;
-            }
-          }
-        });
-
-        albums = Array.from(dynamicMap.values());
-      } else {
-        albums = STATIC_ALBUMS;
-      }
+      albums = await fetchPublishedAlbums();
     } catch (err) {
-      console.warn("Firestore album merge fallback:", err);
-      albums = STATIC_ALBUMS;
+      console.error("Gallery fetch failed:", err);
+      throw err;
     }
 
     _albumsCache = albums;
@@ -358,17 +381,17 @@ export async function getGalleryAlbums({ category = "all", search = "", year = "
   let filtered = [...albums];
 
   if (category && category !== "all") {
-    filtered = filtered.filter(a => a.category.toLowerCase() === category.toLowerCase());
+    filtered = filtered.filter((a) => a.category.toLowerCase() === category.toLowerCase());
   }
 
   if (year && year !== "all") {
-    filtered = filtered.filter(a => String(a.year) === String(year));
+    filtered = filtered.filter((a) => String(a.year) === String(year));
   }
 
   if (search && search.trim()) {
     const q = search.toLowerCase().trim();
     filtered = filtered.filter(
-      a =>
+      (a) =>
         a.title.toLowerCase().includes(q) ||
         a.description.toLowerCase().includes(q) ||
         a.category.toLowerCase().includes(q)
@@ -376,7 +399,7 @@ export async function getGalleryAlbums({ category = "all", search = "", year = "
   }
 
   // Return album cards with optimized cover thumbnail URLs
-  return filtered.map(album => ({
+  return filtered.map((album) => ({
     id: album.id,
     slug: album.slug,
     title: album.title,
@@ -404,7 +427,7 @@ export async function getAlbumBySlug(slug) {
   }
 
   const all = _albumsCache || STATIC_ALBUMS;
-  const album = all.find(a => a.slug === slug || a.id === slug);
+  const album = all.find((a) => a.slug === slug || a.id === slug);
 
   if (!album) return null;
 
@@ -413,9 +436,10 @@ export async function getAlbumBySlug(slug) {
     id: photo.id || `photo-${index}`,
     title: photo.title || `${album.title} — Moment ${index + 1}`,
     description: photo.description || album.description,
-    thumbnailSrc: getCloudinaryThumbnail(photo.src),
-    fullSrc: getCloudinaryFullImage(photo.src),
-    rawSrc: photo.src,
+    thumbnailSrc: getCloudinaryThumbnail(photo.src || photo.thumbnailSrc || photo.rawSrc),
+    fullSrc: getCloudinaryFullImage(photo.src || photo.fullSrc || photo.rawSrc),
+    rawSrc: photo.rawSrc || photo.src || "",
+    src: photo.src || photo.rawSrc || "",
     width: photo.width || 1200,
     height: photo.height || 800,
     aspectRatio: photo.aspectRatio || "4/3",
@@ -506,15 +530,15 @@ export async function getRandomHighlightPhoto() {
   }
   const albums = _albumsCache || STATIC_ALBUMS;
   const allPhotos = [];
-  albums.forEach(alb => {
-    (alb.photos || []).forEach(p => {
+  albums.forEach((alb) => {
+    (alb.photos || []).forEach((p) => {
       allPhotos.push({
         ...p,
         albumTitle: alb.title,
         albumSlug: alb.slug,
         albumCategory: alb.category,
-        thumbnailSrc: getCloudinaryThumbnail(p.src),
-        fullSrc: getCloudinaryFullImage(p.src),
+        thumbnailSrc: getCloudinaryThumbnail(p.src || p.thumbnailSrc || p.rawSrc),
+        fullSrc: getCloudinaryFullImage(p.src || p.fullSrc || p.rawSrc),
       });
     });
   });
@@ -523,4 +547,3 @@ export async function getRandomHighlightPhoto() {
   const randomIndex = Math.floor(Math.random() * allPhotos.length);
   return allPhotos[randomIndex];
 }
-
