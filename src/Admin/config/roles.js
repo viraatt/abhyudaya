@@ -4,6 +4,15 @@ export const ROLES = {
   EVENT_ADMIN: "event_admin",
 };
 
+// Default landing page for each admin role.
+// Used by ProtectedRoute when an authenticated user is redirected
+// because they don't have access to the requested route.
+export const ROLE_HOME = {
+  [ROLES.SUPER_ADMIN]: "/admin/dashboard",
+  [ROLES.BLOG_ADMIN]: "/admin/blogs",
+  [ROLES.EVENT_ADMIN]: "/admin/events",
+};
+
 export const PERMISSIONS = {
   [ROLES.SUPER_ADMIN]: {
     dashboard: true,
