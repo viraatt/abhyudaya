@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import "./style/admin.css";
+import "./Gallery.css";
 import {
   getGalleryItems,
   addGalleryItem,
@@ -38,6 +39,7 @@ export default function Gallery() {
   const [photos, setPhotos] = useState([]); // [{ file?, src?, title, description, preview? }]
   const [slugTouched, setSlugTouched] = useState(false);
 
+  /* ── Data Loading ─────────────────────────────────────────── */
   const loadItems = async () => {
     try {
       setLoading(true);
@@ -55,6 +57,7 @@ export default function Gallery() {
     loadItems();
   }, []);
 
+  /* ── Form Reset ───────────────────────────────────────────── */
   const resetForm = () => {
     setFormData(EMPTY_FORM);
     setPhotos([]);
@@ -62,6 +65,7 @@ export default function Gallery() {
     setSlugTouched(false);
   };
 
+  /* ── Open Drawer ──────────────────────────────────────────── */
   const handleOpenDrawer = (item = null) => {
     if (item) {
       setEditingItem(item);
@@ -94,6 +98,7 @@ export default function Gallery() {
     setShowDrawer(true);
   };
 
+  /* ── Form Change Handlers ─────────────────────────────────── */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === "checkbox" ? checked : value;
@@ -131,6 +136,7 @@ export default function Gallery() {
     }));
   };
 
+  /* ── Photo Handlers ───────────────────────────────────────── */
   const handlePhotoFiles = (e) => {
     const files = Array.from(e.target.files || []);
     const newPhotos = files.map((file) => ({
@@ -170,6 +176,7 @@ export default function Gallery() {
     }));
   };
 
+  /* ── Submit ───────────────────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -215,6 +222,7 @@ export default function Gallery() {
     }
   };
 
+  /* ── Delete ───────────────────────────────────────────────── */
   const handleDelete = async (item) => {
     if (!window.confirm(`Delete album "${item.title}"? This cannot be undone.`)) return;
     try {
@@ -227,6 +235,7 @@ export default function Gallery() {
     }
   };
 
+  /* ── Filter Logic ─────────────────────────────────────────── */
   const categories = ["All", ...GALLERY_CATEGORIES];
   const statuses = ["All", "Published", "Draft"];
 
@@ -236,6 +245,25 @@ export default function Gallery() {
     return catMatch && statusMatch;
   });
 
+  /* ── Computed Stats ───────────────────────────────────────── */
+  const totalAlbums = items.length;
+  const publishedCount = items.filter((i) => i.status === "Published").length;
+  const draftCount = items.filter((i) => i.status === "Draft").length;
+  const featuredCount = items.filter((i) => i.featured).length;
+
+  /* ── Helpers ──────────────────────────────────────────────── */
+  const isCover = (photo) =>
+    formData.coverImage && formData.coverImage === (photo.src || photo.preview);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const [, , d] = dateStr.split("-");
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const [y, m] = dateStr.split("-");
+    return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1]} ${y}`;
+  };
+
+  /* ── Render ───────────────────────────────────────────────── */
   return (
     <div className="dashboard-layout">
       <Sidebar />
@@ -243,76 +271,72 @@ export default function Gallery() {
       <div className="dashboard-main">
         <Topbar />
 
-        <div className="dashboard-content">
-          {/* Header */}
-          <div className="events-header">
-            <div className="events-title">
-              <h2>🖼️ Gallery Album Management</h2>
-              <p>Create and manage photo albums for the public gallery.</p>
-            </div>
+        <div className="gm-page">
 
-            <button className="add-event-btn" onClick={() => handleOpenDrawer()}>
-              + Create Album
+          {/* ── Page Header ───────────────────────────────── */}
+          <div className="gm-page-header">
+            <div className="gm-page-header__left">
+              <h1>Gallery Management</h1>
+              <p>Manage event albums, photographs, and published gallery content.</p>
+            </div>
+            <button className="gm-btn-create" onClick={() => handleOpenDrawer()}>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+              </svg>
+              Create Album
             </button>
           </div>
 
-          {/* Cloudinary Free Plan Tip Banner */}
-          <div
-            style={{
-              background: "rgba(59, 130, 246, 0.1)",
-              border: "1px solid rgba(59, 130, 246, 0.3)",
-              borderRadius: "12px",
-              padding: "12px 16px",
-              marginBottom: "20px",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              color: "#93c5fd",
-              fontSize: "13px",
-              lineHeight: "1.5",
-            }}
-          >
-            <span style={{ fontSize: "20px" }}>💡</span>
-            <div>
-              <strong>Cloudinary Free Plan Optimization:</strong> Recommended photo dimensions are <strong>1600px–2400px</strong> (JPEG/WebP under 2 MB). This conserves your monthly 25 credits while ensuring sharp display on mobile & desktop displays.
+          {/* ── Stats Row ─────────────────────────────────── */}
+          <div className="gm-stats">
+            <div className="gm-stat">
+              <div className="gm-stat__value">{totalAlbums}</div>
+              <div className="gm-stat__label">Total Albums</div>
+            </div>
+            <div className="gm-stat gm-stat--green">
+              <div className="gm-stat__value">{publishedCount}</div>
+              <div className="gm-stat__label">Published</div>
+            </div>
+            <div className="gm-stat gm-stat--orange">
+              <div className="gm-stat__value">{draftCount}</div>
+              <div className="gm-stat__label">Drafts</div>
+            </div>
+            <div className="gm-stat gm-stat--gold">
+              <div className="gm-stat__value">{featuredCount}</div>
+              <div className="gm-stat__label">Featured</div>
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px" }}>
+          {/* ── Cloudinary Tip Banner ──────────────────────── */}
+          <div className="gm-info-banner">
+            <span className="gm-info-banner__icon">💡</span>
+            <div>
+              <strong>Cloudinary Free Plan:</strong> Recommended photo size is{" "}
+              <strong>1600–2400 px</strong> (JPEG/WebP under 2 MB). This conserves
+              monthly credits while ensuring sharp display on all devices.
+            </div>
+          </div>
+
+          {/* ── Toolbar: Category + Status Pills ──────────── */}
+          <div className="gm-toolbar">
+            <span className="gm-toolbar__label">Category</span>
             {categories.map((cat) => (
               <button
                 key={cat}
-                className="filter-btn"
-                style={{
-                  background: activeCategory === cat ? "#3b82f6" : "#1e293b",
-                  color: "#fff",
-                  border: "none",
-                  padding: "8px 16px",
-                  borderRadius: "20px",
-                  cursor: "pointer",
-                }}
+                className={`gm-pill gm-pill--cat${activeCategory === cat ? " gm-pill--active" : ""}`}
                 onClick={() => setActiveCategory(cat)}
               >
                 {cat}
               </button>
             ))}
-          </div>
 
-          {/* Status Filter Pills */}
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px" }}>
+            <div className="gm-toolbar__divider" />
+
+            <span className="gm-toolbar__label">Status</span>
             {statuses.map((st) => (
               <button
                 key={st}
-                className="filter-btn"
-                style={{
-                  background: activeStatus === st ? "#10b981" : "#1e293b",
-                  color: "#fff",
-                  border: "none",
-                  padding: "8px 16px",
-                  borderRadius: "20px",
-                  cursor: "pointer",
-                }}
+                className={`gm-pill${activeStatus === st ? " gm-pill--active" : ""}`}
                 onClick={() => setActiveStatus(st)}
               >
                 {st}
@@ -320,104 +344,112 @@ export default function Gallery() {
             ))}
           </div>
 
-          {/* Gallery Items Grid */}
+          {/* ── Album List ────────────────────────────────── */}
           {loading ? (
-            <div className="empty-card">
-              <h3>Loading Gallery Albums...</h3>
+            <div className="gm-loading">
+              <div className="gm-loading__spinner" />
+              Loading gallery albums…
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="empty-card">
-              <div style={{ fontSize: "70px" }}>🖼️</div>
+            <div className="gm-empty">
+              <span className="gm-empty__icon">🖼️</span>
               <h3>No Albums Found</h3>
               <p>Create photo albums to showcase in the public gallery.</p>
-              <button className="add-event-btn" onClick={() => handleOpenDrawer()}>
-                + Create Album
+              <button className="gm-btn-create" onClick={() => handleOpenDrawer()}>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{width:16,height:16,stroke:"#fff",strokeWidth:2.5}}>
+                  <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                </svg>
+                Create Album
               </button>
             </div>
           ) : (
-            <div className="events-grid">
+            <div className="gm-album-grid">
               {filteredItems.map((item) => (
-                <div className="event-card" key={item.id}>
-                  <img
-                    src={item.coverImage || (item.photos?.[0]?.src) || ""}
-                    alt={item.title}
-                    className="event-image"
-                    style={{ height: "220px", objectFit: "cover" }}
-                  />
+                <div className="gm-album-card" key={item.id}>
 
-                  <div className="event-body">
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          background: "rgba(59, 130, 246, 0.15)",
-                          color: "#60a5fa",
-                          padding: "3px 8px",
-                          borderRadius: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {item.category}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          background: item.status === "Published" ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
-                          color: item.status === "Published" ? "#34d399" : "#fbbf24",
-                          padding: "3px 8px",
-                          borderRadius: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {item.status}
-                      </span>
-                      {item.featured && (
+                  {/* Thumbnail */}
+                  <div className="gm-album-card__thumb">
+                    {item.coverImage || item.photos?.[0]?.src ? (
+                      <img
+                        src={item.coverImage || item.photos[0].src}
+                        alt={item.title}
+                      />
+                    ) : (
+                      <div className="gm-album-card__thumb-empty">🖼️</div>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="gm-album-card__body">
+                    <div className="gm-album-card__top">
+                      <div>
+                        <h3 className="gm-album-card__title">{item.title}</h3>
+                        {item.subtitle && (
+                          <p className="gm-album-card__subtitle">{item.subtitle}</p>
+                        )}
+                      </div>
+                      <div className="gm-album-card__badges">
+                        {item.featured && (
+                          <span className="gm-badge gm-badge--featured">⭐ Featured</span>
+                        )}
                         <span
-                          style={{
-                            fontSize: "12px",
-                            background: "rgba(245, 158, 11, 0.15)",
-                            color: "#fbbf24",
-                            padding: "3px 8px",
-                            borderRadius: "12px",
-                            fontWeight: "600",
-                          }}
+                          className={`gm-badge gm-badge--dot ${
+                            item.status === "Published"
+                              ? "gm-badge--published"
+                              : "gm-badge--draft"
+                          }`}
                         >
-                          ⭐ Featured
+                          {item.status}
                         </span>
-                      )}
+                      </div>
                     </div>
 
-                    <h3 style={{ marginTop: "10px", marginBottom: "4px" }}>
-                      {item.title}
-                    </h3>
-
-                    {item.date && (
-                      <small style={{ color: "#94a3b8" }}>
-                        {item.date} • {item.photos?.length || 0} photos
-                      </small>
-                    )}
+                    <div className="gm-album-card__meta">
+                      <span className="gm-badge gm-badge--category">{item.category}</span>
+                      {item.date && (
+                        <span className="gm-album-card__meta-item">
+                          📅 {formatDate(item.date)}
+                        </span>
+                      )}
+                      <span className="gm-album-card__meta-item">
+                        🖼 {item.photos?.length || 0} photo{item.photos?.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
 
                     {item.description && (
-                      <p style={{ fontSize: "13px", marginTop: "6px" }}>
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "var(--gm-muted)",
+                          margin: "4px 0 0",
+                          lineHeight: 1.5,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
                         {item.description}
                       </p>
                     )}
+                  </div>
 
-                    <div style={{ marginTop: "15px", display: "flex", gap: "8px" }}>
-                      <button
-                        className="filter-btn"
-                        style={{ background: "#3b82f6", color: "#fff" }}
-                        onClick={() => handleOpenDrawer(item)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="filter-btn"
-                        onClick={() => handleDelete(item)}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                  {/* Actions */}
+                  <div className="gm-album-card__actions">
+                    <button
+                      className="gm-btn-edit"
+                      onClick={() => handleOpenDrawer(item)}
+                      title="Edit album"
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      className="gm-btn-delete"
+                      onClick={() => handleDelete(item)}
+                      title="Delete album"
+                    >
+                      🗑 Delete
+                    </button>
                   </div>
                 </div>
               ))}
@@ -425,224 +457,322 @@ export default function Gallery() {
           )}
         </div>
 
-        {/* Album Drawer */}
+        {/* ════════════════════════════════════════════════════
+            ALBUM DRAWER
+            ════════════════════════════════════════════════════ */}
         {showDrawer && (
           <>
+            {/* Overlay */}
             <div
               className="drawer-overlay"
               onClick={() => setShowDrawer(false)}
             />
 
-            <div className="event-drawer" style={{ width: "min(720px, 100%)" }}>
-              <div className="drawer-header">
-                <h2>{editingItem ? "Edit Album" : "Create Album"}</h2>
+            {/* Drawer panel */}
+            <div className="gm-drawer">
+
+              {/* Header */}
+              <div className="gm-drawer__header">
+                <div className="gm-drawer__header-text">
+                  <h2>{editingItem ? "Edit Album" : "Create Album"}</h2>
+                  <p>
+                    {editingItem
+                      ? "Update album information and media."
+                      : "Build a new photo album for the public gallery."}
+                  </p>
+                </div>
                 <button
-                  className="close-btn"
+                  className="gm-drawer__close"
                   onClick={() => setShowDrawer(false)}
+                  aria-label="Close drawer"
                 >
                   ✕
                 </button>
               </div>
 
-              <form className="drawer-form" onSubmit={handleSubmit}>
-                {/* Album Information */}
-                <label>Album Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  placeholder="e.g. TechBloom 2.0"
-                  required
-                />
+              {/* Body — scrollable form */}
+              <form
+                className="gm-drawer__body"
+                onSubmit={handleSubmit}
+                id="gm-album-form"
+              >
 
-                <label>Subtitle</label>
-                <input
-                  type="text"
-                  name="subtitle"
-                  value={formData.subtitle}
-                  onChange={handleChange}
-                  placeholder="e.g. Flagship Technical Festival"
-                />
+                {/* ── Section 1: Album Information ─────────── */}
+                <div className="gm-section">
+                  <div className="gm-section__heading">Album Information</div>
 
-                <label>Slug</label>
-                <input
-                  type="text"
-                  name="slug"
-                  value={formData.slug}
-                  onChange={handleSlugChange}
-                  placeholder="auto-generated from title"
-                />
-                <small style={{ color: "#64748b", marginTop: "-8px", display: "block" }}>
-                  URL: /gallery/{formData.slug || "..."}
-                </small>
-
-                <label>Category</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  style={{
-                    padding: "10px",
-                    background: "#0f172a",
-                    border: "1px solid #334155",
-                    borderRadius: "8px",
-                    color: "#fff",
-                  }}
-                >
-                  {GALLERY_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <label>Date</label>
+                  <div className="gm-field">
+                    <label>
+                      Album Title
+                      <span className="gm-field__required"> *</span>
+                    </label>
                     <input
-                      type="date"
-                      name="date"
-                      value={formData.date}
+                      type="text"
+                      name="title"
+                      value={formData.title}
                       onChange={handleChange}
+                      placeholder="e.g. TechBloom 2.0"
+                      required
+                      autoFocus
                     />
                   </div>
-                  <div>
-                    <label>Year</label>
+
+                  <div className="gm-field">
+                    <label>Subtitle</label>
                     <input
-                      type="number"
-                      name="year"
-                      value={formData.year}
-                      onChange={handleYearChange}
-                      min="2000"
-                      max="2100"
+                      type="text"
+                      name="subtitle"
+                      value={formData.subtitle}
+                      onChange={handleChange}
+                      placeholder="e.g. Flagship Technical Festival"
+                    />
+                  </div>
+
+                  <div className="gm-field">
+                    <label>Slug</label>
+                    <input
+                      type="text"
+                      name="slug"
+                      value={formData.slug}
+                      onChange={handleSlugChange}
+                      placeholder="auto-generated from title"
+                    />
+                    {formData.slug && (
+                      <span className="gm-field__url-preview">
+                        /gallery/{formData.slug}
+                      </span>
+                    )}
+                    {!formData.slug && (
+                      <span className="gm-field__hint">
+                        Leave blank to auto-generate from title
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Section 2: Classification ─────────────── */}
+                <div className="gm-section">
+                  <div className="gm-section__heading">Classification</div>
+
+                  <div className="gm-field">
+                    <label>Category</label>
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                    >
+                      {GALLERY_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="gm-field-row">
+                    <div className="gm-field">
+                      <label>Date</label>
+                      <input
+                        type="date"
+                        name="date"
+                        value={formData.date}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="gm-field">
+                      <label>Year</label>
+                      <input
+                        type="number"
+                        name="year"
+                        value={formData.year}
+                        onChange={handleYearChange}
+                        min="2000"
+                        max="2100"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Section 3: Description ────────────────── */}
+                <div className="gm-section">
+                  <div className="gm-section__heading">Description</div>
+
+                  <div className="gm-field">
+                    <label>Description</label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="Details about this event album…"
+                      rows={4}
                     />
                   </div>
                 </div>
 
-                <label>Description</label>
-                <textarea
-                  rows="3"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Details about this event album"
-                />
+                {/* ── Section 4: Publishing ─────────────────── */}
+                <div className="gm-section">
+                  <div className="gm-section__heading">Publishing</div>
 
-                <div style={{ display: "flex", gap: "20px", marginTop: "10px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      name="featured"
-                      checked={formData.featured}
-                      onChange={handleChange}
-                    />
-                    ⭐ Featured Album
-                  </label>
-
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      name="status"
-                      checked={formData.status === "Published"}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          status: e.target.checked ? "Published" : "Draft",
-                        }))
-                      }
-                    />
-                    Published
-                  </label>
-                </div>
-
-                {/* Photos */}
-                <label style={{ marginTop: "20px" }}>Photos *</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoFiles}
-                />
-                <small style={{ color: "#64748b", marginTop: "-8px", display: "block" }}>
-                  You can select multiple images at once. Images only.
-                </small>
-
-                {photos.length > 0 && (
-                  <div style={{ marginTop: "15px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {photos.map((photo, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          display: "flex",
-                          gap: "12px",
-                          background: "#0f172a",
-                          border: "1px solid #334155",
-                          borderRadius: "8px",
-                          padding: "10px",
-                          alignItems: "center",
-                        }}
-                      >
-                        <img
-                          src={photo.preview || photo.src}
-                          alt={photo.title || `Photo ${index + 1}`}
-                          style={{ width: "80px", height: "60px", objectFit: "cover", borderRadius: "6px" }}
-                        />
-                        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <input
-                            type="text"
-                            value={photo.title}
-                            onChange={(e) => handlePhotoChange(index, "title", e.target.value)}
-                            placeholder="Photo title"
-                            style={{ padding: "6px", background: "#1e293b", border: "1px solid #334155", borderRadius: "6px", color: "#fff" }}
-                          />
-                          <input
-                            type="text"
-                            value={photo.description}
-                            onChange={(e) => handlePhotoChange(index, "description", e.target.value)}
-                            placeholder="Photo description (optional)"
-                            style={{ padding: "6px", background: "#1e293b", border: "1px solid #334155", borderRadius: "6px", color: "#fff" }}
-                          />
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <button
-                            type="button"
-                            className="filter-btn"
-                            style={{
-                              background: formData.coverImage === (photo.src || photo.preview) ? "#10b981" : "#1e293b",
-                              color: "#fff",
-                              fontSize: "11px",
-                              padding: "4px 8px",
-                            }}
-                            onClick={() => handleSetCover(index)}
-                          >
-                            {formData.coverImage === (photo.src || photo.preview) ? "✓ Cover" : "Set Cover"}
-                          </button>
-                          <button
-                            type="button"
-                            className="filter-btn"
-                            style={{ background: "#ef4444", color: "#fff", fontSize: "11px", padding: "4px 8px" }}
-                            onClick={() => handleRemovePhoto(index)}
-                          >
-                            Remove
-                          </button>
-                        </div>
+                  <div className="gm-toggle-group">
+                    {/* Featured toggle */}
+                    <div className="gm-toggle-row">
+                      <div className="gm-toggle-row__info">
+                        <h4>⭐ Featured Album</h4>
+                        <p>Highlight this album on the public gallery homepage.</p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <label className="gm-switch">
+                        <input
+                          type="checkbox"
+                          name="featured"
+                          checked={formData.featured}
+                          onChange={handleChange}
+                        />
+                        <span className="gm-switch__track" />
+                      </label>
+                    </div>
 
+                    {/* Published toggle */}
+                    <div className="gm-toggle-row">
+                      <div className="gm-toggle-row__info">
+                        <h4>● Published</h4>
+                        <p>Make this album visible to visitors on the public gallery.</p>
+                      </div>
+                      <label className="gm-switch">
+                        <input
+                          type="checkbox"
+                          name="status"
+                          checked={formData.status === "Published"}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              status: e.target.checked ? "Published" : "Draft",
+                            }))
+                          }
+                        />
+                        <span className="gm-switch__track" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Section 5: Photos ─────────────────────── */}
+                <div className="gm-section">
+                  <div className="gm-section__heading">
+                    Photos
+                    <span className="gm-field__required" style={{textTransform:"none",letterSpacing:0,fontSize:13,marginLeft:-4}}> *</span>
+                  </div>
+
+                  {/* Upload Zone */}
+                  <div className="gm-upload-zone">
+                    <input
+                      className="gm-upload-zone__input"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoFiles}
+                      title="Select photos to upload"
+                    />
+                    <span className="gm-upload-zone__icon">📷</span>
+                    <h4>Drag & drop photos here</h4>
+                    <p>
+                      or{" "}
+                      <span className="gm-upload-zone__browse">browse from your computer</span>
+                    </p>
+                    <div className="gm-upload-zone__formats">
+                      JPG · PNG · WEBP · GIF
+                    </div>
+                  </div>
+
+                  {/* Photo Grid */}
+                  {photos.length > 0 && (
+                    <div className="gm-photo-grid">
+                      {photos.map((photo, index) => {
+                        const coverPhoto = isCover(photo);
+                        return (
+                          <div
+                            key={index}
+                            className={`gm-photo-item${coverPhoto ? " gm-photo-item--cover" : ""}`}
+                          >
+                            {/* Thumbnail */}
+                            <div className="gm-photo-item__thumb">
+                              <img
+                                src={photo.preview || photo.src}
+                                alt={photo.title || `Photo ${index + 1}`}
+                              />
+                              {coverPhoto && (
+                                <span className="gm-photo-item__cover-badge">Cover</span>
+                              )}
+                            </div>
+
+                            {/* Title & Description inputs */}
+                            <div className="gm-photo-item__body">
+                              <input
+                                type="text"
+                                value={photo.title}
+                                onChange={(e) =>
+                                  handlePhotoChange(index, "title", e.target.value)
+                                }
+                                placeholder="Photo title"
+                              />
+                              <input
+                                type="text"
+                                value={photo.description}
+                                onChange={(e) =>
+                                  handlePhotoChange(index, "description", e.target.value)
+                                }
+                                placeholder="Description (optional)"
+                              />
+                            </div>
+
+                            {/* Set Cover / Remove */}
+                            <div className="gm-photo-item__actions">
+                              <button
+                                type="button"
+                                className={`gm-photo-btn gm-photo-btn--cover${coverPhoto ? " is-cover" : ""}`}
+                                onClick={() => handleSetCover(index)}
+                                title={coverPhoto ? "This is the cover" : "Set as album cover"}
+                              >
+                                {coverPhoto ? "✓ Cover" : "Set Cover"}
+                              </button>
+                              <button
+                                type="button"
+                                className="gm-photo-btn gm-photo-btn--remove"
+                                onClick={() => handleRemovePhoto(index)}
+                                title="Remove photo"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+              </form>
+
+              {/* ── Sticky Footer ─────────────────────────── */}
+              <div className="gm-drawer__footer">
                 <button
-                  className="add-event-btn"
-                  type="submit"
-                  disabled={saving}
-                  style={{ marginTop: "20px" }}
+                  type="button"
+                  className="gm-btn-cancel"
+                  onClick={() => setShowDrawer(false)}
                 >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  form="gm-album-form"
+                  className="gm-btn-save"
+                  disabled={saving}
+                >
+                  {saving && <span className="gm-btn-save__spinner" />}
                   {saving
-                    ? "Saving..."
+                    ? "Saving…"
                     : editingItem
-                    ? "Update Album"
+                    ? "Save Changes"
                     : "Create Album"}
                 </button>
-              </form>
+              </div>
             </div>
           </>
         )}
