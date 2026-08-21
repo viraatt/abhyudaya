@@ -19,7 +19,7 @@ import {
 } from "react-icons/fa";
 import { db } from "../../Firebase/firebase";
 import {
-  getEvents,
+  getAllEvents,
   updateEvent,
   deleteEvent,
   createEvent,
@@ -100,7 +100,7 @@ export default function EventManager() {
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getEvents();
+      const data = await getAllEvents();
       setEvents(data);
 
       // Fetch registration counts for each event (lightweight)

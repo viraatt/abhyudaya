@@ -174,6 +174,23 @@ export async function getEventsPage(options = {}) {
   }
 }
 
+/**
+ * Fetches ALL events (regardless of status) for the Admin panel.
+ * No pagination limit — the Admin Event Manager must see the complete collection.
+ */
+export async function getAllEvents() {
+  try {
+    const q = query(eventsRef, orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(formatEventDoc);
+  } catch (err) {
+    console.warn("getAllEvents fallback query:", err);
+    // Fallback without orderBy (avoids needing a single-field index on createdAt)
+    const snapshot = await getDocs(eventsRef);
+    return snapshot.docs.map(formatEventDoc);
+  }
+}
+
 export async function getEvents(options = {}) {
   const { pageSize = 6, lastDoc = null, onlyPublished = true, allowFallback = false } = options;
   const res = await getEventsPage({ pageSize, lastDoc, onlyPublished });
