@@ -209,10 +209,16 @@ export default function Home() {
           <div className="wrap">
             <div className="featured">
               <div className="featured__text">
-                <p className="eyebrow">{featured.kind}</p>
+                <p className="eyebrow featured__eyebrow">
+                  Abhyudaya • Signature Event · 2026
+                </p>
                 <h2>{featured.name}</h2>
+                <p className="featured__tagline">Ideas. Innovation. Flight.</p>
                 <p className="featured__summary">{featured.detail}</p>
-                <Link to="/events" className="link-arrow link-arrow--light">
+                <Link
+                  to="/events"
+                  className="link-arrow link-arrow--light featured__cta"
+                >
                   See all events <span aria-hidden="true">&rarr;</span>
                 </Link>
               </div>
