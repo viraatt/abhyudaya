@@ -139,6 +139,18 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // GALLERY META
+    // Tracks permanently deleted static album IDs so they never
+    // reappear from the STATIC_ALBUMS fallback.
+    // Public: read (needed to filter deleted static albums).
+    // Admins: read + write.
+    // ============================================================
+    match /gallery_meta/{metaId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin', 'blog_admin']);
+    }
+
+    // ============================================================
     // EVENT REVIEWS
     // Public: read approved reviews + submit review.
     // Admins: manage reviews.

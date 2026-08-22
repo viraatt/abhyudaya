@@ -11,6 +11,7 @@ import {
   query,
   orderBy,
   where,
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "../../../Firebase/firebase";
 import { uploadImage } from "./imageUpload";
@@ -18,6 +19,7 @@ import { slugify, yearFromDate, normalizeCategory } from "../../../utils/gallery
 import { STATIC_ALBUMS } from "../../../data/staticGalleryAlbums";
 
 const galleryRef = collection(db, "gallery");
+const galleryMetaRef = doc(db, "gallery_meta", "deleted_static_albums");
 
 /**
  * Fetch all gallery album documents (admin view — includes Drafts).
@@ -28,14 +30,28 @@ export async function getGalleryItems() {
     const snapshot = await getDocs(q);
     const dbItems = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+    // Fetch the list of deleted static album IDs from the metadata doc.
+    let deletedStaticIds = [];
+    try {
+      const metaSnap = await getDoc(galleryMetaRef);
+      if (metaSnap.exists()) {
+        deletedStaticIds = Array.isArray(metaSnap.data().ids) ? metaSnap.data().ids : [];
+      }
+    } catch (err) {
+      console.warn("Failed to read deleted static albums metadata:", err);
+    }
+
     // If Firestore has zero albums, fall back to STATIC_ALBUMS
     // so the Admin Panel shows the same albums as the public Gallery.
+    // Exclude any static albums that have been permanently deleted.
     if (dbItems.length === 0) {
-      return STATIC_ALBUMS.map((album) => ({
-        ...album,
-        id: album.id || album.slug,
-        status: "Published",
-      }));
+      return STATIC_ALBUMS
+        .filter((album) => !deletedStaticIds.includes(album.id) && !deletedStaticIds.includes(album.slug))
+        .map((album) => ({
+          ...album,
+          id: album.id || album.slug,
+          status: "Published",
+        }));
     }
 
     return dbItems;
@@ -211,6 +227,23 @@ export async function updateGalleryItem(id, data) {
       updatedAt: serverTimestamp(),
     });
   } else {
+    // Check if this static album has been permanently deleted.
+    const staticAlbum = STATIC_ALBUMS.find((a) => a.id === id || a.slug === id);
+    if (staticAlbum) {
+      let deletedStaticIds = [];
+      try {
+        const metaSnap = await getDoc(galleryMetaRef);
+        if (metaSnap.exists()) {
+          deletedStaticIds = Array.isArray(metaSnap.data().ids) ? metaSnap.data().ids : [];
+        }
+      } catch (err) {
+        console.warn("Failed to read deleted static albums metadata:", err);
+      }
+      const albumId = staticAlbum.id || staticAlbum.slug;
+      if (deletedStaticIds.includes(albumId)) {
+        throw new Error("This album has been deleted and cannot be modified.");
+      }
+    }
     await setDoc(itemRef, {
       ...albumData,
       createdAt: serverTimestamp(),
@@ -226,10 +259,32 @@ export async function updateGalleryItem(id, data) {
 export async function deleteGalleryItem(id) {
   const itemRef = doc(db, "gallery", id);
   const snap = await getDoc(itemRef);
-  // Only delete if the document exists in Firestore.
-  // Static albums (not yet in Firestore) are simply ignored.
+
   if (snap.exists()) {
+    // Case 3: Normal Firestore album — delete the document.
     await deleteDoc(itemRef);
+    return;
+  }
+
+  // Case 1 & 2: Static album (not in Firestore, or was deleted from Firestore).
+  // Persist the deleted static album ID so it never reappears from STATIC_ALBUMS.
+  const staticAlbum = STATIC_ALBUMS.find((a) => a.id === id || a.slug === id);
+  if (staticAlbum) {
+    const albumId = staticAlbum.id || staticAlbum.slug;
+    try {
+      const metaSnap = await getDoc(galleryMetaRef);
+      if (metaSnap.exists()) {
+        const existing = Array.isArray(metaSnap.data().ids) ? metaSnap.data().ids : [];
+        if (!existing.includes(albumId)) {
+          await updateDoc(galleryMetaRef, { ids: arrayUnion(albumId) });
+        }
+      } else {
+        await setDoc(galleryMetaRef, { ids: [albumId] });
+      }
+    } catch (err) {
+      console.error("Failed to persist deleted static album:", err);
+      throw err;
+    }
   }
 }
 
@@ -263,6 +318,21 @@ export async function addPhotosToAlbum(id, newPhotoEntries) {
     // If so, create the album in Firestore with the static data + new photos.
     const staticAlbum = STATIC_ALBUMS.find((a) => a.id === id || a.slug === id);
     if (staticAlbum) {
+      // Check if this static album has been permanently deleted.
+      let deletedStaticIds = [];
+      try {
+        const metaSnap = await getDoc(galleryMetaRef);
+        if (metaSnap.exists()) {
+          deletedStaticIds = Array.isArray(metaSnap.data().ids) ? metaSnap.data().ids : [];
+        }
+      } catch (err) {
+        console.warn("Failed to read deleted static albums metadata:", err);
+      }
+      const albumId = staticAlbum.id || staticAlbum.slug;
+      if (deletedStaticIds.includes(albumId)) {
+        throw new Error("This album has been deleted and cannot be modified.");
+      }
+
       existingData = {
         slug: staticAlbum.slug || staticAlbum.id,
         title: staticAlbum.title || "Untitled Album",
