@@ -10,6 +10,8 @@ import {
   yearFromDate,
 } from "../utils/galleryConstants.js";
 import { STATIC_ALBUMS } from "../data/staticGalleryAlbums.js";
+import { db } from "../Firebase/firebase.js";
+import { doc, getDoc } from "firebase/firestore";
 
 // Vite asset imports for local images used in editorial moments & hero collage
 import techBloomCover from "../assets/9ae3f21a-b6bf-4115-8c6b-a44b01f95bf9.jpg";
@@ -66,17 +68,32 @@ function normalizeFirestoreAlbum(doc) {
 async function fetchPublishedAlbums() {
   const dbItems = await getPublishedGalleryItems();
 
+  // Fetch the list of deleted static album IDs from the metadata doc.
+  let deletedStaticIds = [];
+  try {
+    const metaRef = doc(db, "gallery_meta", "deleted_static_albums");
+    const metaSnap = await getDoc(metaRef);
+    if (metaSnap.exists()) {
+      deletedStaticIds = Array.isArray(metaSnap.data().ids) ? metaSnap.data().ids : [];
+    }
+  } catch (err) {
+    console.warn("Failed to read deleted static albums metadata:", err);
+  }
+
   // Firestore has albums → Firestore is the source of truth
   if (Array.isArray(dbItems) && dbItems.length > 0) {
     return dbItems.map(normalizeFirestoreAlbum);
   }
 
   // Firestore has zero albums → optional STATIC_ALBUMS fallback
-  return STATIC_ALBUMS.map((album) => ({
-    ...album,
-    category: normalizeCategory(album.category),
-    date: formatDisplayDate(album.date),
-  }));
+  // Exclude any static albums that have been permanently deleted.
+  return STATIC_ALBUMS
+    .filter((album) => !deletedStaticIds.includes(album.id) && !deletedStaticIds.includes(album.slug))
+    .map((album) => ({
+      ...album,
+      category: normalizeCategory(album.category),
+      date: formatDisplayDate(album.date),
+    }));
 }
 
 /**
@@ -149,7 +166,21 @@ export async function getAlbumBySlug(slug) {
     await getGalleryAlbums();
   }
 
-  const all = _albumsCache || STATIC_ALBUMS;
+  // Fetch deleted static album IDs to filter them out of the fallback
+  let deletedStaticIds = [];
+  try {
+    const metaRef = doc(db, "gallery_meta", "deleted_static_albums");
+    const metaSnap = await getDoc(metaRef);
+    if (metaSnap.exists()) {
+      deletedStaticIds = Array.isArray(metaSnap.data().ids) ? metaSnap.data().ids : [];
+    }
+  } catch (err) {
+    console.warn("Failed to read deleted static albums metadata:", err);
+  }
+
+  const all = _albumsCache || STATIC_ALBUMS.filter(
+    (album) => !deletedStaticIds.includes(album.id) && !deletedStaticIds.includes(album.slug)
+  );
   const album = all.find((a) => a.slug === slug || a.id === slug);
 
   if (!album) return null;
@@ -251,7 +282,22 @@ export async function getRandomHighlightPhoto() {
   if (!_albumsCache) {
     await getGalleryAlbums();
   }
-  const albums = _albumsCache || STATIC_ALBUMS;
+
+  // Fetch deleted static album IDs to filter them out of the fallback
+  let deletedStaticIds = [];
+  try {
+    const metaRef = doc(db, "gallery_meta", "deleted_static_albums");
+    const metaSnap = await getDoc(metaRef);
+    if (metaSnap.exists()) {
+      deletedStaticIds = Array.isArray(metaSnap.data().ids) ? metaSnap.data().ids : [];
+    }
+  } catch (err) {
+    console.warn("Failed to read deleted static albums metadata:", err);
+  }
+
+  const albums = _albumsCache || STATIC_ALBUMS.filter(
+    (album) => !deletedStaticIds.includes(album.id) && !deletedStaticIds.includes(album.slug)
+  );
   const allPhotos = [];
   albums.forEach((alb) => {
     (alb.photos || []).forEach((p) => {
