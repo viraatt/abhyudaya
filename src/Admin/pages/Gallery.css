@@ -1380,7 +1380,8 @@
   }
 
   .gm-btn-edit,
-  .gm-btn-delete {
+  .gm-btn-delete,
+  .gm-btn-add-photos {
     width: auto;
     flex: none;
     padding: 0 14px;
@@ -1431,5 +1432,302 @@
 
   .gm-photo-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ADD PHOTOS BUTTON (album card)
+   ══════════════════════════════════════════════════════════════ */
+.gm-btn-add-photos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--gm-radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+  white-space: nowrap;
+  width: 100%;
+  font-family: Inter, "Segoe UI", sans-serif;
+  background: var(--gm-gold-bg);
+  color: var(--gm-gold);
+  border-color: var(--gm-gold-border);
+}
+
+.gm-btn-add-photos:hover {
+  background: var(--gm-gold);
+  border-color: var(--gm-gold);
+  color: #fff;
+}
+
+.gm-btn-add-photos svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ADD PHOTOS MODAL
+   ══════════════════════════════════════════════════════════════ */
+.gm-add-photos-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 92vw);
+  max-height: 88vh;
+  background: #fff;
+  border-radius: var(--gm-radius-lg);
+  box-shadow: var(--gm-shadow-lg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: gm-modal-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes gm-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ── Modal Header ── */
+.gm-add-photos-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--gm-border);
+  flex-shrink: 0;
+}
+
+.gm-add-photos-modal__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.gm-add-photos-modal__header-text h2 {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--gm-text);
+  margin: 0 0 4px;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+  font-family: Inter, "Segoe UI", sans-serif;
+  word-break: break-word;
+}
+
+.gm-add-photos-modal__header-text p {
+  font-size: 12.5px;
+  color: var(--gm-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Modal Body ── */
+.gm-add-photos-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gm-add-photos-modal__body::-webkit-scrollbar { width: 5px; }
+.gm-add-photos-modal__body::-webkit-scrollbar-track { background: transparent; }
+.gm-add-photos-modal__body::-webkit-scrollbar-thumb {
+  background: var(--gm-border);
+  border-radius: 10px;
+}
+
+/* ── Upload Zone (reuse .gm-upload-zone) ── */
+.gm-add-photos-zone {
+  padding: 28px 20px;
+}
+
+/* ── Selected Files Preview ── */
+.gm-add-photos-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gm-add-photos-preview__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gm-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gm-add-photos-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.gm-add-photos-preview__item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--gm-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--gm-border);
+  background: var(--gm-surface);
+}
+
+.gm-add-photos-preview__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gm-add-photos-preview__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.75);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+  padding: 0;
+}
+
+.gm-add-photos-preview__remove:hover {
+  background: var(--gm-danger);
+}
+
+.gm-add-photos-preview__remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Upload Progress ── */
+.gm-upload-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gm-upload-progress__bar {
+  width: 100%;
+  height: 6px;
+  background: var(--gm-border-soft);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.gm-upload-progress__fill {
+  height: 100%;
+  background: var(--gm-gold);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.gm-upload-progress__text {
+  font-size: 12px;
+  color: var(--gm-muted);
+  font-weight: 600;
+}
+
+/* ── Success / Error Message ── */
+.gm-upload-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: var(--gm-radius);
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.gm-upload-message--success {
+  background: var(--gm-success-bg);
+  color: var(--gm-success);
+  border: 1px solid var(--gm-success-border);
+}
+
+.gm-upload-message--error {
+  background: var(--gm-danger-bg);
+  color: var(--gm-danger);
+  border: 1px solid #fecaca;
+}
+
+/* ── Modal Footer ── */
+.gm-add-photos-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 24px;
+  border-top: 1px solid var(--gm-border);
+  background: #fff;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .gm-add-photos-modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+    animation: gm-modal-slide-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes gm-modal-slide-up {
+    from { transform: translateY(100%); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .gm-add-photos-modal__header {
+    padding: 16px;
+  }
+
+  .gm-add-photos-modal__body {
+    padding: 16px;
+  }
+
+  .gm-add-photos-modal__footer {
+    padding: 12px 16px;
+  }
+
+  .gm-add-photos-preview__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .gm-add-photos-preview__grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

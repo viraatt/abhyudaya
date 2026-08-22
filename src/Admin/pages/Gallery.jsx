@@ -8,6 +8,7 @@ import {
   addGalleryItem,
   updateGalleryItem,
   deleteGalleryItem,
+  addPhotosToAlbum,
 } from "./services/galleryService";
 import { invalidateGalleryCache } from "../../services/galleryAlbumsService";
 import { GALLERY_CATEGORIES, slugify, yearFromDate } from "../../utils/galleryConstants";
@@ -39,6 +40,14 @@ export default function Gallery() {
   const [photos, setPhotos] = useState([]); // [{ file?, src?, title, description, preview? }]
   const [slugTouched, setSlugTouched] = useState(false);
 
+  // ── Add Photos Modal State ──────────────────────────────────
+  const [addPhotosAlbum, setAddPhotosAlbum] = useState(null); // album object or null
+  const [newPhotoFiles, setNewPhotoFiles] = useState([]); // [{ file, preview }]
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState(null); // { type: 'success'|'error', text }
+  const [dragOver, setDragOver] = useState(false);
+
   /* ── Data Loading ─────────────────────────────────────────── */
   const loadItems = async () => {
     try {
@@ -69,12 +78,29 @@ export default function Gallery() {
   const handleOpenDrawer = (item = null) => {
     if (item) {
       setEditingItem(item);
+      // Normalize date: static albums use "16 February 2026" format,
+      // Firestore albums use "YYYY-MM-DD" format.
+      let dateValue = item.date || new Date().toISOString().split("T")[0];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        // Try to convert "16 February 2026" → "2026-02-16"
+        const months = {
+          january: "01", february: "02", march: "03", april: "04",
+          may: "05", june: "06", july: "07", august: "08",
+          september: "09", october: "10", november: "11", december: "12",
+        };
+        const match = String(dateValue).match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+        if (match) {
+          const [, day, monthName, year] = match;
+          const month = months[monthName.toLowerCase()] || "01";
+          dateValue = `${year}-${month}-${String(day).padStart(2, "0")}`;
+        }
+      }
       setFormData({
         title: item.title || "",
         subtitle: item.subtitle || "",
         category: item.category || "Festivals",
-        date: item.date || new Date().toISOString().split("T")[0],
-        year: item.year || yearFromDate(item.date),
+        date: dateValue,
+        year: item.year || yearFromDate(dateValue),
         description: item.description || "",
         slug: item.slug || "",
         featured: Boolean(item.featured),
@@ -235,6 +261,122 @@ export default function Gallery() {
     }
   };
 
+  /* ── Add Photos Modal ─────────────────────────────────────── */
+  const handleOpenAddPhotos = (item) => {
+    setAddPhotosAlbum(item);
+    setNewPhotoFiles([]);
+    setUploadProgress(0);
+    setUploadMessage(null);
+    setDragOver(false);
+  };
+
+  const handleCloseAddPhotos = () => {
+    if (uploading) return; // prevent closing while uploading
+    // Clean up object URLs
+    newPhotoFiles.forEach((p) => {
+      if (p.preview?.startsWith("blob:")) URL.revokeObjectURL(p.preview);
+    });
+    setAddPhotosAlbum(null);
+    setNewPhotoFiles([]);
+    setUploadProgress(0);
+    setUploadMessage(null);
+    setDragOver(false);
+  };
+
+  const handleAddPhotoFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter((f) => f.type.startsWith("image/"));
+    const invalidCount = files.length - validFiles.length;
+    if (invalidCount > 0) {
+      setUploadMessage({
+        type: "error",
+        text: `${invalidCount} file${invalidCount > 1 ? "s were" : " was"} skipped — only image files are allowed.`,
+      });
+    }
+    const newEntries = validFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setNewPhotoFiles((prev) => [...prev, ...newEntries]);
+    setUploadMessage(null);
+    e.target.value = "";
+  };
+
+  const handleRemoveNewPhoto = (index) => {
+    setNewPhotoFiles((prev) => {
+      const next = [...prev];
+      if (next[index]?.preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(next[index].preview);
+      }
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer?.files || []);
+    const validFiles = files.filter((f) => f.type.startsWith("image/"));
+    const invalidCount = files.length - validFiles.length;
+    if (invalidCount > 0) {
+      setUploadMessage({
+        type: "error",
+        text: `${invalidCount} file${invalidCount > 1 ? "s were" : " was"} skipped — only image files are allowed.`,
+      });
+    }
+    const newEntries = validFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setNewPhotoFiles((prev) => [...prev, ...newEntries]);
+    setUploadMessage(null);
+  };
+
+  const handleUploadPhotos = async () => {
+    if (!addPhotosAlbum) return;
+    if (newPhotoFiles.length === 0) {
+      setUploadMessage({ type: "error", text: "Please select at least one image to upload." });
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadMessage(null);
+
+    try {
+      const entries = newPhotoFiles.map((p) => ({ file: p.file }));
+      const result = await addPhotosToAlbum(addPhotosAlbum.id, entries);
+      setUploadProgress(100);
+      setUploadMessage({
+        type: "success",
+        text: `Successfully added ${result.addedCount} photo${result.addedCount !== 1 ? "s" : ""} to "${addPhotosAlbum.title}". Album now has ${result.totalCount} photo${result.totalCount !== 1 ? "s" : ""}.`,
+      });
+      invalidateGalleryCache();
+      await loadItems();
+      // Clear selected files after success
+      newPhotoFiles.forEach((p) => {
+        if (p.preview?.startsWith("blob:")) URL.revokeObjectURL(p.preview);
+      });
+      setNewPhotoFiles([]);
+    } catch (err) {
+      console.error(err);
+      setUploadMessage({ type: "error", text: err.message || "Upload failed. Please try again." });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   /* ── Filter Logic ─────────────────────────────────────────── */
   const categories = ["All", ...GALLERY_CATEGORIES];
   const statuses = ["All", "Published", "Draft"];
@@ -257,10 +399,14 @@ export default function Gallery() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
-    const [, , d] = dateStr.split("-");
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const [y, m] = dateStr.split("-");
-    return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1]} ${y}`;
+    // Handle "YYYY-MM-DD" format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split("-");
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1]} ${y}`;
+    }
+    // Handle "16 February 2026" format (static albums)
+    return String(dateStr);
   };
 
   /* ── Render ───────────────────────────────────────────────── */
@@ -436,6 +582,13 @@ export default function Gallery() {
 
                   {/* Actions */}
                   <div className="gm-album-card__actions">
+                    <button
+                      className="gm-btn-add-photos"
+                      onClick={() => handleOpenAddPhotos(item)}
+                      title={`Add photos to "${item.title}"`}
+                    >
+                      📷 Add Photos
+                    </button>
                     <button
                       className="gm-btn-edit"
                       onClick={() => handleOpenDrawer(item)}
@@ -771,6 +924,141 @@ export default function Gallery() {
                     : editingItem
                     ? "Save Changes"
                     : "Create Album"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ════════════════════════════════════════════════════
+            ADD PHOTOS MODAL
+            ════════════════════════════════════════════════════ */}
+        {addPhotosAlbum && (
+          <>
+            {/* Overlay */}
+            <div
+              className="drawer-overlay"
+              onClick={handleCloseAddPhotos}
+            />
+
+            {/* Modal panel */}
+            <div className="gm-add-photos-modal">
+              {/* Header */}
+              <div className="gm-add-photos-modal__header">
+                <div className="gm-add-photos-modal__header-text">
+                  <h2>Add Photos to "{addPhotosAlbum.title}"</h2>
+                  <p>
+                    {addPhotosAlbum.photos?.length || 0} existing photo
+                    {addPhotosAlbum.photos?.length !== 1 ? "s" : ""} — new uploads will be appended.
+                  </p>
+                </div>
+                <button
+                  className="gm-drawer__close"
+                  onClick={handleCloseAddPhotos}
+                  aria-label="Close modal"
+                  disabled={uploading}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="gm-add-photos-modal__body">
+                {/* Upload Zone */}
+                <div
+                  className={`gm-upload-zone gm-add-photos-zone${dragOver ? " gm-upload-zone--dragover" : ""}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <input
+                    className="gm-upload-zone__input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleAddPhotoFiles}
+                    title="Select photos to upload"
+                    disabled={uploading}
+                  />
+                  <span className="gm-upload-zone__icon">📷</span>
+                  <h4>Drag & drop images here</h4>
+                  <p>
+                    or{" "}
+                    <span className="gm-upload-zone__browse">browse from your computer</span>
+                  </p>
+                  <div className="gm-upload-zone__formats">
+                    JPG · PNG · WEBP · GIF
+                  </div>
+                </div>
+
+                {/* Selected files preview */}
+                {newPhotoFiles.length > 0 && (
+                  <div className="gm-add-photos-preview">
+                    <div className="gm-add-photos-preview__label">
+                      Selected ({newPhotoFiles.length})
+                    </div>
+                    <div className="gm-add-photos-preview__grid">
+                      {newPhotoFiles.map((p, index) => (
+                        <div className="gm-add-photos-preview__item" key={index}>
+                          <img src={p.preview} alt={`Selected ${index + 1}`} />
+                          <button
+                            type="button"
+                            className="gm-add-photos-preview__remove"
+                            onClick={() => handleRemoveNewPhoto(index)}
+                            title="Remove"
+                            disabled={uploading}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload progress */}
+                {uploading && (
+                  <div className="gm-upload-progress">
+                    <div className="gm-upload-progress__bar">
+                      <div
+                        className="gm-upload-progress__fill"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <span className="gm-upload-progress__text">
+                      Uploading photos… {uploadProgress}%
+                    </span>
+                  </div>
+                )}
+
+                {/* Success / Error message */}
+                {uploadMessage && (
+                  <div
+                    className={`gm-upload-message gm-upload-message--${uploadMessage.type}`}
+                  >
+                    {uploadMessage.type === "success" ? "✅" : "⚠️"} {uploadMessage.text}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="gm-add-photos-modal__footer">
+                <button
+                  type="button"
+                  className="gm-btn-cancel"
+                  onClick={handleCloseAddPhotos}
+                  disabled={uploading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="gm-btn-save"
+                  onClick={handleUploadPhotos}
+                  disabled={uploading || newPhotoFiles.length === 0}
+                >
+                  {uploading && <span className="gm-btn-save__spinner" />}
+                  {uploading ? "Uploading…" : "Upload Photos"}
                 </button>
               </div>
             </div>
