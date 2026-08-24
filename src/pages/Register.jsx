@@ -114,12 +114,21 @@ export default function Register() {
 
   const canRegister = regStatus?.status === "OPEN" || regStatus?.status === "CLOSING_SOON";
 
+  // Phase 3: Free events register directly. Paid events show a "coming soon" state.
+  const isPaidEvent = Boolean(event?.isPaid);
+  const isFreeEvent = !isPaidEvent;
+  const canSubmitFree = isFreeEvent && canRegister;
+  const showPaidComingSoon = isPaidEvent && canRegister;
+
   const validate = () => {
     const errs = {};
     if (!form.name.trim()) errs.name = "Name is required.";
     if (!form.email.trim()) errs.email = "Email is required.";
     else if (!EMAIL_REGEX.test(form.email.trim())) errs.email = "Invalid email format.";
-    if (form.phone && !PHONE_REGEX.test(form.phone.trim())) errs.phone = "Invalid phone number.";
+    if (!form.phone.trim()) errs.phone = "Phone number is required.";
+    else if (!PHONE_REGEX.test(form.phone.trim())) errs.phone = "Invalid phone number.";
+    if (!form.branch.trim()) errs.branch = "Branch is required.";
+    if (!form.semester.trim()) errs.semester = "Semester is required.";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -147,12 +156,21 @@ export default function Register() {
         phone: form.phone.trim(),
         branch: form.branch.trim(),
         semester: form.semester.trim(),
+        // Free event payment metadata
+        isPaid: false,
+        amount: 0,
+        paymentStatus: "free",
       });
 
       setResult({
         registrationId: res.registrationId,
         name: form.name.trim(),
         eventTitle: event.title,
+        eventDate: event.eventStartDate || "",
+        venue: event.venue || "",
+        isPaid: false,
+        amount: 0,
+        paymentStatus: "free",
       });
       setRegCount((prev) => prev + 1);
     } catch (err) {
@@ -437,6 +455,10 @@ export default function Register() {
                         ? "Registration for this event has closed."
                         : "Registration is currently unavailable."}
                     </div>
+                  ) : showPaidComingSoon ? (
+                    <div className="register-closed-msg">
+                      💳 Payment integration for this paid event is coming in the next phase. Please check back soon.
+                    </div>
                   ) : (
                     <button
                       type="submit"
@@ -461,26 +483,46 @@ export default function Register() {
           ) : (
             <div className="register-success">
               <div className="register-success-icon">🎉</div>
-              <h2>Registration Successful!</h2>
-              <p className="register-success-subtitle">
-                You're registered for <strong>{result.eventTitle}</strong>
-              </p>
+              <h2>REGISTRATION CONFIRMED</h2>
 
-              <div className="register-success-id-card">
-                <span className="register-success-label">Registration ID</span>
-                <span className="register-success-id">{result.registrationId}</span>
+              <div className="register-success-details">
+                <div className="register-success-row">
+                  <span className="register-success-label">Event</span>
+                  <strong>{result.eventTitle}</strong>
+                </div>
+                <div className="register-success-row">
+                  <span className="register-success-label">Name</span>
+                  <strong>{result.name}</strong>
+                </div>
+                <div className="register-success-row">
+                  <span className="register-success-label">Registration ID</span>
+                  <strong className="register-success-id">{result.registrationId}</strong>
+                </div>
+                {result.eventDate && (
+                  <div className="register-success-row">
+                    <span className="register-success-label">Date</span>
+                    <strong>{formatDate(result.eventDate)}</strong>
+                  </div>
+                )}
+                {result.venue && (
+                  <div className="register-success-row">
+                    <span className="register-success-label">Venue</span>
+                    <strong>{result.venue}</strong>
+                  </div>
+                )}
+                <div className="register-success-row">
+                  <span className="register-success-label">Payment</span>
+                  <strong className="register-success-payment">FREE</strong>
+                </div>
               </div>
 
               <div className="register-success-actions">
                 <button type="button" className="register-btn" onClick={handleCopyId}>
                   {copied ? "✅ Copied!" : "📋 Copy Registration ID"}
                 </button>
-                <button type="button" className="register-btn" onClick={handleCopyLink}>
-                  🔗 Copy Registration Link
-                </button>
-                <button type="button" className="register-btn" onClick={handleWhatsApp}>
-                  💬 Share on WhatsApp
-                </button>
+                <Link to="/events" className="register-btn">
+                  ← Back to Events
+                </Link>
               </div>
 
               <p className="register-success-note">

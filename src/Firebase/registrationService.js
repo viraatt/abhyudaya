@@ -129,12 +129,17 @@ export async function createRegistration(data) {
 
   const payload = {
     eventId: data.eventId,
+    eventTitle: (data.eventTitle || "").trim(),
     name: (data.name || "").trim(),
     email,
     phone: (data.phone || "").trim(),
     branch: (data.branch || "").trim(),
     semester: (data.semester || "").trim(),
     registrationId,
+    // Payment metadata (free events only in this phase)
+    isPaid: Boolean(data.isPaid),
+    amount: Number.isFinite(Number(data.amount)) ? Number(data.amount) : 0,
+    paymentStatus: data.paymentStatus || "free",
     createdAt: serverTimestamp(),
   };
 
