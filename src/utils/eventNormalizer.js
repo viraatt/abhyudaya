@@ -170,5 +170,9 @@ export function normalizeEvent(event) {
     since: statsList.find((s) => s.key === "since")?.value || event.since || "",
     competitions: statsList.find((s) => s.key === "competitions")?.value || event.competitions || "",
     competitionsLabel: statsList.find((s) => s.key === "competitions")?.label || event.competitionsLabel || "Competitions",
+    // Pricing / Registration Type (backward-compatible safe defaults)
+    isPaid: Boolean(event.isPaid),
+    feeAmount: Number.isFinite(Number(event.feeAmount)) ? Number(event.feeAmount) : 0,
+    currency: event.currency || "INR",
   };
 }

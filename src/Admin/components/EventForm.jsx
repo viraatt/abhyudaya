@@ -126,6 +126,12 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
     initialData?.maxRegistrations ? String(initialData.maxRegistrations) : ""
   );
 
+  /* ── Registration / Pricing ── */
+  const [isPaid, setIsPaid] = useState(Boolean(initialData?.isPaid));
+  const [feeAmount, setFeeAmount] = useState(
+    initialData?.feeAmount ? String(initialData.feeAmount) : ""
+  );
+
   /* ── Derived slug ── */
   const derivedSlug = slugLocked ? slugManual : generateSlug(title);
 
@@ -258,6 +264,19 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
     if (!derivedSlug.trim())  errs.slug  = "Slug is required.";
     if (!shortDesc.trim() && !longDesc.trim())
       errs.description = "At least a short description is required.";
+
+    // Pricing validation
+    if (isPaid) {
+      const fee = Number(feeAmount);
+      if (feeAmount === "" || feeAmount === null || feeAmount === undefined) {
+        errs.fee = "Registration fee is required for paid events.";
+      } else if (!Number.isFinite(fee)) {
+        errs.fee = "Registration fee must be a valid number.";
+      } else if (fee < 0) {
+        errs.fee = "Registration fee cannot be negative.";
+      }
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -313,11 +332,15 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
       ctaLink:     ctaLink.trim(),
       status:      submitStatus,
       featured:    featured,
+      // Pricing / Registration Type
+      isPaid:      isPaid,
+      feeAmount:   isPaid ? (Number.isFinite(Number(feeAmount)) ? Number(feeAmount) : 0) : 0,
+      currency:    "INR",
     };
   }, [
     title, derivedSlug, category, tagline, shortDesc, longDesc,
     venue, location, organizer, eventStartDate, eventEndDate, regDeadline,
-    maxRegistrations,
+    maxRegistrations, isPaid, feeAmount,
     bannerUrl, thumbUrl, stats, highlights, speakers,
     badgeText, badgeIcon, ctaText, ctaLink, featured,
   ]);
@@ -558,6 +581,65 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
                 rows={6}
               />
             </div>
+          </div>
+
+          {/* ── 1b. Registration / Pricing ── */}
+          <div className="ae-card">
+            <h2 className="ae-card-title">
+              <span className="ae-card-icon">💳</span>
+              Registration & Pricing
+            </h2>
+            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 18 }}>
+              Choose whether this event is free or requires a registration fee.
+            </p>
+
+            {/* Registration Type */}
+            <div className="ae-field">
+              <span className="ae-label">Registration Type</span>
+              <div className="ae-status-pills">
+                <button
+                  type="button"
+                  className={`ae-status-pill-btn ${!isPaid ? "active-draft" : ""}`}
+                  onClick={() => { setIsPaid(false); setFeeAmount(""); setErrors((p) => ({ ...p, fee: "" })); }}
+                >
+                  🆓 Free Event
+                </button>
+                <button
+                  type="button"
+                  className={`ae-status-pill-btn ${isPaid ? "active-published" : ""}`}
+                  onClick={() => { setIsPaid(true); setErrors((p) => ({ ...p, fee: "" })); }}
+                >
+                  💰 Paid Event
+                </button>
+              </div>
+            </div>
+
+            {/* Fee input — only shown for paid events */}
+            {isPaid && (
+              <div className="ae-field" style={{ marginTop: 16 }}>
+                <label className="ae-label" htmlFor="evt-fee">
+                  Registration Fee <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <div className="ae-slug-row">
+                  <span className="ae-slug-prefix">₹</span>
+                  <input
+                    id="evt-fee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className={`ae-input ae-slug-input${errors.fee ? " error" : ""}`}
+                    placeholder="e.g. 199"
+                    value={feeAmount}
+                    onChange={(e) => { setFeeAmount(e.target.value); setErrors((p) => ({ ...p, fee: "" })); }}
+                    style={errors.fee ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239,68,68,.12)" } : {}}
+                  />
+                </div>
+                {errors.fee && <span style={{ color: "#ef4444", fontSize: 12, marginTop: 2 }}>{errors.fee}</span>}
+                <small style={{ color: "#64748b", fontSize: 12, display: "block", marginTop: 4 }}>
+                  Fee is in INR. Free events will automatically save a fee of ₹0.
+                </small>
+              </div>
+            )}
           </div>
 
           {/* ── 2. Hero Images ── */}

@@ -1,0 +1,151 @@
+/* ==========================================
+   REGISTER FOR AN EVENT — ENTRY PAGE
+   ========================================== */
+
+.register-event-page {
+  padding: 50px 0 80px;
+  min-height: 60vh;
+}
+
+.register-event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.register-event-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted, #6b7280);
+  font-size: 16px;
+  grid-column: 1 / -1;
+}
+
+.register-event-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+  max-width: 500px;
+  margin: 0 auto;
+  grid-column: 1 / -1;
+}
+
+.register-event-emoji {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.register-event-empty h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.register-event-empty p {
+  color: var(--muted, #6b7280);
+  margin-bottom: 24px;
+}
+
+.register-event-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.25s;
+}
+
+.register-event-btn:hover {
+  background: #1d4ed8;
+}
+
+/* ── Event Card ── */
+
+.register-event-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+  padding: 26px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.register-event-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+}
+
+.register-event-card-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.register-event-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.register-event-card-category {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #2563eb;
+}
+
+.register-event-card-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.25;
+}
+
+.register-event-card-tagline {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.register-event-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2563eb;
+  margin-top: 4px;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 600px) {
+  .register-event-page {
+    padding: 30px 0 60px;
+  }
+
+  .register-event-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .register-event-card {
+    padding: 20px;
+  }
+}

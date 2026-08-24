@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { navLinks } from '../data/club.js'
 import logo from '../assets/logo-120.png'
@@ -7,7 +7,9 @@ import './Header.css'
 export default function Header() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [eventsOpen, setEventsOpen] = useState(false)
   const location = useLocation()
+  const eventsRef = useRef(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,7 +43,42 @@ export default function Header() {
     }
   }, [open])
 
+  // Close dropdown on route change
+  useEffect(() => {
+    setEventsOpen(false)
+  }, [location.pathname])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (eventsRef.current && !eventsRef.current.contains(e.target)) {
+        setEventsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Close dropdown on Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setEventsOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const closeMenu = () => setOpen(false)
+
+  const closeDropdown = () => {
+    setEventsOpen(false)
+    setOpen(false)
+  }
+
+  const isEventsActive =
+    location.pathname === '/events' || location.pathname.startsWith('/register')
 
   return (
     <header className={`navbar ${scrolled ? 'navbar--scrolled scrolled' : ''}`}>
@@ -76,19 +113,87 @@ export default function Header() {
           aria-label="Primary navigation"
         >
 
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/'}
-              className={({ isActive }) =>
-                `navbar__link ${isActive ? 'navbar__link--active' : ''}`
-              }
-              onClick={closeMenu}
-            >
-              {link.label}
-            </NavLink>
-          ))}
+          {navLinks.map((link) => {
+            // Events renders as a dropdown with sub-links
+            if (link.label === 'Events') {
+              return (
+                <div
+                  className="navbar__dropdown"
+                  key={link.to}
+                  ref={eventsRef}
+                >
+                  <button
+                    type="button"
+                    className={`navbar__link navbar__dropdown-toggle ${
+                      eventsOpen ? 'navbar__dropdown-toggle--open' : ''
+                    } ${isEventsActive ? 'navbar__link--active' : ''}`}
+                    aria-haspopup="true"
+                    aria-expanded={eventsOpen}
+                    onClick={() => setEventsOpen((v) => !v)}
+                  >
+                    Events
+                    <svg
+                      className="navbar__dropdown-chevron"
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+
+                  <div
+                    className={`navbar__dropdown-menu ${
+                      eventsOpen ? 'navbar__dropdown-menu--open' : ''
+                    }`}
+                  >
+                    <NavLink
+                      to="/events"
+                      className={({ isActive }) =>
+                        `navbar__dropdown-item ${
+                          isActive ? 'navbar__dropdown-item--active' : ''
+                        }`
+                      }
+                      onClick={closeDropdown}
+                    >
+                      Existing Events
+                    </NavLink>
+                    <NavLink
+                      to="/register"
+                      className={({ isActive }) =>
+                        `navbar__dropdown-item ${
+                          isActive ? 'navbar__dropdown-item--active' : ''
+                        }`
+                      }
+                      onClick={closeDropdown}
+                    >
+                      Register for Event
+                    </NavLink>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.to === '/'}
+                className={({ isActive }) =>
+                  `navbar__link ${isActive ? 'navbar__link--active' : ''}`
+                }
+                onClick={closeMenu}
+              >
+                {link.label}
+              </NavLink>
+            )
+          })}
 
           {/* Mobile-only actions (inside the slide-down panel) */}
           <div className="navbar__mobile-actions">

@@ -27,6 +27,7 @@ const Contact = lazy(() => import("./pages/Contact.jsx"));
 const JoinClub = lazy(() => import("./pages/JoinClub.jsx"));
 const Announcements = lazy(() => import("./pages/Announcements.jsx"));
 const Register = lazy(() => import("./pages/Register.jsx"));
+const RegisterEvent = lazy(() => import("./pages/RegisterEvent.jsx"));
 const Certificate = lazy(() => import("./pages/Certificate/Certificate.jsx"));
 const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate/VerifyCertificate.jsx"));
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
@@ -314,6 +315,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/join" element={<JoinClub />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/register" element={<RegisterEvent />} />
             <Route path="/register/:eventId" element={<Register />} />
             <Route path="/certificate" element={<Certificate />} />
             <Route path="/verify/:certificateId" element={<VerifyCertificate />} />

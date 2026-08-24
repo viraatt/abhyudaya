@@ -206,6 +206,13 @@ export default function EventDetails() {
                   ● Registration Open
                 </span>
               )}
+
+              {/* Pricing badge */}
+              <span className={`hero-price-badge ${event.isPaid ? "paid" : "free"}`}>
+                {event.isPaid
+                  ? `₹${Number(event.feeAmount).toLocaleString("en-IN")} / Person`
+                  : "Free Entry"}
+              </span>
             </div>
 
             <h1>{event.title}</h1>
