@@ -345,6 +345,41 @@
   letter-spacing: 0.5px;
 }
 
+.register-success-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.register-success-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.register-success-row .register-success-label {
+  color: #6b7280;
+  font-weight: 600;
+  margin: 0;
+}
+
+.register-success-row strong {
+  color: #111827;
+  text-align: right;
+}
+
+.register-success-payment {
+  color: #16a34a;
+  font-weight: 800;
+}
+
 .register-success-actions {
   display: flex;
   flex-direction: column;

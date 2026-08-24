@@ -752,6 +752,31 @@ font-size:2rem;
   color: #93c5fd;
 }
 
+/* Pricing badge */
+.hero-price-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
+}
+
+.hero-price-badge.free {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.hero-price-badge.paid {
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fcd34d;
+}
+
 .hero-meta-row {
   display: flex;
   gap: 12px;
