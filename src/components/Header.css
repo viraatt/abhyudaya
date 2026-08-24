@@ -220,6 +220,86 @@
   opacity: 1;
 }
 
+/* ── Events Dropdown ──────────────────────────────────────── */
+.navbar__dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.navbar__dropdown-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  gap: 5px;
+}
+
+.navbar__dropdown-chevron {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.navbar__dropdown-toggle--open .navbar__dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+.navbar__dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  min-width: 200px;
+  background: var(--night, #0d1224);
+  border: 1px solid rgba(238, 184, 74, 0.18);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.55), 0 4px 12px -4px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0s linear 0.25s;
+  z-index: 10002;
+}
+
+.navbar__dropdown-menu--open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0s linear 0s;
+}
+
+.navbar__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--dawn-dim, #f2e8d7);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.navbar__dropdown-item:hover {
+  background: rgba(238, 184, 74, 0.1);
+  color: var(--sun, #eeb84a);
+}
+
+.navbar__dropdown-item--active {
+  background: rgba(238, 184, 74, 0.14);
+  color: var(--sun, #eeb84a);
+  font-weight: 600;
+}
+
 /* ── 3. Action Buttons Section (Right) ────────────────────── */
 .navbar__actions {
   display: flex;
@@ -273,7 +353,7 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(238, 184, 74, 0.3);
 }
-
+ 
 /* Secondary CTA — Admin Login */
 .navbar__cta--secondary {
   background: transparent;
@@ -465,6 +545,68 @@
     color: var(--sun, #eeb84a);
     font-weight: 600;
     border-left-color: var(--sun, #eeb84a);
+  }
+
+  /* Mobile Events Dropdown */
+  .navbar__dropdown {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navbar__dropdown-toggle {
+    width: 100%;
+    justify-content: space-between;
+    font-size: 1.05rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: 8px;
+    color: var(--dawn-dim, #f2e8d7);
+    border-left: 2px solid transparent;
+  }
+
+  .navbar__dropdown-toggle:hover {
+    background: rgba(238, 184, 74, 0.08);
+    color: var(--sun, #eeb84a);
+  }
+
+  .navbar__dropdown-toggle.navbar__link--active {
+    background: rgba(238, 184, 74, 0.14);
+    color: var(--sun, #eeb84a);
+    font-weight: 600;
+    border-left-color: var(--sun, #eeb84a);
+  }
+
+  .navbar__dropdown-menu {
+    position: static;
+    transform: none;
+    min-width: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    border: none;
+    border-left: 2px solid rgba(238, 184, 74, 0.3);
+    border-radius: 0 8px 8px 0;
+    box-shadow: none;
+    padding: 4px 0 4px 8px;
+    margin: 2px 0 4px 1.25rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.25s ease, max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.25s;
+  }
+
+  .navbar__dropdown-menu--open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    max-height: 200px;
+    transition: opacity 0.25s ease, max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0s;
+  }
+
+  .navbar__dropdown-item {
+    font-size: 0.98rem;
+    padding: 0.75rem 1rem;
   }
 
   .navbar__mobile-actions {

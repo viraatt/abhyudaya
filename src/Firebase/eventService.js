@@ -118,6 +118,10 @@ function formatEventDoc(snapshotDoc) {
     eventEndDate: data.eventEndDate || "",
     registrationDeadline: data.registrationDeadline || "",
     maxRegistrations: data.maxRegistrations ? Number(data.maxRegistrations) : null,
+    // Pricing / Registration Type (backward-compatible safe defaults)
+    isPaid: Boolean(data.isPaid),
+    feeAmount: Number.isFinite(Number(data.feeAmount)) ? Number(data.feeAmount) : 0,
+    currency: data.currency || "INR",
     createdAt: data.createdAt || null,
     updatedAt: data.updatedAt || null,
   };
@@ -293,6 +297,10 @@ export async function createEvent(eventData, imageFile = null) {
     eventEndDate: eventData.eventEndDate || "",
     registrationDeadline: eventData.registrationDeadline || "",
     maxRegistrations: eventData.maxRegistrations ? Number(eventData.maxRegistrations) : null,
+    // Pricing / Registration Type
+    isPaid: Boolean(eventData.isPaid),
+    feeAmount: Number.isFinite(Number(eventData.feeAmount)) ? Number(eventData.feeAmount) : 0,
+    currency: eventData.currency || "INR",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -348,6 +356,10 @@ export async function updateEvent(id, eventData, imageFile = null) {
     eventEndDate: eventData.eventEndDate || "",
     registrationDeadline: eventData.registrationDeadline || "",
     maxRegistrations: eventData.maxRegistrations ? Number(eventData.maxRegistrations) : null,
+    // Pricing / Registration Type
+    isPaid: Boolean(eventData.isPaid),
+    feeAmount: Number.isFinite(Number(eventData.feeAmount)) ? Number(eventData.feeAmount) : 0,
+    currency: eventData.currency || "INR",
     updatedAt: serverTimestamp(),
   };
 
