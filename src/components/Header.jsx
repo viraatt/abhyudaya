@@ -9,7 +9,9 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8)
+    const onScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
 
