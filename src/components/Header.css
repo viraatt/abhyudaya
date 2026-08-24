@@ -8,26 +8,23 @@
   position: sticky;
   top: 0;
   z-index: 1000;
+  width: 100%;
   background: var(--night, #0d1224);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              backdrop-filter 0.35s ease,
+              -webkit-backdrop-filter 0.35s ease;
 }
 
-/* Pseudo-element for glassmorphic backdrop without trapping fixed modals/drawers */
-.navbar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
+/* Scrolled state: subtle transparent dark glassmorphic effect */
+.navbar--scrolled {
+  background: rgba(13, 18, 36, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  z-index: -1;
-  pointer-events: none;
-}
-
-.navbar--scrolled {
-  background: rgba(13, 18, 36, 0.96);
-  border-bottom-color: rgba(238, 184, 74, 0.18);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  border-bottom-color: rgba(238, 184, 74, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.25);
 }
 
 /* ── Full-Width Container ─────────────────────────────────── */
@@ -42,6 +39,12 @@
   justify-content: space-between;
   position: relative;
   box-sizing: border-box;
+  transition: height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar--scrolled .navbar__container {
+  height: 62px;
 }
 
 /* ── Backdrop Overlay for Mobile Drawer ───────────────────── */
@@ -74,7 +77,11 @@
   text-decoration: none;
   z-index: 10001;
   flex-shrink: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, gap 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar--scrolled .navbar__brand {
+  gap: 10px;
 }
 
 .navbar__brand:hover {
@@ -89,13 +96,24 @@
   flex-shrink: 0;
   border: 1.5px solid rgba(238, 184, 74, 0.35);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease,
+              transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.navbar--scrolled .navbar__logo {
+  width: 38px;
+  height: 38px;
+  border-color: rgba(238, 184, 74, 0.5);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 12px rgba(238, 184, 74, 0.2);
 }
 
 .navbar__brand:hover .navbar__logo {
   border-color: var(--sun, #eeb84a);
-  transform: scale(1.02);
-  box-shadow: 0 3px 10px rgba(238, 184, 74, 0.25);
+  transform: scale(1.04);
+  box-shadow: 0 3px 10px rgba(238, 184, 74, 0.35);
 }
 
 .navbar__brand-text {
@@ -111,6 +129,11 @@
   letter-spacing: -0.01em;
   color: var(--dawn, #fbf4e8);
   line-height: 1.1;
+  transition: font-size 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar--scrolled .navbar__brand-title {
+  font-size: 19px;
 }
 
 .navbar__brand-sub {
@@ -123,6 +146,12 @@
   opacity: 0.92;
   margin-top: 3px;
   line-height: 1;
+  transition: font-size 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar--scrolled .navbar__brand-sub {
+  font-size: 8.5px;
 }
 
 /* ── 2. Navigation Links Section (Center) ─────────────────── */
@@ -206,11 +235,20 @@
   white-space: nowrap;
   box-sizing: border-box;
   padding: 0 20px;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              font-size 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
               background-color 0.2s ease,
               color 0.2s ease,
               box-shadow 0.2s ease,
               border-color 0.2s ease;
+}
+
+.navbar--scrolled .navbar__cta {
+  height: 38px;
+  padding: 0 16px;
+  font-size: 0.82rem;
 }
 
 /* Primary CTA — Join the Club */
@@ -259,7 +297,15 @@
   cursor: pointer;
   padding: 0;
   z-index: 10001;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease,
+              border-color 0.2s ease,
+              width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar--scrolled .navbar__toggle {
+  width: 36px;
+  height: 36px;
 }
 
 .navbar__toggle:hover {
@@ -319,6 +365,10 @@
     padding: 0 20px;
   }
 
+  .navbar--scrolled .navbar__container {
+    height: 58px;
+  }
+
   .navbar__brand {
     gap: 10px;
   }
@@ -328,8 +378,17 @@
     height: 44px;
   }
 
+  .navbar--scrolled .navbar__logo {
+    width: 36px;
+    height: 36px;
+  }
+
   .navbar__brand-title {
     font-size: 1.2rem;
+  }
+
+  .navbar--scrolled .navbar__brand-title {
+    font-size: 1.05rem;
   }
 
   .navbar__toggle {
@@ -341,14 +400,14 @@
     display: none;
   }
 
-  /* Slide-down Mobile Navigation Panel */
+  /* Slide-down Mobile Navigation Panel anchored dynamically to navbar */
   .navbar__links {
-    position: fixed;
-    top: 74px;
+    position: absolute;
+    top: 100%;
     left: 0;
     width: 100vw;
-    height: calc(100vh - 74px);
-    height: calc(100dvh - 74px);
+    height: calc(100vh - 100%);
+    height: calc(100dvh - 100%);
     margin: 0;
     padding: 1.5rem 24px 3rem;
     background: var(--night, #0d1224);
@@ -414,10 +473,15 @@
   }
 }
 
+/* ── Responsive: Small Mobile Breakpoint ──────────────────── */
 @media (max-width: 480px) {
   .navbar__container {
     height: 68px;
     padding: 0 16px;
+  }
+
+  .navbar--scrolled .navbar__container {
+    height: 54px;
   }
 
   .navbar__brand {
@@ -429,18 +493,28 @@
     height: 40px;
   }
 
+  .navbar--scrolled .navbar__logo {
+    width: 32px;
+    height: 32px;
+  }
+
   .navbar__brand-title {
     font-size: 1.1rem;
+  }
+
+  .navbar--scrolled .navbar__brand-title {
+    font-size: 0.98rem;
   }
 
   .navbar__brand-sub {
     font-size: 8.5px;
   }
 
+  .navbar--scrolled .navbar__brand-sub {
+    font-size: 7.5px;
+  }
+
   .navbar__links {
-    top: 68px;
-    height: calc(100vh - 68px);
-    height: calc(100dvh - 68px);
     padding: 1.25rem 18px 2.5rem;
   }
 
