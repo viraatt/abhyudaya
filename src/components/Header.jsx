@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { navLinks } from '../data/club.js'
 import logo from '../assets/logo-120.png'
 import './Header.css'
@@ -7,21 +7,27 @@ import './Header.css'
 export default function Header() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const location = useLocation()
 
   useEffect(() => {
     const handleScroll = () => {
-      const isScrolled = window.scrollY > 50
+      const currentScroll =
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      const isScrolled = currentScroll > 50
       setScrolled((prev) => (prev !== isScrolled ? isScrolled : prev))
     }
 
-    // Initialize check
+    // Initialize check on mount / route transition
     handleScroll()
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', handleScroll)
     }
-  }, [])
+  }, [location.pathname])
 
   // Lock background body scroll when mobile menu is open
   useEffect(() => {
