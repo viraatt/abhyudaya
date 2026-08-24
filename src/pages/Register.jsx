@@ -11,6 +11,7 @@ import "./Register.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[+]?[\d\s-]{7,15}$/;
+const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
 function formatDate(dateStr) {
   if (!dateStr) return null;
@@ -44,6 +45,43 @@ function getRegistrationStatus(event, currentCount) {
   return { status: "OPEN", label: "Registration Open", color: "#22c55e" };
 }
 
+/**
+ * Dynamically loads the Razorpay Checkout script once.
+ * Resolves with the Razorpay constructor, rejects on load failure.
+ */
+function loadRazorpayScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve(window.Razorpay);
+      return;
+    }
+    if (document.getElementById("razorpay-checkout-script")) {
+      // Script is loading; wait for it
+      const check = setInterval(() => {
+        if (window.Razorpay) {
+          clearInterval(check);
+          resolve(window.Razorpay);
+        }
+      }, 100);
+      setTimeout(() => {
+        clearInterval(check);
+        if (!window.Razorpay) reject(new Error("Razorpay script timed out."));
+      }, 10000);
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "razorpay-checkout-script";
+    script.src = RAZORPAY_SCRIPT_URL;
+    script.async = true;
+    script.onload = () => {
+      if (window.Razorpay) resolve(window.Razorpay);
+      else reject(new Error("Razorpay script loaded but constructor missing."));
+    };
+    script.onerror = () => reject(new Error("Failed to load Razorpay checkout script."));
+    document.body.appendChild(script);
+  });
+}
+
 export default function Register() {
   const { eventId } = useParams();
   const formRef = useRef(null);
@@ -69,6 +107,11 @@ export default function Register() {
 
   const [copied, setCopied] = useState(false);
   const [alreadyChecked, setAlreadyChecked] = useState(null);
+
+  // ── Phase 4B: Payment flow state ────────────────────────────
+  const [paymentState, setPaymentState] = useState("idle"); // idle | creating | preparing | opening | verifying | failed | cancelled
+  const [paymentError, setPaymentError] = useState("");
+  const [pendingReg, setPendingReg] = useState(null); // { registrationId, orderId, amount, currency, publicKey }
 
   const loadEvent = useCallback(async () => {
     setEventLoading(true);
@@ -114,11 +157,10 @@ export default function Register() {
 
   const canRegister = regStatus?.status === "OPEN" || regStatus?.status === "CLOSING_SOON";
 
-  // Phase 3: Free events register directly. Paid events show a "coming soon" state.
   const isPaidEvent = Boolean(event?.isPaid);
   const isFreeEvent = !isPaidEvent;
   const canSubmitFree = isFreeEvent && canRegister;
-  const showPaidComingSoon = isPaidEvent && canRegister;
+  const canSubmitPaid = isPaidEvent && canRegister;
 
   const validate = () => {
     const errs = {};
@@ -137,16 +179,13 @@ export default function Register() {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
     setSubmitError("");
+    setPaymentError("");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    if (!canRegister) return;
-
+  /* ── FREE EVENT SUBMIT (unchanged) ────────────────────────── */
+  const handleFreeSubmit = async () => {
     setSubmitting(true);
     setSubmitError("");
-
     try {
       const res = await createRegistration({
         eventId: event.id,
@@ -156,7 +195,6 @@ export default function Register() {
         phone: form.phone.trim(),
         branch: form.branch.trim(),
         semester: form.semester.trim(),
-        // Free event payment metadata
         isPaid: false,
         amount: 0,
         paymentStatus: "free",
@@ -183,6 +221,214 @@ export default function Register() {
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  /* ── PAID EVENT: create pending registration ──────────────── */
+  const createPendingRegistration = async () => {
+    const res = await createRegistration({
+      eventId: event.id,
+      eventTitle: event.title,
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      branch: form.branch.trim(),
+      semester: form.semester.trim(),
+      isPaid: true,
+      amount: Number(event.feeAmount) || 0,
+      paymentStatus: "pending",
+    });
+    return res.registrationId;
+  };
+
+  /* ── PAID EVENT: create Razorpay order ────────────────────── */
+  const createOrder = async (registrationId) => {
+    const res = await fetch("/api/razorpay/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId: event.id, registrationId }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "Failed to create payment order.");
+    }
+    return data; // { orderId, amount, currency, publicKey }
+  };
+
+  /* ── PAID EVENT: verify payment ───────────────────────────── */
+  const verifyPayment = async (payload) => {
+    const res = await fetch("/api/razorpay/verify-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "Payment verification failed.");
+    }
+    return data;
+  };
+
+  /* ── PAID EVENT: open Razorpay checkout ───────────────────── */
+  const openRazorpay = async (orderData, registrationId) => {
+    setPaymentState("opening");
+    const Razorpay = await loadRazorpayScript();
+
+    const options = {
+      key: orderData.publicKey,
+      amount: Math.round(Number(orderData.amount) * 100), // paise
+      currency: orderData.currency || "INR",
+      name: "Abhyudaya Club",
+      description: event.title,
+      order_id: orderData.orderId,
+      prefill: {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        contact: form.phone.trim(),
+      },
+      notes: {
+        eventId: event.id,
+        registrationId,
+      },
+      handler: async (response) => {
+        // Payment reported success — verify server-side before confirming
+        setPaymentState("verifying");
+        try {
+          const verifyRes = await verifyPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            registrationId,
+          });
+
+          if (verifyRes.alreadyPaid) {
+            // Already confirmed — show confirmation
+            setResult({
+              registrationId,
+              name: form.name.trim(),
+              eventTitle: event.title,
+              eventDate: event.eventStartDate || "",
+              venue: event.venue || "",
+              isPaid: true,
+              amount: Number(orderData.amount) || 0,
+              paymentStatus: "paid",
+            });
+            setPaymentState("idle");
+            return;
+          }
+
+          setResult({
+            registrationId,
+            name: form.name.trim(),
+            eventTitle: event.title,
+            eventDate: event.eventStartDate || "",
+            venue: event.venue || "",
+            isPaid: true,
+            amount: Number(orderData.amount) || 0,
+            paymentStatus: "paid",
+          });
+          setPaymentState("idle");
+        } catch (err) {
+          console.error("verify-payment error:", err);
+          setPaymentError("Payment verification failed. Your registration is still pending.");
+          setPaymentState("failed");
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          // User closed Razorpay without paying
+          setPaymentState("cancelled");
+          setPaymentError("Payment cancelled. Registration is still pending.");
+        },
+      },
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.on("payment.failed", (response) => {
+      console.error("Razorpay payment failed:", response);
+      setPaymentState("failed");
+      setPaymentError("Payment failed. Your registration has not been confirmed.");
+    });
+    rzp.open();
+  };
+
+  /* ── PAID EVENT: full submit flow ─────────────────────────── */
+  const handlePaidSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError("");
+    setPaymentError("");
+    setPaymentState("creating");
+    try {
+      // 1. Create pending registration
+      const registrationId = await createPendingRegistration();
+      setPaymentState("preparing");
+
+      // 2. Create Razorpay order (server determines amount)
+      const orderData = await createOrder(registrationId);
+      setPendingReg({
+        registrationId,
+        orderId: orderData.orderId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        publicKey: orderData.publicKey,
+      });
+
+      // 3. Open Razorpay checkout
+      await openRazorpay(orderData, registrationId);
+    } catch (err) {
+      console.error("Paid registration error:", err);
+      if (err.message === "ALREADY_REGISTERED") {
+        setSubmitError(
+          "You are already registered for this event. Please check your email for the registration confirmation."
+        );
+      } else {
+        setPaymentError(err.message || "Failed to start payment. Please try again.");
+        setPaymentState("failed");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /* ── Retry payment (reuse existing pending registration) ──── */
+  const handleRetryPayment = async () => {
+    setPaymentError("");
+    setPaymentState("preparing");
+    try {
+      let registrationId = pendingReg?.registrationId;
+      if (!registrationId) {
+        // No pending registration — create one
+        setPaymentState("creating");
+        registrationId = await createPendingRegistration();
+      }
+
+      const orderData = await createOrder(registrationId);
+      setPendingReg({
+        registrationId,
+        orderId: orderData.orderId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        publicKey: orderData.publicKey,
+      });
+
+      await openRazorpay(orderData, registrationId);
+    } catch (err) {
+      console.error("Retry payment error:", err);
+      setPaymentError(err.message || "Failed to retry payment. Please try again.");
+      setPaymentState("failed");
+    }
+  };
+
+  /* ── Main submit handler ──────────────────────────────────── */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    if (!canRegister) return;
+
+    if (isFreeEvent) {
+      await handleFreeSubmit();
+    } else {
+      await handlePaidSubmit();
     }
   };
 
@@ -267,6 +513,23 @@ export default function Register() {
     );
   }
 
+  const isPaymentBusy =
+    paymentState === "creating" ||
+    paymentState === "preparing" ||
+    paymentState === "opening" ||
+    paymentState === "verifying";
+
+  const paymentLoadingLabel =
+    paymentState === "creating"
+      ? "Creating registration..."
+      : paymentState === "preparing"
+      ? "Preparing payment..."
+      : paymentState === "opening"
+      ? "Opening payment..."
+      : paymentState === "verifying"
+      ? "Verifying payment..."
+      : "";
+
   return (
     <>
       <Helmet>
@@ -328,6 +591,16 @@ export default function Register() {
                   )}
                 </div>
 
+                {/* Paid event fee display */}
+                {isPaidEvent && (
+                  <div className="register-fee-box">
+                    <span className="register-fee-label">Registration Fee</span>
+                    <span className="register-fee-amount">
+                      ₹{Number(event.feeAmount).toLocaleString("en-IN")} / Person
+                    </span>
+                  </div>
+                )}
+
                 <div className="register-capacity">
                   <div className="register-capacity-header">
                     <span>
@@ -370,7 +643,7 @@ export default function Register() {
                       value={form.name}
                       onChange={(e) => handleChange("name", e.target.value)}
                       placeholder="Your full name"
-                      disabled={!canRegister}
+                      disabled={!canRegister || isPaymentBusy}
                     />
                     {errors.name && <span className="register-error">{errors.name}</span>}
                   </div>
@@ -387,7 +660,7 @@ export default function Register() {
                       onChange={(e) => handleChange("email", e.target.value)}
                       onBlur={handleEmailBlur}
                       placeholder="your.email@example.com"
-                      disabled={!canRegister}
+                      disabled={!canRegister || isPaymentBusy}
                     />
                     {errors.email && <span className="register-error">{errors.email}</span>}
                     {alreadyChecked?.registered && (
@@ -408,7 +681,7 @@ export default function Register() {
                       value={form.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
                       placeholder="e.g. +91 9876543210"
-                      disabled={!canRegister}
+                      disabled={!canRegister || isPaymentBusy}
                     />
                     {errors.phone && <span className="register-error">{errors.phone}</span>}
                   </div>
@@ -425,7 +698,7 @@ export default function Register() {
                         value={form.branch}
                         onChange={(e) => handleChange("branch", e.target.value)}
                         placeholder="e.g. CSE"
-                        disabled={!canRegister}
+                        disabled={!canRegister || isPaymentBusy}
                       />
                     </div>
 
@@ -440,12 +713,37 @@ export default function Register() {
                         value={form.semester}
                         onChange={(e) => handleChange("semester", e.target.value)}
                         placeholder="e.g. 4"
-                        disabled={!canRegister}
+                        disabled={!canRegister || isPaymentBusy}
                       />
                     </div>
                   </div>
 
                   {submitError && <div className="register-submit-error">{submitError}</div>}
+
+                  {/* Payment loading state */}
+                  {isPaymentBusy && (
+                    <div className="register-payment-loading">
+                      <span className="register-payment-spinner" aria-hidden="true" />
+                      {paymentLoadingLabel}
+                    </div>
+                  )}
+
+                  {/* Payment error / cancelled state */}
+                  {paymentError && (
+                    <div className="register-payment-error">
+                      <p>{paymentError}</p>
+                      {(paymentState === "failed" || paymentState === "cancelled") && (
+                        <button
+                          type="button"
+                          className="register-btn register-retry-btn"
+                          onClick={handleRetryPayment}
+                          disabled={isPaymentBusy}
+                        >
+                          Retry Payment
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {!canRegister ? (
                     <div className="register-closed-msg">
@@ -455,17 +753,17 @@ export default function Register() {
                         ? "Registration for this event has closed."
                         : "Registration is currently unavailable."}
                     </div>
-                  ) : showPaidComingSoon ? (
-                    <div className="register-closed-msg">
-                      💳 Payment integration for this paid event is coming in the next phase. Please check back soon.
-                    </div>
                   ) : (
                     <button
                       type="submit"
                       className="register-btn register-submit-btn"
-                      disabled={submitting}
+                      disabled={submitting || isPaymentBusy}
                     >
-                      {submitting ? "Registering..." : "Register Now"}
+                      {submitting
+                        ? "Processing..."
+                        : isPaidEvent
+                        ? `Pay ₹${Number(event.feeAmount).toLocaleString("en-IN")} & Register`
+                        : "Register Now"}
                     </button>
                   )}
 
@@ -510,10 +808,23 @@ export default function Register() {
                     <strong>{result.venue}</strong>
                   </div>
                 )}
-                <div className="register-success-row">
-                  <span className="register-success-label">Payment</span>
-                  <strong className="register-success-payment">FREE</strong>
-                </div>
+                {result.isPaid ? (
+                  <>
+                    <div className="register-success-row">
+                      <span className="register-success-label">Amount Paid</span>
+                      <strong>₹{Number(result.amount).toLocaleString("en-IN")}</strong>
+                    </div>
+                    <div className="register-success-row">
+                      <span className="register-success-label">Payment Status</span>
+                      <strong className="register-success-payment">PAID</strong>
+                    </div>
+                  </>
+                ) : (
+                  <div className="register-success-row">
+                    <span className="register-success-label">Payment</span>
+                    <strong className="register-success-payment">FREE</strong>
+                  </div>
+                )}
               </div>
 
               <div className="register-success-actions">

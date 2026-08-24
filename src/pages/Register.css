@@ -240,6 +240,85 @@
   text-align: center;
 }
 
+.register-fee-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.register-fee-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.register-fee-amount {
+  font-size: 18px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.register-payment-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.register-payment-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #bfdbfe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: regSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes regSpin {
+  to { transform: rotate(360deg); }
+}
+
+.register-payment-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.register-payment-error p {
+  margin: 0 0 12px 0;
+}
+
+.register-retry-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.register-retry-btn:hover {
+  background: #1d4ed8;
+}
+
 .register-btn {
   display: inline-flex;
   align-items: center;
