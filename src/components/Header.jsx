@@ -9,13 +9,18 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 20)
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 50
+      setScrolled((prev) => (prev !== isScrolled ? isScrolled : prev))
     }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
 
-    return () => window.removeEventListener('scroll', onScroll)
+    // Initialize check
+    handleScroll()
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   // Lock background body scroll when mobile menu is open
@@ -33,7 +38,7 @@ export default function Header() {
   const closeMenu = () => setOpen(false)
 
   return (
-    <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
+    <header className={`navbar ${scrolled ? 'navbar--scrolled scrolled' : ''}`}>
       {/* Backdrop overlay for mobile drawer */}
       <div
         className={`navbar__overlay ${open ? 'navbar__overlay--visible' : ''}`}
