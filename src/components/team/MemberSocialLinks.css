@@ -1,0 +1,127 @@
+/* ============================================================
+   MEMBER SOCIAL LINKS — Premium Component Styling
+   ============================================================ */
+
+.member-social-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-weight: 600;
+  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+/* Compact Variant (Round Icon Buttons) */
+.member-social-links--compact .social-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(20, 23, 43, 0.06);
+  color: var(--ink, #14172b);
+  border: 1px solid rgba(20, 23, 43, 0.08);
+}
+
+.section--dark .member-social-links--compact .social-btn,
+.profile-modal .member-social-links--compact .social-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.social-btn .social-icon {
+  font-size: 15px;
+  transition: transform 0.2s ease;
+}
+
+.social-btn:hover {
+  transform: translateY(-2px);
+}
+
+.social-btn:hover .social-icon {
+  transform: scale(1.1);
+}
+
+/* LinkedIn Specific Hover */
+.social-btn--linkedin:hover {
+  background: #0a66c2 !important;
+  color: #ffffff !important;
+  border-color: #0a66c2 !important;
+  box-shadow: 0 4px 14px rgba(10, 102, 194, 0.35);
+}
+
+/* GitHub Specific Hover */
+.social-btn--github:hover {
+  background: #24292e !important;
+  color: #ffffff !important;
+  border-color: #24292e !important;
+  box-shadow: 0 4px 14px rgba(36, 41, 46, 0.3);
+}
+
+/* Instagram Specific Hover */
+.social-btn--instagram:hover {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(220, 39, 67, 0.35);
+}
+
+/* Website Specific Hover */
+.social-btn--website:hover {
+  background: var(--sun, #eeb84a) !important;
+  color: var(--night, #0d1224) !important;
+  border-color: var(--sun, #eeb84a) !important;
+  box-shadow: 0 4px 14px rgba(238, 184, 74, 0.35);
+}
+
+/* Expanded Variant (Pill with Text) */
+.member-social-links--expanded {
+  gap: 12px;
+}
+
+.member-social-links--expanded .social-btn {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  gap: 8px;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+
+.member-social-links--expanded .social-btn--linkedin {
+  background: #0a66c2;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(10, 102, 194, 0.24);
+}
+
+.member-social-links--expanded .social-btn--github {
+  background: #24292e;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(36, 41, 46, 0.2);
+}
+
+.member-social-links--expanded .social-btn--instagram {
+  background: #e1306c;
+  color: #fff;
+}
+
+.member-social-links--expanded .social-btn--website {
+  background: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+}
+
+/* Focus Visible */
+.social-btn:focus-visible {
+  outline: 2.5px solid var(--sun, #eeb84a);
+  outline-offset: 2px;
+}
