@@ -77,23 +77,26 @@ export default function LeadershipSection({ members = [], onSelectMember }) {
 
                   {/* Social System */}
                   <div className="leadership-card__footer">
-                    <MemberSocialLinks
-                      linkedin={person.linkedin}
-                      github={person.github}
-                      memberName={person.name}
-                      variant="compact"
-                    />
+                    <div className="leadership-card__social-slot">
+                      <MemberSocialLinks
+                        linkedin={person.linkedin}
+                        github={person.github}
+                        memberName={person.name}
+                        variant="compact"
+                      />
+                    </div>
 
                     <button
                       type="button"
-                      className="leadership-card__details-btn"
+                      className="member-view-btn member-view-btn--dark"
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectMember && onSelectMember(person);
                       }}
                       aria-label={`View full profile for ${person.name}`}
                     >
-                      View Profile →
+                      <span>View Profile</span>
+                      <span className="member-view-btn__arrow">→</span>
                     </button>
                   </div>
                 </div>

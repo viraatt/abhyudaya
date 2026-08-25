@@ -21,11 +21,26 @@
   --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-utility: "Space Grotesk", "Inter", sans-serif;
 
+  /* Standardized Type Scale */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.45rem;     /* 23px */
+  --text-2xl: 1.85rem;    /* 30px */
+  --text-3xl: clamp(2.2rem, 4.2vw, 3.2rem);
+  --text-hero: clamp(2.6rem, 6.2vw, 4.8rem);
+
+  /* --- Standardized Radius tokens --- */
+  --radius-sm: 8px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-full: 999px;
+
   /* --- Layout tokens --- */
   --max-width: 1180px;
   --gutter: clamp(1.25rem, 4vw, 3rem);
-  --radius-sm: 6px;
-  --radius-md: 14px;
 }
 
 * {

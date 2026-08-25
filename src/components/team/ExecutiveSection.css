@@ -60,10 +60,10 @@
   border: none;
   color: rgba(251, 244, 232, 0.75);
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 13.5px;
+  font-size: var(--text-sm, 0.8125rem);
   font-weight: 600;
   padding: 8px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-full, 999px);
   cursor: pointer;
   transition: color 0.2s ease;
   z-index: 1;
@@ -82,7 +82,7 @@
   position: absolute;
   inset: 0;
   background: var(--sun, #eeb84a);
-  border-radius: 999px;
+  border-radius: var(--radius-full, 999px);
   z-index: -1;
   box-shadow: 0 4px 14px rgba(238, 184, 74, 0.35);
 }
@@ -97,7 +97,7 @@
 .executive-card {
   background: var(--navy-card, #1c2549);
   border: 1px solid rgba(251, 244, 232, 0.1);
-  border-radius: 20px;
+  border-radius: var(--radius-md, 18px);
   overflow: hidden;
   box-shadow:
     0 10px 26px rgba(0, 0, 0, 0.25),
@@ -142,7 +142,7 @@
   top: 10px;
   left: 10px;
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 10px;
+  font-size: var(--text-xs, 0.75rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -152,7 +152,7 @@
   color: var(--sun, #eeb84a);
   border: 1px solid rgba(238, 184, 74, 0.25);
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full, 999px);
 }
 
 /* Body */
@@ -167,7 +167,7 @@
 
 .executive-card__name {
   font-family: var(--font-display, "Fraunces", serif);
-  font-size: 1.22rem;
+  font-size: var(--text-lg, 1.125rem);
   font-weight: 700;
   color: #ffffff;
   margin: 0 0 4px;
@@ -175,7 +175,7 @@
 
 .executive-card__role {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 12px;
+  font-size: var(--text-xs, 0.75rem);
   font-weight: 600;
   color: rgba(251, 244, 232, 0.65);
   margin: 0 0 14px;

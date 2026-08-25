@@ -87,7 +87,7 @@
 .profile-modal__image-wrapper {
   width: 160px;
   height: 160px;
-  border-radius: 20px;
+  border-radius: var(--radius-md, 18px);
   overflow: hidden;
   border: 2px solid rgba(238, 184, 74, 0.35);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
@@ -102,12 +102,12 @@
 
 .profile-modal__dept-badge {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 11px;
+  font-size: var(--text-xs, 0.75rem);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full, 999px);
   background: rgba(238, 184, 74, 0.14);
   color: var(--sun, #eeb84a);
   border: 1px solid rgba(238, 184, 74, 0.28);
@@ -122,7 +122,7 @@
 
 .profile-modal__role-tag {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 12px;
+  font-size: var(--text-xs, 0.75rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -133,7 +133,7 @@
 
 .profile-modal__name {
   font-family: var(--font-display, "Fraunces", serif);
-  font-size: 1.65rem;
+  font-size: var(--text-2xl, 1.85rem);
   font-weight: 700;
   color: #fff;
   margin: 0 0 8px;
@@ -142,17 +142,17 @@
 
 .profile-modal__tier-badge {
   display: inline-block;
-  font-size: 11px;
+  font-size: var(--text-xs, 0.75rem);
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm, 8px);
   background: rgba(255, 255, 255, 0.07);
   color: var(--dawn-dim, #f2e8d7);
   margin-bottom: 16px;
 }
 
 .profile-modal__bio {
-  font-size: 14px;
+  font-size: var(--text-base, 0.875rem);
   line-height: 1.65;
   color: rgba(251, 244, 232, 0.82);
   margin-bottom: 24px;
@@ -160,7 +160,7 @@
 
 .profile-modal__social-label {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 12px;
+  font-size: var(--text-xs, 0.75rem);
   color: rgba(251, 244, 232, 0.6);
   margin-bottom: 10px;
 }

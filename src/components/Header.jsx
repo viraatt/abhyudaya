@@ -101,7 +101,7 @@ export default function Header() {
           <span className="navbar__brand-text">
             <span className="navbar__brand-title">Abhyudaya</span>
             <span className="navbar__brand-sub">
-              CLUB &middot; MPEC KANPUR
+              Club &middot; MPEC Kanpur
             </span>
           </span>
         </NavLink>

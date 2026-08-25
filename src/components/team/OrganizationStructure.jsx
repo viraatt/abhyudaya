@@ -55,7 +55,7 @@ export default function OrganizationStructure() {
             <HiOutlineUserGroup className="org-structure__head-icon" />
             <span className="eyebrow">Organizational Architecture</span>
           </div>
-          <h2 className="org-structure__title">HOW ABHYUDAYA WORKS</h2>
+          <h2 className="org-structure__title">How Abhyudaya Works</h2>
           <p className="org-structure__subtitle">
             An agile, student-driven governance pipeline designed for seamless execution, rapid innovation, and cross-vertical synergy.
           </p>
@@ -73,7 +73,7 @@ export default function OrganizationStructure() {
             transition={{ duration: 0.45 }}
           >
             <div className="org-node__badge">Top Governance</div>
-            <h4 className="org-node__role">PRESIDENT</h4>
+            <h3 className="org-node__role">President</h3>
             <span className="org-node__sub">Chief Executive Officer of Abhyudaya</span>
           </motion.div>
 
@@ -91,7 +91,7 @@ export default function OrganizationStructure() {
             transition={{ duration: 0.45, delay: 0.1 }}
           >
             <div className="org-node__badge">Executive Leadership</div>
-            <h4 className="org-node__role">VICE PRESIDENT</h4>
+            <h3 className="org-node__role">Vice President</h3>
             <span className="org-node__sub">Strategic Alignment &amp; Vertical Operations</span>
           </motion.div>
 
@@ -109,7 +109,7 @@ export default function OrganizationStructure() {
             transition={{ duration: 0.45, delay: 0.2 }}
           >
             <div className="org-node__badge">Executive Synchrony</div>
-            <h4 className="org-node__role">GENERAL SECRETARY</h4>
+            <h3 className="org-node__role">General Secretary</h3>
             <span className="org-node__sub">Unnati Pal • Central Operations &amp; Inter-Department Coordination</span>
           </motion.div>
 
@@ -146,7 +146,7 @@ export default function OrganizationStructure() {
                       {dept.icon}
                       <span className="org-card__dept-name">{dept.name}</span>
                     </div>
-                    <h5 className="org-card__role">{dept.leadRole}</h5>
+                    <div className="org-card__role">{dept.leadRole}</div>
                     <div className="org-card__person">{dept.leadPerson}</div>
                     <p className="org-card__tagline">{dept.tagline}</p>
                   </div>
@@ -159,7 +159,7 @@ export default function OrganizationStructure() {
                   {/* Executives Node */}
                   <div className="org-card org-card--execs">
                     <span className="org-card__exec-label">Department Execution</span>
-                    <h6 className="org-card__exec-title">{dept.executives}</h6>
+                    <div className="org-card__exec-title">{dept.executives}</div>
                     <span className="org-card__exec-note">Field Execution &amp; Support Crew</span>
                   </div>
                 </motion.div>

@@ -115,7 +115,7 @@ export default function ExecutiveSection({ members = [], onSelectMember }) {
 
                   {/* Body Info */}
                   <div className="executive-card__body">
-                    <h4 className="executive-card__name">{person.name}</h4>
+                    <h3 className="executive-card__name">{person.name}</h3>
                     <p className="executive-card__role">{person.role}</p>
 
                     <div className="executive-card__footer">

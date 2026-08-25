@@ -11,7 +11,7 @@
   position: relative;
   background: var(--night, #0d1224);
   color: var(--dawn, #fbf4e8);
-  border-radius: 28px;
+  border-radius: var(--radius-lg, 24px);
   padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 4vw, 3.5rem);
   text-align: center;
   overflow: hidden;
