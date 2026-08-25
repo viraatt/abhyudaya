@@ -128,86 +128,144 @@ export const events = [
 export const team = {
   faculty: [
     {
+      id: "faculty-1",
       name: "Dr. Anupama Mathur",
       role: "Faculty Advisor",
+      department: "Department of Basic Sciences & Humanities",
+      level: "faculty-advisor",
       image:
         "https://www.image2url.com/r2/default/images/1782925455771-fcabd88a-9d76-44aa-8731-ebbb72274fd0.jpeg",
       linkedin: "https://www.linkedin.com/in/anupama-mathur-426578263/",
+      bio: "Guiding and mentoring the student leaders of Abhyudaya Club to cultivate innovation, multidisciplinary growth, and leadership excellence across MPEC Kanpur.",
+    },
+  ],
+
+  leadership: [
+    {
+      id: "lead-1",
+      name: "N/A",
+      role: "President",
+      department: "Leadership",
+      level: "leadership",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "",
+      github: "",
+      bio: "Steering the overarching vision, strategic initiatives, and organizational growth of Abhyudaya Club.",
+    },
+    {
+      id: "lead-2",
+      name: "N/A",
+      role: "Vice President",
+      department: "Leadership",
+      level: "leadership",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "",
+      github: "",
+      bio: "Assisting executive leadership and ensuring cross-department coordination across all club verticals.",
+    },
+    {
+      id: "lead-3",
+      name: "Unnati Pal",
+      role: "General Secretary",
+      department: "Leadership",
+      level: "leadership",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "https://www.linkedin.com/in/unnatii05/",
+      github: "",
+      bio: "Managing institutional communications, administrative operations, and executive synchrony across team verticals.",
     },
   ],
 
   core: [
     {
-      name: "N/A",
-      role: "President",
-      image:
-        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
-      linkedin: "",
-    },
-    {
-      name: "N/A",
-      role: "Vice President",
-      image:
-        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
-      linkedin: "",
-    },
-    {
-      name: "Unnati Pal",
-      role: "General Secretary",
-      image:
-        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
-      linkedin: "https://www.linkedin.com/in/unnatii05/",
-    },
-    {
+      id: "core-1",
       name: "Ishan Shukla",
       role: "Operations Lead",
+      department: "Operations",
+      level: "core",
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
       linkedin: "https://www.linkedin.com/in/ishanshukla2/",
+      github: "",
+      bio: "Leading event logistics, venue orchestration, resource allocation, and real-time operational execution for flagship fests.",
     },
     {
+      id: "core-2",
       name: "Virat Mishra",
       role: "Technical Lead",
+      department: "Technical",
+      level: "core",
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
       linkedin: "https://www.linkedin.com/in/viratmishra24/",
+      github: "",
+      bio: "Spearheading digital architecture, web platforms, technical workshops, and coding challenges for student engineers.",
     },
     {
+      id: "core-3",
       name: "Sharad Agnihotri",
       role: "PR Lead",
+      department: "PR",
+      level: "core",
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
       linkedin: "https://www.linkedin.com/in/sharad-agnihotri-628938315/",
+      github: "",
+      bio: "Driving institutional public relations, media outreach, brand storytelling, and corporate sponsorship partnerships.",
+    },
+  ],
+
+  executives: [
+    {
+      id: "exec-1",
+      name: "Shashwat Singh",
+      role: "Operations Executive",
+      department: "Operations",
+      level: "executive",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "https://www.linkedin.com/in/shashwat-singh-8a5784362/",
+      github: "",
+      bio: "Managing on-ground event workflows, stage logistics, and volunteer management.",
     },
     {
+      id: "exec-2",
       name: "Tilak Rajawat",
-      role: "Core Member",
+      role: "Technical Executive",
+      department: "Technical",
+      level: "executive",
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
       linkedin: "https://www.linkedin.com/in/tilakraj-singh-rajawat-121y/",
+      github: "",
+      bio: "Supporting technical platform developments, workshop tooling, and event infrastructure.",
     },
     {
+      id: "exec-3",
       name: "Kuldeep Yadav",
-      role: "Core Member",
+      role: "Technical Executive",
+      department: "Technical",
+      level: "executive",
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
       linkedin: "https://www.linkedin.com/in/kuldeep-yadav-cse28/",
+      github: "",
+      bio: "Contributing to software systems, technical problem sets, and web development.",
     },
     {
-      name: "Shashwat Singh",
-      role: "Core Member",
-      image:
-        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
-      linkedin:
-        "https://www.linkedin.com/in/shashwat-singh-8a5784362/",
-    },
-    {
+      id: "exec-4",
       name: "Arpit Singh",
-      role: "Core Member",
+      role: "PR Executive",
+      department: "PR",
+      level: "executive",
       image:
         "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
-      linkedin:
-        "https://www.linkedin.com/in/arpit-singh-1004a8327/",
+      linkedin: "https://www.linkedin.com/in/arpit-singh-1004a8327/",
+      github: "",
+      bio: "Executing creative campaigns, social engagement, student outreach, and public relations.",
     },
   ],
 };

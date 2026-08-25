@@ -1,0 +1,106 @@
+/* ============================================================
+   TEAM CLOSING — Manifesto & Call to Action
+   ============================================================ */
+
+.team-closing-section {
+  padding: clamp(4.5rem, 8vw, 7rem) 0;
+  background: var(--dawn, #fbf4e8);
+}
+
+.team-closing-card {
+  position: relative;
+  background: var(--night, #0d1224);
+  color: var(--dawn, #fbf4e8);
+  border-radius: 28px;
+  padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 4vw, 3.5rem);
+  text-align: center;
+  overflow: hidden;
+  border: 1px solid var(--line-on-dark, rgba(251, 244, 232, 0.14));
+  box-shadow:
+    0 24px 60px rgba(13, 18, 36, 0.25),
+    0 4px 14px rgba(13, 18, 36, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-closing-card__glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(238, 184, 74, 0.15) 0%, rgba(13, 18, 36, 0) 70%);
+  pointer-events: none;
+}
+
+.team-closing-card__eyebrow-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.team-closing-card__sparkle {
+  color: var(--sun, #eeb84a);
+  font-size: 15px;
+}
+
+.team-closing-card__eyebrow {
+  color: var(--sun, #eeb84a);
+}
+
+.team-closing-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: var(--font-display, "Fraunces", serif);
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 1.25rem;
+}
+
+.team-closing-card__title-accent {
+  color: var(--sun, #eeb84a);
+  font-style: italic;
+}
+
+.team-closing-card__text {
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+  line-height: 1.65;
+  color: rgba(251, 244, 232, 0.75);
+  max-width: 620px;
+  margin-bottom: 2.25rem;
+}
+
+.team-closing-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.team-closing-card__btn {
+  padding: 0.95rem 2rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.team-closing-card__btn-ghost {
+  padding: 0.95rem 2rem;
+  font-size: 0.95rem;
+  color: var(--dawn, #fbf4e8);
+  border-color: rgba(251, 244, 232, 0.3);
+  cursor: pointer;
+}
+
+.team-closing-card__btn-ghost:hover {
+  border-color: var(--sun, #eeb84a);
+  color: var(--sun, #eeb84a);
+}

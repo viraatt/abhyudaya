@@ -1,0 +1,246 @@
+/* ============================================================
+   FACULTY ADVISOR SECTION — Distinct Profile Showcase
+   ============================================================ */
+
+.faculty-section {
+  padding: clamp(3.5rem, 7vw, 5.5rem) 0;
+  background: var(--dawn, #fbf4e8);
+  border-bottom: 1px solid rgba(20, 23, 43, 0.08);
+}
+
+.faculty-section__head {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto clamp(2rem, 4vw, 3rem);
+}
+
+.faculty-section__eyebrow-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.faculty-section__sparkle {
+  color: var(--horizon, #7a2128);
+  font-size: 15px;
+}
+
+.faculty-section__title {
+  font-family: var(--font-display, "Fraunces", serif);
+  font-size: clamp(2rem, 3.8vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink, #14172b);
+  margin-bottom: 0.6rem;
+}
+
+.faculty-section__subtitle {
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ink-soft, #4a4f6b);
+}
+
+/* Faculty Card */
+.faculty-card {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(20, 23, 43, 0.09);
+  box-shadow:
+    0 12px 36px rgba(20, 23, 43, 0.06),
+    0 2px 8px rgba(20, 23, 43, 0.04);
+  overflow: hidden;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+  cursor: pointer;
+}
+
+.faculty-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 22px 50px rgba(20, 23, 43, 0.12),
+    0 4px 12px rgba(20, 23, 43, 0.05);
+  border-color: rgba(238, 184, 74, 0.4);
+}
+
+.faculty-card__grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  align-items: stretch;
+}
+
+.faculty-card__media {
+  background: linear-gradient(135deg, #0d1224 0%, #161d3a 100%);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  position: relative;
+}
+
+.faculty-card__photo-frame {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  padding: 4px;
+  background: linear-gradient(135deg, var(--sun, #eeb84a), rgba(238, 184, 74, 0.2));
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.faculty-card__image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: #202744;
+}
+
+.faculty-card__badge {
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: rgba(238, 184, 74, 0.18);
+  color: var(--sun, #eeb84a);
+  border: 1px solid rgba(238, 184, 74, 0.35);
+  padding: 4px 14px;
+  border-radius: 999px;
+}
+
+.faculty-card__body {
+  padding: 36px 36px 36px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.faculty-card__dept {
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--horizon, #7a2128);
+  margin-bottom: 6px;
+}
+
+.faculty-card__name {
+  font-family: var(--font-display, "Fraunces", serif);
+  font-size: clamp(1.5rem, 2.5vw, 1.95rem);
+  font-weight: 700;
+  color: var(--ink, #14172b);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+
+.faculty-card__role {
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft, #4a4f6b);
+  margin: 0 0 14px;
+}
+
+.faculty-card__bio {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #4b5563;
+  margin: 0 0 24px;
+}
+
+.faculty-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.faculty-card__linkedin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: #0a66c2;
+  color: #ffffff;
+  text-decoration: none;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(10, 102, 194, 0.28);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.faculty-card__linkedin-btn:hover {
+  background: #004182;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(10, 102, 194, 0.4);
+}
+
+.faculty-card__linkedin-icon {
+  font-size: 15px;
+}
+
+.faculty-card__arrow {
+  transition: transform 0.2s ease;
+}
+
+.faculty-card__linkedin-btn:hover .faculty-card__arrow {
+  transform: translateX(3px);
+}
+
+.faculty-card__view-btn {
+  background: transparent;
+  border: 1.5px solid rgba(20, 23, 43, 0.16);
+  color: var(--ink, #14172b);
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.faculty-card__view-btn:hover {
+  background: rgba(20, 23, 43, 0.05);
+  border-color: var(--ink, #14172b);
+}
+
+.faculty-card__dept-pill {
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 13px;
+  color: var(--ink-soft, #4a4f6b);
+}
+
+@media (max-width: 768px) {
+  .faculty-card__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .faculty-card__media {
+    padding: 28px 20px 20px;
+  }
+
+  .faculty-card__photo-frame {
+    width: 140px;
+    height: 140px;
+  }
+
+  .faculty-card__body {
+    padding: 24px 22px 28px;
+    text-align: center;
+    align-items: center;
+  }
+
+  .faculty-card__actions {
+    justify-content: center;
+  }
+}
