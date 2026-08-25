@@ -110,11 +110,13 @@
 /* Lines & Connectors */
 .org-line {
   position: relative;
-  background: rgba(238, 184, 74, 0.3);
+  background: var(--sun, #eeb84a);
+  opacity: 0.65;
+  box-shadow: 0 0 8px rgba(238, 184, 74, 0.4);
 }
 
 .org-line--vertical {
-  width: 2px;
+  width: 3px;
   height: 32px;
   margin: 0 auto;
 }
@@ -122,12 +124,13 @@
 .org-line__glow-dot {
   position: absolute;
   top: 0;
-  left: -3px;
-  width: 8px;
-  height: 8px;
+  left: -3.5px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--sun, #eeb84a);
-  box-shadow: 0 0 10px var(--sun, #eeb84a);
+  background: #ffffff;
+  border: 2px solid var(--sun, #eeb84a);
+  box-shadow: 0 0 12px var(--sun, #eeb84a), 0 0 4px #ffffff;
   animation: flow-down 2.2s infinite linear;
 }
 
@@ -159,14 +162,15 @@
 }
 
 .org-line--stem {
-  width: 2px;
+  width: 3px;
   height: 28px;
 }
 
 .org-line--horizontal {
   width: 74%;
-  height: 2px;
+  height: 3px;
   position: relative;
+  box-shadow: 0 0 8px rgba(238, 184, 74, 0.4);
 }
 
 /* 3 Departments Grid Row */
@@ -190,7 +194,7 @@
 }
 
 .org-line--dept-drop {
-  width: 2px;
+  width: 3px;
   height: 24px;
   margin-bottom: 0;
 }
@@ -296,10 +300,10 @@
 
 .org-card__exec-label {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 10px;
+  font-size: 0.75rem; /* 12px */
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--dawn-dim, #f2e8d7);
   display: block;
   margin-bottom: 4px;
@@ -307,15 +311,15 @@
 
 .org-card__exec-title {
   font-family: var(--font-display, "Fraunces", serif);
-  font-size: 13px;
+  font-size: 0.875rem; /* 14px */
   font-weight: 600;
   color: #ffffff;
   margin: 0 0 2px;
 }
 
 .org-card__exec-note {
-  font-size: 11px;
-  color: rgba(251, 244, 232, 0.5);
+  font-size: 0.75rem; /* 12px */
+  color: rgba(251, 244, 232, 0.72);
   display: block;
 }
 

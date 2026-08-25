@@ -21,9 +21,15 @@
   margin-bottom: 0.5rem;
 }
 
+.faculty-section .eyebrow {
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
 .faculty-section__sparkle {
   color: var(--horizon, #7a2128);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .faculty-section__title {
@@ -196,27 +202,40 @@
   transform: translateX(3px);
 }
 
-.faculty-card__view-btn {
-  background: transparent;
-  border: 1.5px solid rgba(20, 23, 43, 0.16);
+.member-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(20, 23, 43, 0.05);
+  border: 1px solid rgba(20, 23, 43, 0.14);
   color: var(--ink, #14172b);
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px */
   font-weight: 600;
-  padding: 9px 18px;
+  padding: 8px 18px;
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.faculty-card__view-btn:hover {
-  background: rgba(20, 23, 43, 0.05);
+.member-view-btn:hover {
+  background: var(--ink, #14172b);
+  color: #ffffff;
   border-color: var(--ink, #14172b);
+  transform: translateY(-1px);
+}
+
+.member-view-btn__arrow {
+  transition: transform 0.2s ease;
+}
+
+.member-view-btn:hover .member-view-btn__arrow {
+  transform: translateX(3px);
 }
 
 .faculty-card__dept-pill {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink-soft, #4a4f6b);
 }
 

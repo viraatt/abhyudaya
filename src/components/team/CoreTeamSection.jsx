@@ -78,9 +78,18 @@ export default function CoreTeamSection({ members = [], onSelectMember }) {
                       variant="compact"
                     />
 
-                    <span className="core-team-card__view-text">
-                      View Profile
-                    </span>
+                    <button
+                      type="button"
+                      className="member-view-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectMember && onSelectMember(person);
+                      }}
+                      aria-label={`View full profile for ${person.name}`}
+                    >
+                      <span>View Profile</span>
+                      <span className="member-view-btn__arrow">→</span>
+                    </button>
                   </div>
                 </div>
               </motion.div>

@@ -65,10 +65,10 @@
   border-color: rgba(238, 184, 74, 0.45);
 }
 
-/* Image Container */
+/* Image Container — Standardized 1:1 Ratio */
 .core-team-card__image-container {
   width: 100%;
-  aspect-ratio: 4 / 3.4;
+  aspect-ratio: 1 / 1;
   position: relative;
   overflow: hidden;
   background: #11172e;
@@ -91,7 +91,7 @@
   top: 14px;
   left: 14px;
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 11px;
+  font-size: 0.75rem; /* 12px */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -121,7 +121,7 @@
 
 .core-team-card__role {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 12.5px;
+  font-size: 0.8125rem; /* 13px */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -163,9 +163,9 @@
 }
 
 .core-team-card__bio {
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px */
   line-height: 1.6;
-  color: #4b5563;
+  color: var(--ink-soft, #4a4f6b);
   margin: 0 0 18px;
   flex: 1;
 }
@@ -176,18 +176,39 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
-.core-team-card__view-text {
+.core-team-card .member-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(20, 23, 43, 0.05);
+  border: 1px solid rgba(20, 23, 43, 0.14);
+  color: var(--ink, #14172b);
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: 12px;
+  font-size: 0.8125rem; /* 13px */
   font-weight: 600;
-  color: var(--ink-soft, #4a4f6b);
-  transition: color 0.2s ease;
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s ease;
 }
 
-.core-team-card:hover .core-team-card__view-text {
-  color: var(--horizon, #7a2128);
+.core-team-card .member-view-btn:hover {
+  background: var(--ink, #14172b);
+  color: #ffffff;
+  border-color: var(--ink, #14172b);
+  transform: translateY(-1px);
+}
+
+.core-team-card .member-view-btn__arrow {
+  transition: transform 0.2s ease;
+}
+
+.core-team-card .member-view-btn:hover .member-view-btn__arrow {
+  transform: translateX(3px);
 }
 
 /* Tablet */

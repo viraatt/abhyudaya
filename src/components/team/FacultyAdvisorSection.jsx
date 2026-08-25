@@ -98,11 +98,12 @@ export default function FacultyAdvisorSection({ advisor, onSelectMember }) {
 
                 <button
                   type="button"
-                  className="faculty-card__view-btn"
+                  className="member-view-btn"
                   onClick={() => onSelectMember && onSelectMember(advisor)}
                   aria-label={`View full profile of ${advisor.name}`}
                 >
-                  View Profile
+                  <span>View Profile</span>
+                  <span className="member-view-btn__arrow">→</span>
                 </button>
               </div>
             </div>
