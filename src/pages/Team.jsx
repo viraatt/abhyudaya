@@ -4,7 +4,7 @@ import { team as staticTeam } from '../data/club.js';
 import { getTeamMembers } from '../Admin/pages/services/teamService.js';
 import BreadcrumbSchema from '../components/seo/schemas/BreadcrumbSchema.jsx';
 
-// Modular Team Subcomponents
+// Modular Subcomponents
 import TeamHero from '../components/team/TeamHero.jsx';
 import FacultyAdvisorSection from '../components/team/FacultyAdvisorSection.jsx';
 import LeadershipSection from '../components/team/LeadershipSection.jsx';
@@ -30,103 +30,185 @@ export default function Team() {
   ];
 
   useEffect(() => {
+    let isMounted = true;
     async function loadData() {
       try {
         const data = await getTeamMembers();
-        if (Array.isArray(data) && data.length > 0) {
+        if (isMounted && Array.isArray(data)) {
           setDbMembers(data);
         }
       } catch (err) {
         console.error('Error loading team members from Firestore:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Process data from Firestore if available, otherwise use enhanced static fallback
-  const groupedData = useMemo(() => {
+  // Process and group team data
+  const {
+    faculty,
+    mainLeadership,
+    verticalLeads,
+    core,
+    executives,
+    associates
+  } = useMemo(() => {
+    let rawFaculty = [];
+    let rawLeadership = [];
+    let rawCore = [];
+    let rawExecutives = [];
+    let rawAssociates = [];
+
     if (dbMembers.length > 0) {
-      return groupTeamMembers(dbMembers);
+      const grouped = groupTeamMembers(dbMembers);
+      rawFaculty = grouped.faculty || [];
+      rawLeadership = grouped.leadership || [];
+      rawCore = grouped.core || [];
+      rawExecutives = grouped.executives || [];
+      rawAssociates = grouped.associates || [];
+    } else {
+      rawFaculty = staticTeam.faculty || [];
+      rawLeadership = staticTeam.leadership || [];
+      rawCore = staticTeam.core || [];
+      rawExecutives = staticTeam.executives || [];
+      rawAssociates = staticTeam.associates || staticTeam.associateExecutives || [];
     }
 
+    // Filter vertical leads ("Technical Lead", "Operations Lead", "PR Lead") from main student leadership
+    const mainL = rawLeadership.filter(
+      (m) => !m.role.toLowerCase().includes('lead')
+    );
+    const vertL = rawLeadership.filter(
+      (m) => m.role.toLowerCase().includes('lead')
+    );
+
     return {
-      faculty: staticTeam.faculty || [],
-      leadership: staticTeam.leadership || [],
-      core: staticTeam.core || [],
-      executives: staticTeam.executives || [],
+      faculty: rawFaculty,
+      mainLeadership: mainL,
+      verticalLeads: vertL,
+      core: rawCore,
+      executives: rawExecutives,
+      associates: rawAssociates
     };
   }, [dbMembers]);
 
-  const primaryAdvisor = groupedData.faculty[0] || (staticTeam.faculty && staticTeam.faculty[0]);
+  const primaryAdvisor = faculty?.[0] || null;
 
   return (
-    <div className="team-page-wrapper">
+    <div className="team-page-wrapper team-page-centered">
       <Helmet>
         <title>Our Team 2026 | Abhyudaya Club — Faculty &amp; Student Leaders at MPEC Kanpur</title>
         <meta
           name="description"
-          content="Meet the Abhyudaya Club 2026 team — dedicated faculty advisor and passionate student leaders across Operations, Technical, and PR verticals at MPEC Kanpur."
+          content="Meet the Abhyudaya Club 2026 team — dedicated faculty advisor, student leadership, core team, and executives at MPEC Kanpur."
         />
         <link rel="canonical" href={`${SITE_URL}/team`} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
-
         <meta property="og:title" content="Our Team 2026 | Abhyudaya Club — MPEC Kanpur" />
-        <meta
-          property="og:description"
-          content="Meet the visionary faculty advisor and dynamic student leaders of Abhyudaya Club at MPEC Kanpur."
-        />
+        <meta property="og:description" content="Meet the faculty advisor, student leaders, executives, and associate executives of Abhyudaya Club at MPEC Kanpur." />
         <meta property="og:url" content={`${SITE_URL}/team`} />
         <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
         <meta property="og:locale" content="en_IN" />
         <meta property="og:type" content="website" />
-
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Our Team 2026 | Abhyudaya Club" />
-        <meta
-          name="twitter:description"
-          content="Meet the faculty advisor and student leaders of Abhyudaya Club at MPEC Kanpur."
-        />
+        <meta name="twitter:description" content="Meet the faculty advisor and student leaders of Abhyudaya Club at MPEC Kanpur." />
         <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
       </Helmet>
 
       <BreadcrumbSchema items={breadcrumbItems} />
 
-      {/* 1. HERO — TEAM / 2026 */}
+      {/* 1. HERO */}
       <TeamHero />
 
-      {/* 2. FACULTY ADVISOR */}
-      <FacultyAdvisorSection
-        advisor={primaryAdvisor}
-        onSelectMember={setSelectedMember}
-      />
+      {loading ? (
+        <section className="section team-loading">
+          <div className="wrap">
+            <p>Loading team members...</p>
+          </div>
+        </section>
+      ) : (
+        <>
+          {/* 2. FACULTY COORDINATOR */}
+          {primaryAdvisor && (
+            <FacultyAdvisorSection
+              advisor={primaryAdvisor}
+              onSelectMember={setSelectedMember}
+            />
+          )}
 
-      {/* 3. THE LEADERSHIP */}
-      <LeadershipSection
-        members={groupedData.leadership}
-        onSelectMember={setSelectedMember}
-      />
+          {/* 3. STUDENT LEADERSHIP (President, VP, etc. - Styled on Dark BG) */}
+          {mainLeadership.length > 0 && (
+            <div className="section-theme-wrapper section--dark">
+              <LeadershipSection
+                title="Student Leadership"
+                eyebrow="Executive Officers"
+                members={mainLeadership}
+                onSelectMember={setSelectedMember}
+              />
+            </div>
+          )}
 
-      {/* 4. HOW ABHYUDAYA WORKS (Interactive Organizational Flow) */}
-      <OrganizationStructure />
+          {/* 4. DOMAIN & VERTICAL LEADS (Tech, Ops, PR Leads - Directly below Leadership on Dark BG) */}
+          {verticalLeads.length > 0 && (
+            <div className="section-theme-wrapper section--dark section-border-top">
+              <LeadershipSection
+                title="Domain &amp; Vertical Leads"
+                eyebrow="Functional Directors"
+                members={verticalLeads}
+                onSelectMember={setSelectedMember}
+              />
+            </div>
+          )}
 
-      {/* 5. THE CORE TEAM */}
-      <CoreTeamSection
-        members={groupedData.core}
-        onSelectMember={setSelectedMember}
-      />
+          {/* 5. CORE TEAM (Wrapped inside Dark background container as requested) */}
+          {core.length > 0 && (
+            <div className="section-theme-wrapper section--dark section-border-top">
+              <CoreTeamSection
+                members={core}
+                onSelectMember={setSelectedMember}
+              />
+            </div>
+          )}
 
-      {/* 6. MEET THE EXECUTIVES (ALL | OPERATIONS | TECHNICAL | PR) */}
-      <ExecutiveSection
-        members={groupedData.executives}
-        onSelectMember={setSelectedMember}
-      />
+          {/* 6. CLUB STRUCTURE (Positioned in the middle!) */}
+          <OrganizationStructure />
 
-      {/* 7. ONE TEAM. ONE VISION. ABHYUDAYA'26 */}
-      <TeamClosing />
+          {/* 7. EXECUTIVE COMMITTEE */}
+          {executives.length > 0 && (
+            <ExecutiveSection
+              title="Executive Committee"
+              eyebrow="Executives"
+              members={executives}
+              onSelectMember={setSelectedMember}
+            />
+          )}
 
-      {/* PROFILE MODAL DIALOG */}
+          {/* 8. ASSOCIATE EXECUTIVES (Centered grid) */}
+          {associates.length > 0 && (
+            <div className="section-theme-wrapper section--dark">
+              <ExecutiveSection
+                title="Associate Executives"
+                eyebrow="Support Team"
+                members={associates}
+                onSelectMember={setSelectedMember}
+              />
+            </div>
+          )}
+
+          {/* 9. CLOSING CALL TO ACTION */}
+          <TeamClosing />
+        </>
+      )}
+
+      {/* MODAL DETAILED POPUP */}
       <ProfileModal
         member={selectedMember}
         isOpen={Boolean(selectedMember)}
