@@ -1,22 +1,117 @@
 /* ============================================================
-   TEAM PAGE — Main Page Styling
-   Editorial, Premium University Organization Showcase
+   TEAM PAGE — CENTRAL ALIGNMENT STYLES
    ============================================================ */
 
-.team-page-wrapper {
-  width: 100%;
-  overflow-x: clip;
-  background: var(--dawn, #fbf4e8);
-  min-height: 100vh;
+.team-page-centered {
+  text-align: center;
 }
 
-/* Reduced Motion Overrides */
-@media (prefers-reduced-motion: reduce) {
-  .team-page-wrapper *,
-  .team-page-wrapper *::before,
-  .team-page-wrapper *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* Force centering across all subcomponent heads */
+.team-page-centered .section__head,
+.team-page-centered .faculty-text .section__head,
+.team-page-centered .team-section__head {
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: 720px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Center-align structural elements inside Faculty Layout */
+.team-page-centered .faculty-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Flexbox and Grids alignment correction */
+.team-page-centered .team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+  justify-content: center;
+  justify-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Fallback for grids containing small number of items */
+.team-page-centered .team-grid--faculty,
+.team-page-centered .team-grid--leadership {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  width: 100%;
+}
+
+/* Force individual card content elements to center */
+.team-page-centered .team-card {
+  margin: 0 auto;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 290px;
+}
+
+.team-page-centered .team-card__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* ============================================================
+   SECTION CONTROLLERS (Dark / Light wrappers)
+   ============================================================ */
+
+.section-theme-wrapper {
+  padding: 80px 0;
+  width: 100%;
+}
+
+.section-theme-wrapper.section--dark {
+  background-color: var(--navy-bg, #0b1120); /* Deep premium dark theme */
+  color: #ffffff;
+}
+
+.section-border-top {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Adjust heading styles inside dark wrappers */
+.section-theme-wrapper.section--dark .section__head h2,
+.section-theme-wrapper.section--dark h2 {
+  color: #ffffff !important;
+}
+
+.section-theme-wrapper.section--dark .section__head .eyebrow,
+.section-theme-wrapper.section--dark .eyebrow {
+  color: var(--gold-accent, #fbbf24) !important;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN CORRECTIONS
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .section-theme-wrapper {
+    padding: 50px 0;
+  }
+
+  .team-page-centered .team-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  
+  .team-page-centered .team-card {
+    max-width: 260px;
   }
 }
