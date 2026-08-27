@@ -178,8 +178,11 @@ export default function Team() {
             </div>
           )}
 
-          {/* 4. HOW ABHYUDAYA WORKS (Interactive Organizational Flow) */}
-          <OrganizationStructure />
+          {/* 6. HOW ABHYUDAYA WORKS (Interactive Organizational Flow) */}
+          <OrganizationStructure
+            leadership={mainLeadership}
+            core={core}
+          />
 
           {/* 7. EXECUTIVE COMMITTEE */}
           {executives.length > 0 && (
