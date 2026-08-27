@@ -178,7 +178,7 @@ export default function Team() {
             </div>
           )}
 
-          {/* 6. CLUB STRUCTURE (Positioned in the middle!) */}
+          {/* 4. HOW ABHYUDAYA WORKS (Interactive Organizational Flow) */}
           <OrganizationStructure />
 
           {/* 7. EXECUTIVE COMMITTEE */}

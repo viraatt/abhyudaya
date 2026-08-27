@@ -19,17 +19,33 @@ export default function ExecutiveSection({ members = [], onSelectMember }) {
     if (activeFilter === 'ALL') return members;
 
     return members.filter((member) => {
-      const dept = (member.department || '').toUpperCase();
-      const role = (member.role || '').toUpperCase();
+      const dept = (member.department || '').trim();
+      const upperDept = dept.toUpperCase();
 
       if (activeFilter === 'OPERATIONS') {
-        return dept.includes('OP') || role.includes('OP');
+        return (
+          dept === 'Operations' ||
+          upperDept === 'OPERATIONS' ||
+          upperDept.includes('OPERATION') ||
+          upperDept.includes('OPS')
+        );
       }
       if (activeFilter === 'TECHNICAL') {
-        return dept.includes('TECH') || role.includes('TECH') || dept.includes('DEV') || role.includes('DEV');
+        return (
+          dept === 'Technical' ||
+          upperDept === 'TECHNICAL' ||
+          upperDept.includes('TECH') ||
+          upperDept.includes('DEV')
+        );
       }
       if (activeFilter === 'PR') {
-        return dept.includes('PR') || role.includes('PR') || dept.includes('MEDIA') || role.includes('MEDIA') || dept.includes('OUTREACH');
+        return (
+          dept === 'PR' ||
+          upperDept === 'PR' ||
+          upperDept.includes('PUBLIC') ||
+          upperDept.includes('MEDIA') ||
+          upperDept.includes('OUTREACH')
+        );
       }
       return true;
     });

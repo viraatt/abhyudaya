@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   HiOutlineUserGroup,
@@ -9,15 +9,66 @@ import {
 } from 'react-icons/hi2';
 import './OrganizationStructure.css';
 
-export default function OrganizationStructure() {
+export default function OrganizationStructure({ leadership = [], core = [] }) {
   const [activeDept, setActiveDept] = useState('ALL'); // 'ALL', 'OPERATIONS', 'TECHNICAL', 'PR'
+
+  // Derive dynamic leadership names
+  const president = useMemo(() => {
+    return leadership.find(
+      (m) =>
+        (m.role || '').toLowerCase().includes('president') &&
+        !(m.role || '').toLowerCase().includes('vice')
+    );
+  }, [leadership]);
+
+  const vicePresident = useMemo(() => {
+    return leadership.find((m) =>
+      (m.role || '').toLowerCase().includes('vice')
+    );
+  }, [leadership]);
+
+  const genSec = useMemo(() => {
+    return leadership.find(
+      (m) =>
+        (m.role || '').toLowerCase().includes('secretary') ||
+        (m.role || '').toLowerCase().includes('gensec')
+    );
+  }, [leadership]);
+
+  // Derive dynamic core lead names
+  const opsLead = useMemo(() => {
+    return core.find(
+      (m) =>
+        m.department === 'Operations' ||
+        (m.role || '').toLowerCase().includes('operation') ||
+        (m.role || '').toLowerCase().includes('ops')
+    );
+  }, [core]);
+
+  const techLead = useMemo(() => {
+    return core.find(
+      (m) =>
+        m.department === 'Technical' ||
+        (m.role || '').toLowerCase().includes('tech') ||
+        (m.role || '').toLowerCase().includes('dev')
+    );
+  }, [core]);
+
+  const prLead = useMemo(() => {
+    return core.find(
+      (m) =>
+        m.department === 'PR' ||
+        (m.role || '').toLowerCase().includes('pr') ||
+        (m.role || '').toLowerCase().includes('media')
+    );
+  }, [core]);
 
   const departments = [
     {
       id: 'OPERATIONS',
       name: 'Operations Vertical',
-      leadRole: 'Operations Lead',
-      leadPerson: 'Ishan Shukla',
+      leadRole: opsLead?.role || 'Operations Lead',
+      leadPerson: opsLead?.name || 'Ishan Shukla',
       icon: <HiOutlineCog6Tooth className="org-dept__icon" />,
       tagline: 'Logistics, Venue Management, Event Orchestration',
       executives: 'Operations Executives & Stage Crew',
@@ -26,8 +77,8 @@ export default function OrganizationStructure() {
     {
       id: 'TECHNICAL',
       name: 'Technical Vertical',
-      leadRole: 'Technical Lead',
-      leadPerson: 'Virat Mishra',
+      leadRole: techLead?.role || 'Technical Lead',
+      leadPerson: techLead?.name || 'Virat Mishra',
       icon: <HiOutlineCpuChip className="org-dept__icon" />,
       tagline: 'Web Architecture, Software Systems, Hackathons',
       executives: 'Technical Executives & Developers',
@@ -36,8 +87,8 @@ export default function OrganizationStructure() {
     {
       id: 'PR',
       name: 'PR & Media Vertical',
-      leadRole: 'PR Lead',
-      leadPerson: 'Sharad Agnihotri',
+      leadRole: prLead?.role || 'PR Lead',
+      leadPerson: prLead?.name || 'Sharad Agnihotri',
       icon: <HiOutlineMegaphone className="org-dept__icon" />,
       tagline: 'Brand Outreach, Creative Media, Public Relations',
       executives: 'PR Executives & Media Crew',
@@ -73,8 +124,12 @@ export default function OrganizationStructure() {
             transition={{ duration: 0.45 }}
           >
             <div className="org-node__badge">Top Governance</div>
-            <h3 className="org-node__role">President</h3>
-            <span className="org-node__sub">Chief Executive Officer of Abhyudaya</span>
+            <h3 className="org-node__role">{president?.role || 'President'}</h3>
+            <span className="org-node__sub">
+              {president && president.name !== 'N/A'
+                ? `${president.name} • Chief Executive Officer of Abhyudaya`
+                : 'Chief Executive Officer of Abhyudaya'}
+            </span>
           </motion.div>
 
           {/* Connector Line 1 */}
@@ -91,8 +146,12 @@ export default function OrganizationStructure() {
             transition={{ duration: 0.45, delay: 0.1 }}
           >
             <div className="org-node__badge">Executive Leadership</div>
-            <h3 className="org-node__role">Vice President</h3>
-            <span className="org-node__sub">Strategic Alignment &amp; Vertical Operations</span>
+            <h3 className="org-node__role">{vicePresident?.role || 'Vice President'}</h3>
+            <span className="org-node__sub">
+              {vicePresident && vicePresident.name !== 'N/A'
+                ? `${vicePresident.name} • Strategic Alignment & Vertical Operations`
+                : 'Strategic Alignment & Vertical Operations'}
+            </span>
           </motion.div>
 
           {/* Connector Line 2 */}
@@ -109,8 +168,12 @@ export default function OrganizationStructure() {
             transition={{ duration: 0.45, delay: 0.2 }}
           >
             <div className="org-node__badge">Executive Synchrony</div>
-            <h3 className="org-node__role">General Secretary</h3>
-            <span className="org-node__sub">Unnati Pal • Central Operations &amp; Inter-Department Coordination</span>
+            <h3 className="org-node__role">{genSec?.role || 'General Secretary'}</h3>
+            <span className="org-node__sub">
+              {genSec
+                ? `${genSec.name} • Central Operations & Inter-Department Coordination`
+                : 'Central Operations & Inter-Department Coordination'}
+            </span>
           </motion.div>
 
           {/* Branching Connector Splitter */}
