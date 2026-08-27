@@ -109,7 +109,10 @@ export default function Team() {
       />
 
       {/* 4. HOW ABHYUDAYA WORKS (Interactive Organizational Flow) */}
-      <OrganizationStructure />
+      <OrganizationStructure
+        leadership={groupedData.leadership}
+        core={groupedData.core}
+      />
 
       {/* 5. THE CORE TEAM */}
       <CoreTeamSection
