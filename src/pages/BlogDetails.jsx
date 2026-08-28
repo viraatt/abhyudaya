@@ -100,6 +100,9 @@ export default function BlogDetails() {
   const [blogDocId, setBlogDocId] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Resolved HTML string from the async renderBlogContent function
+  const [renderedContent, setRenderedContent] = useState("");
+
   const [scrollProgress, setScrollProgress] = useState(0);
 
   const [relatedBlogs, setRelatedBlogs] = useState([]);
@@ -370,6 +373,22 @@ export default function BlogDetails() {
   }, [blogDocId]);
 
   // ==========================
+  // RESOLVE BLOG CONTENT (async → HTML string)
+  // ==========================
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!blog?.content) {
+      setRenderedContent("");
+      return;
+    }
+    renderBlogContent(blog.content).then((html) => {
+      if (!cancelled) setRenderedContent(html);
+    });
+    return () => { cancelled = true; };
+  }, [blog?.content]);
+
+  // ==========================
   // COOLDOWN TIMER
   // ==========================
 
@@ -583,7 +602,7 @@ export default function BlogDetails() {
           {/* Blog Content */}
           <div
             className="details-content"
-            dangerouslySetInnerHTML={{ __html: renderBlogContent(blog.content) }}
+            dangerouslySetInnerHTML={{ __html: renderedContent }}
           />
 
           {/* COMMENTS SECTION */}
