@@ -168,14 +168,12 @@ export default function Team() {
             </div>
           )}
 
-          {/* 5. CORE TEAM (Wrapped inside Dark background container as requested) */}
+          {/* 5. CORE TEAM (Domain Leadership & Core Leads on Warm Cream BG) */}
           {core.length > 0 && (
-            <div className="section-theme-wrapper section--dark section-border-top">
-              <CoreTeamSection
-                members={core}
-                onSelectMember={setSelectedMember}
-              />
-            </div>
+            <CoreTeamSection
+              members={core}
+              onSelectMember={setSelectedMember}
+            />
           )}
 
           {/* 6. HOW ABHYUDAYA WORKS (Interactive Organizational Flow) */}
