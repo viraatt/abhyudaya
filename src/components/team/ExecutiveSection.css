@@ -91,12 +91,12 @@
 .executives-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 22px;
+  gap: 24px;
 }
 
 .executive-card {
   background: var(--navy-card, #1c2549);
-  border: 1px solid rgba(251, 244, 232, 0.1);
+  border: 1px solid rgba(251, 244, 232, 0.12);
   border-radius: var(--radius-md, 18px);
   overflow: hidden;
   box-shadow:
@@ -104,16 +104,20 @@
     0 2px 6px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.26s ease;
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .executive-card:hover {
   transform: translateY(-6px);
   box-shadow:
     0 20px 42px rgba(0, 0, 0, 0.4),
-    0 4px 12px rgba(238, 184, 74, 0.12);
-  border-color: rgba(238, 184, 74, 0.35);
+    0 4px 14px rgba(238, 184, 74, 0.15);
+  border-color: rgba(238, 184, 74, 0.45);
 }
 
 /* Media */
@@ -146,18 +150,18 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: rgba(13, 18, 36, 0.85);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(13, 18, 36, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   color: var(--sun, #eeb84a);
-  border: 1px solid rgba(238, 184, 74, 0.25);
-  padding: 3px 10px;
+  border: 1px solid rgba(238, 184, 74, 0.3);
+  padding: 4px 11px;
   border-radius: var(--radius-full, 999px);
 }
 
 /* Body */
 .executive-card__body {
-  padding: 16px 18px 20px;
+  padding: 18px 20px 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -167,25 +171,76 @@
 
 .executive-card__name {
   font-family: var(--font-display, "Fraunces", serif);
-  font-size: var(--text-lg, 1.125rem);
+  font-size: 1.18rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0 0 4px;
+  line-height: 1.25;
 }
 
 .executive-card__role {
   font-family: var(--font-utility, "Space Grotesk", sans-serif);
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: rgba(251, 244, 232, 0.65);
+  color: var(--sun-soft, #f7d189);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   margin: 0 0 14px;
 }
 
 .executive-card__footer {
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 12px;
+  width: 100%;
   display: flex;
   justify-content: center;
+  align-items: center;
+  min-height: 52px;
+}
+
+/* Executive Social Buttons Specifics */
+.executive-card .member-social-links {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.executive-card .social-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.executive-card .social-btn .social-icon {
+  font-size: 18px;
+  color: #ffffff !important;
+  transition: color 0.22s ease, transform 0.22s ease;
+}
+
+.executive-card .social-btn:hover {
+  background: var(--sun, #eeb84a) !important;
+  border-color: var(--sun, #eeb84a) !important;
+  color: var(--night, #0d1224) !important;
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 6px 18px rgba(238, 184, 74, 0.45);
+}
+
+.executive-card .social-btn:hover .social-icon {
+  color: var(--night, #0d1224) !important;
+}
+
+.executive-card .social-btn:focus-visible {
+  outline: 2.5px solid var(--sun, #eeb84a);
+  outline-offset: 3px;
 }
 
 /* Empty State */
@@ -206,7 +261,12 @@
 @media (max-width: 768px) {
   .executives-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 18px;
+  }
+
+  .executive-card .social-btn {
+    width: 40px;
+    height: 40px;
   }
 }
 
@@ -219,5 +279,11 @@
   .executives-filter-btn {
     font-size: 12px;
     padding: 6px 12px;
+  }
+
+  .executives-grid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+    margin: 0 auto;
   }
 }
