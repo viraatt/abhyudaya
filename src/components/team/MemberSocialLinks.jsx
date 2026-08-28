@@ -33,8 +33,8 @@ export default function MemberSocialLinks({
           target="_blank"
           rel="noopener noreferrer"
           className="social-btn social-btn--linkedin"
-          aria-label={`${memberName}'s LinkedIn Profile`}
-          title={`${memberName} on LinkedIn`}
+          aria-label={`Visit ${memberName}'s LinkedIn profile`}
+          title={`Visit ${memberName}'s LinkedIn profile`}
           onClick={(e) => e.stopPropagation()}
         >
           <FaLinkedinIn className="social-icon" />
@@ -48,8 +48,8 @@ export default function MemberSocialLinks({
           target="_blank"
           rel="noopener noreferrer"
           className="social-btn social-btn--github"
-          aria-label={`${memberName}'s GitHub Profile`}
-          title={`${memberName} on GitHub`}
+          aria-label={`Visit ${memberName}'s GitHub profile`}
+          title={`Visit ${memberName}'s GitHub profile`}
           onClick={(e) => e.stopPropagation()}
         >
           <FaGithub className="social-icon" />
@@ -63,8 +63,8 @@ export default function MemberSocialLinks({
           target="_blank"
           rel="noopener noreferrer"
           className="social-btn social-btn--instagram"
-          aria-label={`${memberName}'s Instagram`}
-          title={`${memberName} on Instagram`}
+          aria-label={`Visit ${memberName}'s Instagram profile`}
+          title={`Visit ${memberName}'s Instagram profile`}
           onClick={(e) => e.stopPropagation()}
         >
           <FaInstagram className="social-icon" />
@@ -78,8 +78,8 @@ export default function MemberSocialLinks({
           target="_blank"
           rel="noopener noreferrer"
           className="social-btn social-btn--website"
-          aria-label={`${memberName}'s Portfolio Website`}
-          title={`${memberName}'s Website`}
+          aria-label={`Visit ${memberName}'s website`}
+          title={`Visit ${memberName}'s website`}
           onClick={(e) => e.stopPropagation()}
         >
           <FaGlobe className="social-icon" />
