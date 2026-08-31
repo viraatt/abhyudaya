@@ -1,5 +1,12 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Navigate, Routes, Route, useLocation, useParams } from "react-router-dom";
+import {
+  Navigate,
+  Routes,
+  Route,
+  useLocation,
+  useParams,
+} from "react-router-dom";
+import ReactGA from "react-ga4";
 
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
@@ -15,6 +22,7 @@ import "nprogress/nprogress.css";
 // ─────────────────────────────────────────────────────────────
 // Lazy Loaded Public Pages
 // ─────────────────────────────────────────────────────────────
+
 const Home = lazy(() => import("./pages/Home.jsx"));
 const About = lazy(() => import("./pages/About.jsx"));
 const Events = lazy(() => import("./pages/Events.jsx"));
@@ -30,12 +38,17 @@ const Announcements = lazy(() => import("./pages/Announcements.jsx"));
 const Register = lazy(() => import("./pages/Register.jsx"));
 const RegisterEvent = lazy(() => import("./pages/RegisterEvent.jsx"));
 const Certificate = lazy(() => import("./pages/Certificate/Certificate.jsx"));
-const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate/VerifyCertificate.jsx"));
+
+const VerifyCertificate = lazy(() =>
+  import("./pages/VerifyCertificate/VerifyCertificate.jsx")
+);
+
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 
 // ─────────────────────────────────────────────────────────────
 // Lazy Loaded Admin Pages
 // ─────────────────────────────────────────────────────────────
+
 const Login = lazy(() => import("./Admin/pages/login.jsx"));
 const Dashboard = lazy(() => import("./Admin/pages/dashboard.jsx"));
 const EventManager = lazy(() => import("./Admin/pages/EventManager.jsx"));
@@ -49,14 +62,40 @@ const AdminTeam = lazy(() => import("./Admin/pages/Team.jsx"));
 const AdminGallery = lazy(() => import("./Admin/pages/Gallery.jsx"));
 const AdminContact = lazy(() => import("./Admin/pages/Contact.jsx"));
 const AdminReviews = lazy(() => import("./Admin/pages/Reviews.jsx"));
-const RegistrationOutreach = lazy(() => import("./Admin/pages/RegistrationOutreach.jsx"));
+
+const RegistrationOutreach = lazy(() =>
+  import("./Admin/pages/RegistrationOutreach.jsx")
+);
+
 const Students = lazy(() => import("./Admin/pages/Students.jsx"));
-const AdminAnnouncements = lazy(() => import("./Admin/pages/Announcements.jsx"));
-const AdminRegistrations = lazy(() => import("./Admin/pages/Registrations.jsx"));
-const MediaLibraryPage = lazy(() => import("./Admin/components/media/MediaLibrary.jsx"));
-const Certificates = lazy(() => import("./Admin/pages/Certificates/Certificates.jsx"));
-const AddCertificate = lazy(() => import("./Admin/pages/Certificates/AddCertificate.jsx"));
-const EditCertificate = lazy(() => import("./Admin/pages/Certificates/EditCertificate.jsx"));
+
+const AdminAnnouncements = lazy(() =>
+  import("./Admin/pages/Announcements.jsx")
+);
+
+const AdminRegistrations = lazy(() =>
+  import("./Admin/pages/Registrations.jsx")
+);
+
+const MediaLibraryPage = lazy(() =>
+  import("./Admin/components/media/MediaLibrary.jsx")
+);
+
+const Certificates = lazy(() =>
+  import("./Admin/pages/Certificates/Certificates.jsx")
+);
+
+const AddCertificate = lazy(() =>
+  import("./Admin/pages/Certificates/AddCertificate.jsx")
+);
+
+const EditCertificate = lazy(() =>
+  import("./Admin/pages/Certificates/EditCertificate.jsx")
+);
+
+// ─────────────────────────────────────────────────────────────
+// NProgress Configuration
+// ─────────────────────────────────────────────────────────────
 
 NProgress.configure({
   showSpinner: false,
@@ -64,15 +103,40 @@ NProgress.configure({
   minimum: 0.2,
 });
 
+// ─────────────────────────────────────────────────────────────
+// Legacy Blog Redirect
+// ─────────────────────────────────────────────────────────────
+
 function LegacyBlogRedirect() {
   const { slug } = useParams();
-  return <Navigate to={`/blog/${encodeURIComponent(slug || "")}`} replace />;
+
+  return (
+    <Navigate
+      to={`/blog/${encodeURIComponent(slug || "")}`}
+      replace
+    />
+  );
 }
+
+// ─────────────────────────────────────────────────────────────
+// Main App
+// ─────────────────────────────────────────────────────────────
 
 export default function App() {
   const location = useLocation();
 
   useEffect(() => {
+    // Google Analytics page tracking
+    const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
+
+    if (GA_MEASUREMENT_ID) {
+      ReactGA.send({
+        hitType: "pageview",
+        page: location.pathname + location.search,
+      });
+    }
+
+    // Page loading progress
     NProgress.start();
 
     const timer = setTimeout(() => {
@@ -83,7 +147,7 @@ export default function App() {
       clearTimeout(timer);
       NProgress.done();
     };
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   return (
     <ToastProvider>
@@ -91,248 +155,276 @@ export default function App() {
 
       <Suspense fallback={<PageLoader />}>
         <ErrorBoundary key={location.pathname}>
-        <Routes>
+          <Routes>
+            {/* ================= ADMIN ROUTES ================= */}
 
-          {/* ================= ADMIN ================= */}
+            <Route
+              path="/admin/login"
+              element={<Login />}
+            />
 
-          <Route
-            path="/admin/login"
-            element={<Login />}
-          />
+            {/* Dashboard */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Dashboard */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin"]}>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* Events */}
+            <Route
+              path="/admin/events"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <EventManager />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Events */}
-          <Route
-            path="/admin/events"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <EventManager />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/admin/events/add"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <AddEvent />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin/events/add"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <AddEvent />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/admin/events/edit/:id"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <EditEvent />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin/events/edit/:id"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <EditEvent />
-              </ProtectedRoute>
-            }
-          />
+            {/* Users */}
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <Users />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Users */}
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin"]}>
-                <Users />
-              </ProtectedRoute>
-            }
-          />
+            {/* Blogs */}
+            <Route
+              path="/admin/blogs"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                  <BlogManager />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Blogs */}
-          <Route
-            path="/admin/blogs"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
-                <BlogManager />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/admin/blogs/add"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                  <AddBlog />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin/blogs/add"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
-                <AddBlog />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/admin/blogs/edit/:id"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                  <EditBlog />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin/blogs/edit/:id"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
-                <EditBlog />
-              </ProtectedRoute>
-            }
-          />
+            {/* Media */}
+            <Route
+              path="/admin/media"
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "super_admin",
+                    "blog_admin",
+                    "event_admin",
+                  ]}
+                >
+                  <MediaLibraryPage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Media Library */}
-          <Route
-            path="/admin/media"
-            element={
-              <ProtectedRoute
-                allowedRoles={[
-                  "super_admin",
-                  "blog_admin",
-                  "event_admin",
-                ]}
-              >
-                <MediaLibraryPage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Team */}
+            <Route
+              path="/admin/team"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <AdminTeam />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Team */}
-          <Route
-            path="/admin/team"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin"]}>
-                <AdminTeam />
-              </ProtectedRoute>
-            }
-          />
+            {/* Gallery */}
+            <Route
+              path="/admin/gallery"
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "super_admin",
+                    "event_admin",
+                    "blog_admin",
+                  ]}
+                >
+                  <AdminGallery />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Gallery */}
-          <Route
-            path="/admin/gallery"
-            element={
-              <ProtectedRoute
-                allowedRoles={[
-                  "super_admin",
-                  "event_admin",
-                  "blog_admin",
-                ]}
-              >
-                <AdminGallery />
-              </ProtectedRoute>
-            }
-          />
+            {/* Contact */}
+            <Route
+              path="/admin/contact"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <AdminContact />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Contact */}
-          <Route
-            path="/admin/contact"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin"]}>
-                <AdminContact />
-              </ProtectedRoute>
-            }
-          />
+            {/* Reviews */}
+            <Route
+              path="/admin/reviews"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <AdminReviews />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Reviews */}
-          <Route
-            path="/admin/reviews"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin"]}>
-                <AdminReviews />
-              </ProtectedRoute>
-            }
-          />
+            {/* Announcements */}
+            <Route
+              path="/admin/announcements"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <AdminAnnouncements />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Announcements */}
-          <Route
-            path="/admin/announcements"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <AdminAnnouncements />
-              </ProtectedRoute>
-            }
-          />
+            {/* Students */}
+            <Route
+              path="/admin/students"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <Students />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Students */}
-          <Route
-            path="/admin/students"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <Students />
-              </ProtectedRoute>
-            }
-          />
+            {/* Registrations */}
+            <Route
+              path="/admin/registrations"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <AdminRegistrations />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Registrations */}
-          <Route
-            path="/admin/registrations"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <AdminRegistrations />
-              </ProtectedRoute>
-            }
-          />
+            {/* Registration Outreach */}
+            <Route
+              path="/admin/registration-outreach"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <RegistrationOutreach />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Registration Outreach */}
-          <Route
-            path="/admin/registration-outreach"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <RegistrationOutreach />
-              </ProtectedRoute>
-            }
-          />
+            {/* Certificates */}
+            <Route
+              path="/admin/certificates"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <Certificates />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Certificates Admin */}
-          <Route
-            path="/admin/certificates"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <Certificates />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/admin/certificates/add"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <AddCertificate />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin/certificates/add"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <AddCertificate />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/admin/certificates/edit/:id"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <EditCertificate />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/admin/certificates/edit/:id"
-            element={
-              <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
-                <EditCertificate />
-              </ProtectedRoute>
-            }
-          />
+            {/* ================= PUBLIC ROUTES ================= */}
 
-          {/* ================= PUBLIC ================= */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
 
-          <Route element={<Layout />}>
+              <Route path="/events" element={<Events />} />
+              <Route path="/events/:slug" element={<EventDetails />} />
 
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/events/:slug" element={<EventDetails />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/gallery/:eventSlug" element={<EventAlbum />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogDetails />} />
-            <Route path="/blogs" element={<Navigate to="/blog" replace />} />
-            <Route path="/blogs/:slug" element={<LegacyBlogRedirect />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/join" element={<JoinClub />} />
-            <Route path="/announcements" element={<Announcements />} />
-            <Route path="/register" element={<RegisterEvent />} />
-            <Route path="/register/:eventId" element={<Register />} />
-            <Route path="/certificate" element={<Certificate />} />
-            <Route path="/verify/:certificateId" element={<VerifyCertificate />} />
-            <Route path="*" element={<NotFound />} />
+              <Route path="/team" element={<Team />} />
 
-          </Route>
+              <Route path="/gallery" element={<Gallery />} />
+              <Route
+                path="/gallery/:eventSlug"
+                element={<EventAlbum />}
+              />
 
-        </Routes>
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogDetails />} />
+
+              <Route
+                path="/blogs"
+                element={<Navigate to="/blog" replace />}
+              />
+
+              <Route
+                path="/blogs/:slug"
+                element={<LegacyBlogRedirect />}
+              />
+
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/join" element={<JoinClub />} />
+              <Route
+                path="/announcements"
+                element={<Announcements />}
+              />
+
+              <Route path="/register" element={<RegisterEvent />} />
+              <Route
+                path="/register/:eventId"
+                element={<Register />}
+              />
+
+              <Route
+                path="/certificate"
+                element={<Certificate />}
+              />
+
+              <Route
+                path="/verify/:certificateId"
+                element={<VerifyCertificate />}
+              />
+
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
         </ErrorBoundary>
       </Suspense>
     </ToastProvider>
