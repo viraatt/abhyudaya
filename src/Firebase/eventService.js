@@ -16,6 +16,7 @@ import {
 
 import { db } from "./firebase";
 import eventCategories from "../data/eventCategories";
+import { normalizeRouteSlug } from "../utils/slug";
 
 const EVENTS_COLLECTION = "events";
 const eventsRef = collection(db, EVENTS_COLLECTION);
@@ -164,17 +165,28 @@ export async function getEventsPage(options = {}) {
     return { events: items, lastDoc: newLastDoc, hasMore };
   } catch (err) {
     console.warn("getEventsPage fallback query:", err);
-    // Fallback without compound index
-    const constraints = [limit(pageSize)];
-    if (lastDoc) constraints.push(startAfter(lastDoc));
-    const fallbackQ = query(eventsRef, ...constraints);
-    const snapshot = await getDocs(fallbackQ);
-    const items = snapshot.docs.map(formatEventDoc);
-    const filtered = onlyPublished
-      ? items.filter((item) => item.status === "Published")
-      : items;
-    const newLastDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
-    return { events: filtered, lastDoc: newLastDoc, hasMore: snapshot.docs.length === pageSize };
+    try {
+      // Keep the public query compatible with the Firestore rule. The original
+      // fallback read the entire collection, which is rejected when drafts exist.
+      const constraints = onlyPublished
+        ? [where("status", "==", "Published")]
+        : [];
+      const snapshot = await getDocs(query(eventsRef, ...constraints));
+      const items = snapshot.docs
+        .map(formatEventDoc)
+        .sort((a, b) => Number(a.order || 99) - Number(b.order || 99))
+        .slice(0, pageSize);
+      return { events: items, lastDoc: null, hasMore: false };
+    } catch (fallbackError) {
+      console.warn("Unable to read Firestore events; using bundled event data.", fallbackError);
+      // Core content remains usable if a privacy extension, a temporary network
+      // failure, or an undeployed index prevents Firestore from loading.
+      return {
+        events: eventCategories.slice(0, pageSize).map(normalizeEvent),
+        lastDoc: null,
+        hasMore: false,
+      };
+    }
   }
 }
 
@@ -205,28 +217,37 @@ export async function getEvents(options = {}) {
 }
 
 export async function getEventBySlug(slug) {
-  if (!slug) return null;
+  const normalizedSlug = normalizeRouteSlug(slug);
+  if (!normalizedSlug) return null;
 
   try {
-    const q = query(eventsRef, where("slug", "==", slug), limit(1));
+    // Firestore evaluates rules against the query, not only its eventual result.
+    // Public callers must constrain this query to documents they may read.
+    const q = query(
+      eventsRef,
+      where("status", "==", "Published"),
+      where("slug", "==", normalizedSlug),
+      limit(1)
+    );
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
       return formatEventDoc(snapshot.docs[0]);
     }
 
-    const docRef = doc(db, EVENTS_COLLECTION, slug);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      return formatEventDoc(docSnap);
+    const documentId = String(slug).trim();
+    if (documentId && !documentId.includes("/")) {
+      const docSnap = await getDoc(doc(db, EVENTS_COLLECTION, documentId));
+      if (docSnap.exists()) {
+        return formatEventDoc(docSnap);
+      }
     }
   } catch (err) {
-    console.warn(`getEventBySlug warning for "${slug}":`, err);
+    console.warn("Unable to load event from Firestore; checking bundled event data.", err);
   }
 
   const staticMatch = eventCategories.find(
-    (item) => item.slug === slug || String(item.id) === slug
+    (item) => normalizeRouteSlug(item.slug) === normalizedSlug || String(item.id) === String(slug).trim()
   );
   return staticMatch ? normalizeEvent(staticMatch) : null;
 }

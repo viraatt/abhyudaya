@@ -12,11 +12,14 @@ export default function VerifyCertificate() {
   const [loading, setLoading] = useState(true);
   const [certificate, setCertificate] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     setNotFound(false);
+    setError(null);
+    setCertificate(null);
 
     getCertificateById(certificateId)
       .then((cert) => {
@@ -29,7 +32,7 @@ export default function VerifyCertificate() {
       })
       .catch((err) => {
         console.error("Verification error:", err);
-        if (isMounted) setNotFound(true);
+        if (isMounted) setError(err);
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -68,6 +71,15 @@ export default function VerifyCertificate() {
             <div className="verify-loading-card">
               <span className="verify-spinner" aria-hidden="true" />
               <p>Verifying certificate against official registry...</p>
+            </div>
+          ) : error ? (
+            <div className="verify-status-card verify-status-card--invalid">
+              <div className="verify-icon-wrap verify-icon-wrap--invalid">×</div>
+              <h2 className="verify-status-title">Unable to Verify Certificate</h2>
+              <p className="verify-status-desc">Please check your connection and try again.</p>
+              <div className="verify-actions">
+                <Link to="/certificate" className="verify-btn verify-btn--primary">Search Certificates →</Link>
+              </div>
             </div>
           ) : notFound || !certificate ? (
             <div className="verify-status-card verify-status-card--invalid">

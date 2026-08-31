@@ -83,29 +83,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-
-    <!-- Disable right-click and common DevTools shortcuts (deterrent only, not real protection) -->
-    <script>
-      document.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-      });
-
-      document.addEventListener('keydown', function (e) {
-        // F12
-        if (e.key === 'F12') e.preventDefault();
-        // Ctrl+Shift+I / J / C (Windows/Linux)
-        if (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) {
-          e.preventDefault();
-        }
-        // Cmd+Option+I (Mac)
-        if (e.metaKey && e.altKey && e.key.toUpperCase() === 'I') {
-          e.preventDefault();
-        }
-        // Ctrl+U (view source)
-        if (e.ctrlKey && e.key.toUpperCase() === 'U') {
-          e.preventDefault();
-        }
-      });
-    </script>
   </body>
 </html>

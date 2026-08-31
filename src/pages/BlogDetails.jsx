@@ -7,11 +7,10 @@ import "./BlogDetails.css";
 //    Tiptap JSON content is actually viewed (saves ~300 kB on initial load).
 // ──────────────────────────────────────────────────────────────────────────
 import { db } from "../Firebase/firebase";
+import { getBlogBySlug } from "../Firebase/blogService";
 
 import {
   collection,
-  doc,
-  getDoc,
   getDocs,
   addDoc,
   query,
@@ -99,6 +98,7 @@ export default function BlogDetails() {
   // Internal Firestore document ID — used for comments (preserves existing comments)
   const [blogDocId, setBlogDocId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   // Resolved HTML string from the async renderBlogContent function
   const [renderedContent, setRenderedContent] = useState("");
@@ -116,7 +116,7 @@ export default function BlogDetails() {
   const [posting, setPosting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  const canonicalUrl = `${SITE_URL}/blog/${blogIdentifier}`;
+  const canonicalUrl = `${SITE_URL}/blog/${encodeURIComponent(blogIdentifier)}`;
 
   const shareText = blog
     ? `${blog.title} | ${ORG_NAME}`
@@ -228,84 +228,38 @@ export default function BlogDetails() {
   // ==========================
 
   useEffect(() => {
+    let isCurrent = true;
+
     if (!blogIdentifier) {
       setLoading(false);
       setBlog(null);
+      setLoadError(null);
       return;
     }
 
     const fetchBlog = async () => {
       try {
         setLoading(true);
+        setLoadError(null);
+        setBlog(null);
+        setBlogDocId(null);
+        setRelatedBlogs([]);
 
-        let docSnap = null;
-        let data = null;
-
-        // 1. Primary Query: Search by URL slug
-        try {
-          const q = query(
-            collection(db, "blogs"),
-            where("slug", "==", blogIdentifier)
-          );
-          const snapshot = await getDocs(q);
-
-          if (!snapshot.empty) {
-            docSnap = snapshot.docs[0];
-            data = docSnap.data();
-          }
-        } catch (slugQueryErr) {
-          console.warn("Slug query encountered error:", slugQueryErr);
-        }
-
-        // 2. Fallback: If not found by slug, search directly by Firestore Document ID
-        if (!docSnap) {
-          try {
-            const docRef = doc(db, "blogs", blogIdentifier);
-            const directSnap = await getDoc(docRef);
-            if (directSnap.exists()) {
-              docSnap = directSnap;
-              data = directSnap.data();
-            }
-          } catch (docIdErr) {
-            // Direct doc lookup failed
-          }
-        }
-
-        if (!docSnap || !data) {
-          setBlog(null);
+        const currentBlog = await getBlogBySlug(blogIdentifier);
+        if (!isCurrent || !currentBlog) {
           return;
         }
 
-        // Store internal Firestore document ID for comments
-        setBlogDocId(docSnap.id);
-
-        const currentBlog = {
-          id: docSnap.id,
-          ...data,
-          date: data.createdAt?.toDate
-            ? data.createdAt.toDate().toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-              })
-            : data.publishDate || "Recently",
-          dateISO: data.createdAt?.toDate
-            ? data.createdAt.toDate().toISOString()
-            : null,
-          updatedDateISO: data.updatedAt?.toDate
-            ? data.updatedAt.toDate().toISOString()
-            : null,
-        };
-
+        setBlogDocId(currentBlog.id);
         setBlog(currentBlog);
 
         // Fetch related blogs — prefer same category, exclude current
         try {
-          const relatedQuery = data.category
+          const relatedQuery = currentBlog.category
             ? query(
                 collection(db, "blogs"),
                 where("status", "==", "Published"),
-                where("category", "==", data.category)
+                where("category", "==", currentBlog.category)
               )
             : query(collection(db, "blogs"), where("status", "==", "Published"));
 
@@ -313,22 +267,25 @@ export default function BlogDetails() {
 
           const related = blogsSnapshot.docs
             .map((d) => ({ id: d.id, ...d.data() }))
-            .filter((item) => item.id !== docSnap.id && item.slug !== blogIdentifier)
+            .filter((item) => item.id !== currentBlog.id && item.slug !== currentBlog.slug)
             .slice(0, 3);
 
-          setRelatedBlogs(related);
+          if (isCurrent) setRelatedBlogs(related);
         } catch (relatedErr) {
           console.warn("Error fetching related blogs:", relatedErr);
         }
       } catch (error) {
         console.error("Error loading blog details:", error);
-        setBlog(null);
+        if (isCurrent) setLoadError(error);
       } finally {
-        setLoading(false);
+        if (isCurrent) setLoading(false);
       }
     };
 
     fetchBlog();
+    return () => {
+      isCurrent = false;
+    };
   }, [blogIdentifier]);
 
   // ==========================
@@ -417,6 +374,23 @@ export default function BlogDetails() {
   // ==========================
 
   if (!blog) {
+    if (loadError) {
+      return (
+        <section className="blog-details">
+          <div className="blog-details-container" style={{ textAlign: "center", padding: "60px 20px" }}>
+            <h1 style={{ marginBottom: "16px" }}>Unable to Load Blog</h1>
+            <p style={{ color: "#64748b", marginBottom: "24px" }}>
+              Please check your connection and try again.
+            </p>
+            <Link to="/blog" className="back-btn" style={{ display: "inline-flex" }}>
+              <FiArrowLeft />
+              Back to Blog
+            </Link>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <>
         <Helmet>
@@ -552,7 +526,7 @@ export default function BlogDetails() {
               alt={`${blog.title} — featured image`}
               className="details-featured-image"
               loading="eager"
-              fetchpriority="high"
+              fetchPriority="high"
               decoding="async"
               width="1200"
               height="630"

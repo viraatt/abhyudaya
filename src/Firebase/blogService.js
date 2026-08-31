@@ -14,7 +14,8 @@ import {
   startAfter,
   serverTimestamp,
 } from "firebase/firestore";
-import { generateUniqueSlug } from "../utils/slug";
+import { generateUniqueSlug, normalizeRouteSlug } from "../utils/slug";
+import { blogs as staticBlogs } from "../data/blogs";
 
 const BLOGS_COLLECTION = "blogs";
 const blogsRef = collection(db, BLOGS_COLLECTION);
@@ -31,6 +32,17 @@ function formatBlogDoc(snapshotDoc) {
           year: "numeric",
         })
       : "Recently",
+  };
+}
+
+function formatStaticBlog(blog) {
+  return {
+    ...blog,
+    id: String(blog.id),
+    slug: blog.slug,
+    featuredImage: blog.featuredImage || blog.image || "",
+    status: "Published",
+    content: blog.content || `<p>${blog.excerpt || ""}</p>`,
   };
 }
 
@@ -72,17 +84,26 @@ export const getBlogsPage = async ({
     return { blogs, lastDoc: newLastDoc, hasMore };
   } catch (err) {
     console.error("Error in getBlogsPage query:", err);
-    // Fallback if index missing or error
-    let constraints = [limit(pageSize)];
-    if (lastDoc) constraints.push(startAfter(lastDoc));
-    const fallbackQ = query(blogsRef, ...constraints);
-    const snapshot = await getDocs(fallbackQ);
-    const blogs = snapshot.docs.map(formatBlogDoc);
-    const filtered = onlyPublished
-      ? blogs.filter((b) => (b.status || "").toLowerCase() === "published")
-      : blogs;
-    const newLastDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
-    return { blogs: filtered, lastDoc: newLastDoc, hasMore: snapshot.docs.length === pageSize };
+    try {
+      // Avoid an unrestricted fallback query: it violates the public read rule
+      // whenever unpublished posts are present.
+      const constraints = onlyPublished
+        ? [where("status", "==", "Published")]
+        : [];
+      const snapshot = await getDocs(query(blogsRef, ...constraints));
+      const blogs = snapshot.docs
+        .map(formatBlogDoc)
+        .filter((blog) => category === "All" || blog.category === category)
+        .slice(0, pageSize);
+      return { blogs, lastDoc: null, hasMore: false };
+    } catch (fallbackError) {
+      console.warn("Unable to read Firestore blogs; using bundled articles.", fallbackError);
+      const blogs = staticBlogs
+        .map(formatStaticBlog)
+        .filter((blog) => category === "All" || blog.category === category)
+        .slice(0, pageSize);
+      return { blogs, lastDoc: null, hasMore: false };
+    }
   }
 };
 
@@ -268,13 +289,32 @@ export const deleteBlogService = async (id) => {
  * Retrieves a blog by unique slug.
  */
 export const getBlogBySlug = async (slug) => {
-  if (!slug) return null;
+  const normalizedSlug = normalizeRouteSlug(slug);
+  if (!normalizedSlug) return null;
 
-  const q = query(blogsRef, where("slug", "==", slug.trim()), limit(1));
-  const snap = await getDocs(q);
+  try {
+    // Without the status constraint this public query is denied by Firestore
+    // rules, even if the requested post itself is published.
+    const q = query(
+      blogsRef,
+      where("status", "==", "Published"),
+      where("slug", "==", normalizedSlug),
+      limit(1)
+    );
+    const snap = await getDocs(q);
 
-  if (snap.empty) return null;
+    if (!snap.empty) return formatBlogDoc(snap.docs[0]);
 
-  const docSnap = snap.docs[0];
-  return formatBlogDoc(docSnap);
+    const documentId = String(slug).trim();
+    if (documentId && !documentId.includes("/")) {
+      const docSnap = await getDoc(doc(blogsRef, documentId));
+      if (docSnap.exists()) return formatBlogDoc(docSnap);
+    }
+  } catch (err) {
+    console.warn("Unable to load blog from Firestore; checking bundled articles.", err);
+  }
+
+  return staticBlogs
+    .map(formatStaticBlog)
+    .find((blog) => normalizeRouteSlug(blog.slug) === normalizedSlug || blog.id === String(slug).trim()) || null;
 };

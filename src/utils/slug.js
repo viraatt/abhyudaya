@@ -27,6 +27,24 @@ export const generateSlug = (title = "") => {
     .replace(/^-+|-+$/g, ""); // Remove leading and trailing hyphens
 };
 
+/** Normalizes a URL slug before comparison with its stored value. */
+export const normalizeRouteSlug = (value = "") => {
+  let decodedValue = String(value).trim();
+
+  try {
+    decodedValue = decodeURIComponent(decodedValue);
+  } catch {
+    // Keep malformed escape sequences unchanged so the request can resolve safely.
+  }
+
+  return decodedValue
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
+
 /**
  * Sanitizes user manual input as they type a custom slug.
  *
