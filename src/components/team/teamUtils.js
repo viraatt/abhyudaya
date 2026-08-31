@@ -16,6 +16,7 @@ export const LEVELS = {
   LEADERSHIP: "leadership",
   CORE: "core",
   EXECUTIVE: "executive",
+  WEB_DEV: "web-dev",
 };
 
 export const VALID_LEVELS = Object.values(LEVELS);
@@ -25,6 +26,7 @@ export const LEVEL_LABELS = {
   [LEVELS.LEADERSHIP]: "The Leadership",
   [LEVELS.CORE]: "Core Team",
   [LEVELS.EXECUTIVE]: "Executive",
+  [LEVELS.WEB_DEV]: "Web Development Team",
 };
 
 // Canonical department labels used consistently by Admin + Public.
@@ -33,20 +35,22 @@ export const DEPARTMENT_OPTIONS = [
   "Operations",
   "Technical",
   "PR",
+  "Web Development",
   "Faculty Advisory",
 ];
 
-// Departments an Executive / Core member can belong to.
-export const EXECUTIVE_DEPARTMENTS = ["Operations", "Technical", "PR"];
+// Departments an Executive / Core / Web Dev member can belong to.
+export const EXECUTIVE_DEPARTMENTS = ["Operations", "Technical", "PR", "Web Development"];
 
 export const DEPARTMENTS = {
   ALL: "ALL",
   OPERATIONS: "OPERATIONS",
   TECHNICAL: "TECHNICAL",
   PR: "PR",
+  WEB_DEV: "WEB_DEV",
 };
 
-// Fixed role presets an admin can pick for Faculty / Leadership / Core.
+// Fixed role presets an admin can pick for Faculty / Leadership / Core / Web Dev.
 // Selecting one of these auto-locks level + department.
 export const ROLE_PRESETS = [
   {
@@ -99,6 +103,27 @@ export const ROLE_PRESETS = [
     category: "Core Team",
   },
   {
+    label: "Web Developer (Web Dev)",
+    value: "Web Developer",
+    level: LEVELS.WEB_DEV,
+    department: "Web Development",
+    category: "Web Development Team",
+  },
+  {
+    label: "Frontend Developer (Web Dev)",
+    value: "Frontend Developer",
+    level: LEVELS.WEB_DEV,
+    department: "Web Development",
+    category: "Web Development Team",
+  },
+  {
+    label: "Full Stack Developer (Web Dev)",
+    value: "Full Stack Developer",
+    level: LEVELS.WEB_DEV,
+    department: "Web Development",
+    category: "Web Development Team",
+  },
+  {
     label: "Operations Executive (Executive)",
     value: "Operations Executive",
     level: LEVELS.EXECUTIVE,
@@ -128,6 +153,7 @@ export const CATEGORY_BY_LEVEL = {
   [LEVELS.LEADERSHIP]: "Executive Board",
   [LEVELS.CORE]: "Core Team",
   [LEVELS.EXECUTIVE]: "Domain Leads",
+  [LEVELS.WEB_DEV]: "Web Development Team",
 };
 
 /**
@@ -170,6 +196,14 @@ export function normalizeMember(member, index = 0) {
     ) {
       level = LEVELS.FACULTY_ADVISOR;
     } else if (
+      lowerCategory.includes("web dev") ||
+      lowerCategory.includes("web development") ||
+      lowerRole.includes("web dev") ||
+      lowerRole.includes("web developer") ||
+      explicitDept === "Web Development"
+    ) {
+      level = LEVELS.WEB_DEV;
+    } else if (
       lowerRole.includes("president") ||
       lowerRole.includes("general secretary") ||
       lowerRole.includes("gen sec") ||
@@ -196,6 +230,8 @@ export function normalizeMember(member, index = 0) {
       department = "Faculty Advisory";
     } else if (level === LEVELS.LEADERSHIP) {
       department = "Leadership";
+    } else if (level === LEVELS.WEB_DEV) {
+      department = "Web Development";
     } else if (level === LEVELS.CORE || level === LEVELS.EXECUTIVE) {
       if (lowerRole.includes("operation") || lowerRole.includes("ops")) {
         department = "Operations";
@@ -215,7 +251,7 @@ export function normalizeMember(member, index = 0) {
       ) {
         department = "PR";
       } else {
-        const defaultDepts = ["Technical", "Operations", "PR"];
+        const defaultDepts = ["Technical", "Operations", "PR", "Web Development"];
         department = defaultDepts[index % defaultDepts.length];
       }
     }
@@ -268,11 +304,21 @@ export function groupTeamMembers(members = []) {
   const executives = normalized
     .filter((m) => m.level === LEVELS.EXECUTIVE)
     .sort(byOrder);
+  const webDev = normalized
+    .filter(
+      (m) =>
+        m.level === LEVELS.WEB_DEV ||
+        m.department === "Web Development" ||
+        (m.category || "").toLowerCase().includes("web dev")
+    )
+    .sort(byOrder);
 
   return {
     faculty,
     leadership,
     core,
     executives,
+    webDev,
   };
 }
+

@@ -39,11 +39,11 @@ function validateTeamMemberData(data) {
     throw new Error("Role is required.");
   }
   if (!data.level || !VALID_LEVELS.includes(data.level)) {
-    throw new Error("A valid level (faculty-advisor, leadership, core, executive) is required.");
+    throw new Error("A valid level (faculty-advisor, leadership, core, executive, web-dev) is required.");
   }
-  if (data.level === LEVELS.EXECUTIVE || data.level === LEVELS.CORE) {
+  if (data.level === LEVELS.EXECUTIVE || data.level === LEVELS.CORE || data.level === LEVELS.WEB_DEV) {
     if (!data.department || !String(data.department).trim()) {
-      throw new Error("Department is required for Core and Executive members.");
+      throw new Error("Department is required for Core, Executive, and Web Development members.");
     }
   }
   if (!isValidUrl(data.linkedin)) {
