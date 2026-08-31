@@ -6,6 +6,7 @@ import { getAlbumBySlug } from "../services/galleryAlbumsService.js";
 import {
   FaArrowLeft,
   FaCalendarAlt,
+  FaFolderOpen,
   FaImages,
   FaTimes,
   FaChevronLeft,
@@ -136,7 +137,20 @@ export default function EventAlbum() {
     );
   }
 
-  if (error || !album) {
+  if (error && error !== "Album not found.") {
+    return (
+      <div className="gallery-page">
+        <div className="gallery-empty-state" style={{ maxWidth: "600px", margin: "4rem auto" }}>
+          <FaImages className="gallery-empty-icon" />
+          <h2 className="gallery-empty-title">Unable to Load Album</h2>
+          <p className="gallery-empty-desc">Please check your connection and try again.</p>
+          <Link to="/gallery" className="gallery-pill-btn active">← Back to Gallery</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!album) {
     return (
       <div className="gallery-page">
         <Helmet>

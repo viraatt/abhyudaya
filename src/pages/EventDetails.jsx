@@ -83,7 +83,21 @@ export default function EventDetails() {
     );
   }
 
-  if (error || !event) {
+  if (error) {
+    return (
+      <section className="event-not-found">
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <h1 style={{ fontSize: "2.4rem", color: "#0f172a", marginBottom: "12px" }}>Unable to Load Event</h1>
+          <p style={{ color: "#64748b", marginBottom: "24px" }}>Please check your connection and try again.</p>
+          <Link to="/events" style={{ display: "inline-block", padding: "12px 28px", background: "#2563eb", color: "#fff", borderRadius: "999px", fontWeight: 600, textDecoration: "none" }}>
+            ← Back to Events
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  if (!event) {
     return (
       <>
         <Helmet>

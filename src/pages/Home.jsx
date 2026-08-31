@@ -143,7 +143,7 @@ export default function Home() {
             className="hero__logo"
             width="120"
             height="120"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
           />
           <p className="eyebrow hero__eyebrow">{club.institute}</p>

@@ -16,6 +16,7 @@ const Blog = () => {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(null);
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -23,6 +24,7 @@ const Blog = () => {
   const fetchInitialBlogs = useCallback(async (cat) => {
     try {
       setLoading(true);
+      setError(null);
       const res = await getBlogsPage({
         pageSize: 9,
         category: cat,
@@ -33,6 +35,7 @@ const Blog = () => {
       setHasMore(res.hasMore);
     } catch (error) {
       console.error("Error loading blogs:", error);
+      setError("Unable to load articles right now. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -146,6 +149,14 @@ const Blog = () => {
           <div className="blog-loading">
             <div className="blog-loading-spinner" />
             <span>Loading articles...</span>
+          </div>
+        ) : error ? (
+          <div className="no-blogs" role="alert">
+            <h3>Something went wrong</h3>
+            <p>{error}</p>
+            <button type="button" className="reset-search-btn" onClick={() => fetchInitialBlogs(activeCategory)}>
+              Retry loading
+            </button>
           </div>
         ) : (
           <>

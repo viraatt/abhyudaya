@@ -219,7 +219,7 @@ export default function Gallery() {
                   alt={HERO_COLLAGE_PHOTOS[0].title}
                   className="collage-img"
                   loading="eager"
-                  fetchpriority="high"
+                  fetchPriority="high"
                 />
                 <div className="collage-overlay">
                   <span className="collage-badge">{HERO_COLLAGE_PHOTOS[0].category}</span>

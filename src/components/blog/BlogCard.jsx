@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { FiCalendar, FiClock, FiArrowRight, FiUser } from "react-icons/fi";
 
 function BlogCard({ blog }) {
+  const blogPath = `/blog/${blog.slug || blog.id}`;
+
   return (
     <article className="blog-card">
       <div className="blog-card-image">
@@ -23,7 +25,7 @@ function BlogCard({ blog }) {
 
       <div className="blog-card-body">
         <h3 className="blog-card-title">
-          <Link to={`/blog/${blog.slug}`}>{blog.title}</Link>
+          <Link to={blogPath}>{blog.title}</Link>
         </h3>
 
         <p className="blog-card-desc">
@@ -52,7 +54,7 @@ function BlogCard({ blog }) {
             )}
           </div>
 
-          <Link to={`/blog/${blog.slug}`} className="blog-read-btn" aria-label={`Read ${blog.title}`}>
+          <Link to={blogPath} className="blog-read-btn" aria-label={`Read ${blog.title}`}>
             <span>Read Article</span>
             <FiArrowRight className="btn-arrow" />
           </Link>

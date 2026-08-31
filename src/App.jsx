@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Navigate, Routes, Route, useLocation, useParams } from "react-router-dom";
 
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
@@ -7,6 +7,7 @@ import PageLoader from "./components/PageLoader.jsx";
 import { ToastProvider } from "./Admin/components/Toast.jsx";
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
+import ErrorBoundary from "./Admin/components/ErrorBoundary.jsx";
 
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
@@ -63,6 +64,11 @@ NProgress.configure({
   minimum: 0.2,
 });
 
+function LegacyBlogRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/blog/${encodeURIComponent(slug || "")}`} replace />;
+}
+
 export default function App() {
   const location = useLocation();
 
@@ -84,6 +90,7 @@ export default function App() {
       <ScrollToTop />
 
       <Suspense fallback={<PageLoader />}>
+        <ErrorBoundary key={location.pathname}>
         <Routes>
 
           {/* ================= ADMIN ================= */}
@@ -312,6 +319,8 @@ export default function App() {
             <Route path="/gallery/:eventSlug" element={<EventAlbum />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogDetails />} />
+            <Route path="/blogs" element={<Navigate to="/blog" replace />} />
+            <Route path="/blogs/:slug" element={<LegacyBlogRedirect />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/join" element={<JoinClub />} />
             <Route path="/announcements" element={<Announcements />} />
@@ -324,6 +333,7 @@ export default function App() {
           </Route>
 
         </Routes>
+        </ErrorBoundary>
       </Suspense>
     </ToastProvider>
   );
