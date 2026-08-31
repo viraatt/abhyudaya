@@ -11,6 +11,7 @@ import LeadershipSection from '../components/team/LeadershipSection.jsx';
 import OrganizationStructure from '../components/team/OrganizationStructure.jsx';
 import CoreTeamSection from '../components/team/CoreTeamSection.jsx';
 import ExecutiveSection from '../components/team/ExecutiveSection.jsx';
+import WebDevTeamSection from '../components/team/WebDevTeamSection.jsx';
 import TeamClosing from '../components/team/TeamClosing.jsx';
 import ProfileModal from '../components/team/ProfileModal.jsx';
 import { groupTeamMembers } from '../components/team/teamUtils.js';
@@ -58,7 +59,8 @@ export default function Team() {
     verticalLeads,
     core,
     executives,
-    associates
+    associates,
+    webDev
   } = useMemo(() => {
     let rawFaculty = [];
     let rawLeadership = [];
@@ -81,6 +83,8 @@ export default function Team() {
       rawAssociates = staticTeam.associates || staticTeam.associateExecutives || [];
     }
 
+    const rawWebDev = staticTeam.webDev || [];
+
     // Filter vertical leads ("Technical Lead", "Operations Lead", "PR Lead") from main student leadership
     const mainL = rawLeadership.filter(
       (m) => !m.role.toLowerCase().includes('lead')
@@ -95,7 +99,8 @@ export default function Team() {
       verticalLeads: vertL,
       core: rawCore,
       executives: rawExecutives,
-      associates: rawAssociates
+      associates: rawAssociates,
+      webDev: rawWebDev
     };
   }, [dbMembers]);
 
@@ -107,19 +112,19 @@ export default function Team() {
         <title>Our Team 2026 | Abhyudaya Club — Faculty &amp; Student Leaders at MPEC Kanpur</title>
         <meta
           name="description"
-          content="Meet the Abhyudaya Club 2026 team — dedicated faculty advisor, student leadership, core team, and executives at MPEC Kanpur."
+          content="Meet the Abhyudaya Club 2026 team — dedicated faculty advisor, student leadership, core team, executives, and web development team at MPEC Kanpur."
         />
         <link rel="canonical" href={`${SITE_URL}/team`} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
         <meta property="og:title" content="Our Team 2026 | Abhyudaya Club — MPEC Kanpur" />
-        <meta property="og:description" content="Meet the faculty advisor, student leaders, executives, and associate executives of Abhyudaya Club at MPEC Kanpur." />
+        <meta property="og:description" content="Meet the faculty advisor, student leaders, executives, and web development team of Abhyudaya Club at MPEC Kanpur." />
         <meta property="og:url" content={`${SITE_URL}/team`} />
         <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
         <meta property="og:locale" content="en_IN" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Our Team 2026 | Abhyudaya Club" />
-        <meta name="twitter:description" content="Meet the faculty advisor and student leaders of Abhyudaya Club at MPEC Kanpur." />
+        <meta name="twitter:description" content="Meet the faculty advisor, student leaders, and web development team of Abhyudaya Club at MPEC Kanpur." />
         <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
       </Helmet>
 
@@ -204,7 +209,15 @@ export default function Team() {
             </div>
           )}
 
-          {/* 9. CLOSING CALL TO ACTION */}
+          {/* 9. WEB DEVELOPMENT TEAM (Final Team Category) */}
+          {webDev.length > 0 && (
+            <WebDevTeamSection
+              members={webDev}
+              onSelectMember={setSelectedMember}
+            />
+          )}
+
+          {/* 10. CLOSING CALL TO ACTION */}
           <TeamClosing />
         </>
       )}

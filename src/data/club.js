@@ -268,4 +268,67 @@ export const team = {
       bio: "Executing creative campaigns, social engagement, student outreach, and public relations.",
     },
   ],
-};
+
+  webDev: [
+    {
+      id: "webdev-1",
+      name: "Ishan Shukla",
+      role: "Web Developer",
+      department: "Web Development",
+      level: "web-dev",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "https://www.linkedin.com/in/ishanshukla2/",
+      github: "https://github.com/TODO_ishan_shukla",
+      bio: "Full-stack web developer focused on building modern, scalable and interactive digital experiences.",
+    },
+    {
+      id: "webdev-2",
+      name: "Virat Mishra",
+      role: "Web Developer",
+      department: "Web Development",
+      level: "web-dev",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "https://www.linkedin.com/in/viratmishra24/",
+      github: "https://github.com/TODO_virat_mishra",
+      bio: "Passionate developer focused on building efficient and modern web experiences.",
+    },
+    {
+      id: "webdev-3",
+      name: "Kuldeep Yadav",
+      role: "Web Developer",
+      department: "Web Development",
+      level: "web-dev",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "https://www.linkedin.com/in/kuldeep-yadav-cse28/",
+      github: "https://github.com/TODO_kuldeep_yadav",
+      bio: "Web developer interested in creating responsive and user-friendly digital products.",
+    },
+    {
+      id: "webdev-4",
+      name: "Tilak Singh Rajawat",
+      role: "Web Developer",
+      department: "Web Development",
+      level: "web-dev",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "https://www.linkedin.com/in/tilakraj-singh-rajawat-121y/",
+      github: "https://github.com/TODO_tilak_rajawat",
+      bio: "Developer passionate about clean interfaces, modern technologies and creative problem-solving.",
+    },
+    {
+      id: "webdev-5",
+      name: "Shashwat Singh",
+      role: "Web Developer",
+      department: "Web Development",
+      level: "web-dev",
+      image:
+        "https://cdn.phototourl.com/free/2026-07-02-81b91a2b-69df-4bd0-8e49-fb49b7995ab5.png",
+      linkedin: "https://www.linkedin.com/in/shashwat-singh-8a5784362/",
+      github: "https://github.com/TODO_shashwat_singh",
+      bio: "Web developer focused on building seamless and engaging web experiences.",
+    },
+  ],
+};
