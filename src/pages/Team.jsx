@@ -67,6 +67,7 @@ export default function Team() {
     let rawCore = [];
     let rawExecutives = [];
     let rawAssociates = [];
+    let rawWebDev = [];
 
     if (dbMembers.length > 0) {
       const grouped = groupTeamMembers(dbMembers);
@@ -75,15 +76,15 @@ export default function Team() {
       rawCore = grouped.core || [];
       rawExecutives = grouped.executives || [];
       rawAssociates = grouped.associates || [];
+      rawWebDev = (grouped.webDev && grouped.webDev.length > 0) ? grouped.webDev : (staticTeam.webDev || []);
     } else {
       rawFaculty = staticTeam.faculty || [];
       rawLeadership = staticTeam.leadership || [];
       rawCore = staticTeam.core || [];
       rawExecutives = staticTeam.executives || [];
       rawAssociates = staticTeam.associates || staticTeam.associateExecutives || [];
+      rawWebDev = staticTeam.webDev || [];
     }
-
-    const rawWebDev = staticTeam.webDev || [];
 
     // Filter vertical leads ("Technical Lead", "Operations Lead", "PR Lead") from main student leadership
     const mainL = rawLeadership.filter(

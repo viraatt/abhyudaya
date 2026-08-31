@@ -202,6 +202,7 @@
 .team-stat-card.stat-leadership:hover::after { background: #facc15; }
 .team-stat-card.stat-core:hover::after { background: #38bdf8; }
 .team-stat-card.stat-exec:hover::after { background: #a855f7; }
+.team-stat-card.stat-webdev:hover::after { background: #0ea5e9; }
 .team-stat-card.stat-faculty:hover::after { background: #ec4899; }
 
 .team-stat-top {
@@ -234,6 +235,7 @@
 .icon-gold { background: rgba(234, 179, 8, 0.15); color: #facc15; }
 .icon-cyan { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
 .icon-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.icon-webdev { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
 .icon-pink { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
 
 .team-stat-value {
@@ -567,6 +569,11 @@
 
 .badge-exec {
   background: rgba(168, 85, 247, 0.85);
+  color: #ffffff;
+}
+
+.badge-webdev {
+  background: rgba(14, 165, 233, 0.85);
   color: #ffffff;
 }
 

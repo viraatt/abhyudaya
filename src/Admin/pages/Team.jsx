@@ -43,6 +43,7 @@ import {
   FaEnvelope,
   FaFilter,
   FaRedo,
+  FaLaptopCode,
 } from "react-icons/fa";
 import "./style/admin.css";
 import "./Team.css";
@@ -120,8 +121,11 @@ export default function Team() {
     const leadershipCount = members.filter((m) => m.level === LEVELS.LEADERSHIP).length;
     const coreCount = members.filter((m) => m.level === LEVELS.CORE).length;
     const execCount = members.filter((m) => m.level === LEVELS.EXECUTIVE).length;
+    const webDevCount = members.filter(
+      (m) => m.level === LEVELS.WEB_DEV || m.department === "Web Development"
+    ).length;
     const facultyCount = members.filter((m) => m.level === LEVELS.FACULTY_ADVISOR).length;
-    return { total, activeCount, leadershipCount, coreCount, execCount, facultyCount };
+    return { total, activeCount, leadershipCount, coreCount, execCount, webDevCount, facultyCount };
   }, [members]);
 
   // Tab count helper
@@ -140,6 +144,8 @@ export default function Team() {
           return stats.coreCount;
         case "EXECUTIVE":
           return stats.execCount;
+        case "WEB_DEV":
+          return stats.webDevCount;
         case "FACULTY":
           return stats.facultyCount;
         default:
@@ -178,6 +184,9 @@ export default function Team() {
       if (activeTab === "LEADERSHIP") return m.level === LEVELS.LEADERSHIP;
       if (activeTab === "CORE") return m.level === LEVELS.CORE;
       if (activeTab === "EXECUTIVE") return m.level === LEVELS.EXECUTIVE;
+      if (activeTab === "WEB_DEV") {
+        return m.level === LEVELS.WEB_DEV || m.department === "Web Development";
+      }
       if (activeTab === "FACULTY") return m.level === LEVELS.FACULTY_ADVISOR;
 
       return true;
@@ -459,6 +468,8 @@ export default function Team() {
         return "badge-leadership";
       case LEVELS.CORE:
         return "badge-core";
+      case LEVELS.WEB_DEV:
+        return "badge-webdev";
       default:
         return "badge-exec";
     }
@@ -609,6 +620,25 @@ export default function Team() {
               </div>
 
               <div
+                className={`team-stat-card stat-webdev ${activeTab === "WEB_DEV" ? "active-stat" : ""}`}
+                onClick={() => setActiveTab("WEB_DEV")}
+                title="Filter web development team"
+              >
+                <div className="team-stat-top">
+                  <span className="team-stat-label" style={{ color: "#38bdf8" }}>
+                    Web Dev
+                  </span>
+                  <div className="team-stat-icon icon-webdev">
+                    <FaLaptopCode />
+                  </div>
+                </div>
+                <div className="team-stat-value" style={{ color: "#38bdf8" }}>
+                  {stats.webDevCount}
+                </div>
+                <div className="team-stat-sub">Web Development Team</div>
+              </div>
+
+              <div
                 className={`team-stat-card stat-faculty ${activeTab === "FACULTY" ? "active-stat" : ""}`}
                 onClick={() => setActiveTab("FACULTY")}
                 title="Filter faculty advisor"
@@ -638,6 +668,7 @@ export default function Team() {
                     { id: "LEADERSHIP", label: "Leadership" },
                     { id: "CORE", label: "Core Leads" },
                     { id: "EXECUTIVE", label: "Executives" },
+                    { id: "WEB_DEV", label: "Web Dev" },
                     { id: "FACULTY", label: "Faculty" },
                     { id: "ACTIVE", label: "Active" },
                     { id: "INACTIVE", label: "Inactive" },
@@ -1247,6 +1278,11 @@ export default function Team() {
                           <option value="Technical Lead">Technical Lead</option>
                           <option value="PR Lead">PR Lead</option>
                         </optgroup>
+                        <optgroup label="Web Development Team">
+                          <option value="Web Developer">Web Developer</option>
+                          <option value="Frontend Developer">Frontend Developer</option>
+                          <option value="Full Stack Developer">Full Stack Developer</option>
+                        </optgroup>
                         <optgroup label="Department Executives">
                           <option value="Operations Executive">Operations Executive</option>
                           <option value="Technical Executive">Technical Executive</option>
@@ -1289,6 +1325,7 @@ export default function Team() {
                           <option value={LEVELS.LEADERSHIP}>The Leadership</option>
                           <option value={LEVELS.CORE}>Core Team</option>
                           <option value={LEVELS.EXECUTIVE}>Executive</option>
+                          <option value={LEVELS.WEB_DEV}>Web Development Team</option>
                         </select>
                       </div>
 
