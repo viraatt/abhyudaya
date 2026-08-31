@@ -469,6 +469,38 @@
   transform: translateY(-2px);
 }
 
+.event-reg-closed {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 16px;
+  padding: 16px 20px;
+  color: #fca5a5;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.event-reg-closed strong {
+  color: #f87171;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-reg-closed p {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.event-reg-closed-icon {
+  font-size: 1.2rem;
+}
+
+
 .event-downloads-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
