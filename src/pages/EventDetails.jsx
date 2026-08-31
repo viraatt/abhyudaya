@@ -495,12 +495,20 @@ export default function EventDetails() {
                 </div>
               </div>
               <div>
-                <Link
-                  to={event.ctaLink || `/register/${event.slug || event.id}` || "/contact"}
-                  className="event-reg-btn"
-                >
-                  {event.ctaText || "Register Now →"}
-                </Link>
+                {event.registrationOpen === true ? (
+                  <Link
+                    to={event.ctaLink || `/register/${event.slug || event.id}` || "/contact"}
+                    className="event-reg-btn"
+                  >
+                    {event.ctaText || "Register Now →"}
+                  </Link>
+                ) : (
+                  <div className="event-reg-closed">
+                    <span className="event-reg-closed-icon">🔒</span>
+                    <strong>Registrations Closed</strong>
+                    <p>Registration for this event is currently closed. Check back later or contact us for more information.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
