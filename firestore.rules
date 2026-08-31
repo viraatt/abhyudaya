@@ -53,55 +53,15 @@ service cloud.firestore {
 
     // ============================================================
     // REGISTRATIONS
-    // Public: CREATE only (free events).
-    // Admins: read/update/delete.
-    // Payment fields (paymentStatus, paymentId, orderId,
-    // registrationStatus, amount) are controlled by the trusted
-    // backend (Firebase Admin SDK bypasses these rules). Clients
-    // may only create free registrations with paymentStatus="free".
+    // Public submissions are validated and written through the server API using
+    // the Firebase Admin SDK. Browser clients cannot read or forge records.
     // ============================================================
     match /registrations/{registrationId} {
-      allow create: if
-        request.resource.data.keys().hasOnly([
-          'eventId',
-          'eventTitle',
-          'name',
-          'email',
-          'phone',
-          'branch',
-          'semester',
-          'registrationId',
-          'isPaid',
-          'amount',
-          'paymentStatus',
-          'createdAt'
-        ])
-        && request.resource.data.eventId is string
-        && request.resource.data.eventId.size() > 0
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.email is string
-        && request.resource.data.email.size() > 0
-        && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
-        && request.resource.data.registrationId is string
-        && request.resource.data.registrationId.size() > 0
-        && request.resource.data.createdAt is timestamp
-        // Free-event only: clients cannot create paid registrations
-        && request.resource.data.isPaid == false
-        && request.resource.data.amount == 0
-        && request.resource.data.paymentStatus == 'free';
+      allow create: if false;
 
       // Clients cannot update payment/confirmation fields.
       // Only the trusted backend (Admin SDK) can set these.
-      allow update: if isAdmin(['super_admin', 'event_admin'])
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly([
-            'name',
-            'email',
-            'phone',
-            'branch',
-            'semester'
-          ]);
+      allow update: if isAdmin(['super_admin', 'event_admin']);
 
       allow read, delete: if isAdmin(['super_admin', 'event_admin']);
     }

@@ -535,6 +535,55 @@
   white-space: nowrap;
 }
 
+/* ── Registration Open/Closed badge ── */
+.evt-reg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.evt-reg-badge.open {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.evt-reg-badge.closed {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* ── Open Reg / Close Reg action buttons ── */
+.btn-open-reg {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #bbf7d0 !important;
+}
+
+.btn-open-reg:hover {
+  background: #22c55e !important;
+  color: #fff !important;
+  border-color: #22c55e !important;
+}
+
+.btn-close-reg {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border-color: #fecaca !important;
+}
+
+.btn-close-reg:hover {
+  background: #ef4444 !important;
+  color: #fff !important;
+  border-color: #ef4444 !important;
+}
+
 /* ── Responsive ── */
 @media (max-width: 1100px) {
   .evt-table-container {
@@ -559,3 +608,4 @@
     width: 100%;
   }
 }
+

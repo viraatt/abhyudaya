@@ -27,6 +27,10 @@ function formatDate(dateStr) {
 function getRegistrationStatus(event, currentCount) {
   const now = new Date();
 
+  if (event.registrationOpen !== true) {
+    return { status: "CLOSED", label: "Registrations Closed", color: "#ef4444" };
+  }
+
   if (event.registrationDeadline) {
     const deadline = new Date(event.registrationDeadline);
     if (!isNaN(deadline) && deadline < now) {

@@ -125,6 +125,7 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
   const [maxRegistrations, setMaxRegistrations] = useState(
     initialData?.maxRegistrations ? String(initialData.maxRegistrations) : ""
   );
+  const [registrationOpen, setRegistrationOpen] = useState(Boolean(initialData?.registrationOpen));
 
   /* ── Registration / Pricing ── */
   const [isPaid, setIsPaid] = useState(Boolean(initialData?.isPaid));
@@ -310,6 +311,7 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
       eventStartDate,
       eventEndDate,
       registrationDeadline: regDeadline,
+      registrationOpen,
       maxRegistrations: maxRegistrations ? Number(maxRegistrations) : null,
       image:       bannerUrl,
       banner:      bannerUrl,
@@ -339,7 +341,7 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
     };
   }, [
     title, derivedSlug, category, tagline, shortDesc, longDesc,
-    venue, location, organizer, eventStartDate, eventEndDate, regDeadline,
+    venue, location, organizer, eventStartDate, eventEndDate, regDeadline, registrationOpen,
     maxRegistrations, isPaid, feeAmount,
     bannerUrl, thumbUrl, stats, highlights, speakers,
     badgeText, badgeIcon, ctaText, ctaLink, featured,
@@ -590,8 +592,16 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
               Registration & Pricing
             </h2>
             <p style={{ fontSize: 13, color: "#64748b", marginBottom: 18 }}>
-              Choose whether this event is free or requires a registration fee.
+              Choose whether this event is free or requires a registration fee, then explicitly open or close registrations.
             </p>
+
+            <label className="ae-field" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid #e2e8f0", borderRadius: 10, marginBottom: 18, cursor: "pointer" }}>
+              <input type="checkbox" checked={registrationOpen} onChange={(e) => setRegistrationOpen(e.target.checked)} />
+              <span>
+                <strong>{registrationOpen ? "Registration Open" : "Registration Closed"}</strong>
+                <small style={{ display: "block", color: "#64748b", marginTop: 3 }}>Only open events can accept public registrations.</small>
+              </span>
+            </label>
 
             {/* Registration Type */}
             <div className="ae-field">

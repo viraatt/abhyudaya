@@ -16,6 +16,8 @@ import {
   FaCalendarAlt,
   FaArchive,
   FaClipboardList,
+  FaLockOpen,
+  FaLock,
 } from "react-icons/fa";
 import { db } from "../../Firebase/firebase";
 import {
@@ -246,6 +248,23 @@ export default function EventManager() {
     await handleStatusChange(ev, "Draft");
   }, [handleStatusChange]);
 
+  const handleToggleRegistration = useCallback(async (ev) => {
+    const newVal = !ev.registrationOpen;
+    try {
+      const docRef = doc(db, "events", ev.id);
+      await updateDoc(docRef, { registrationOpen: newVal, updatedAt: serverTimestamp() });
+      setEvents((prev) =>
+        prev.map((e) => (e.id === ev.id ? { ...e, registrationOpen: newVal } : e))
+      );
+      toast.success(
+        newVal ? "🟢 Registration opened for this event!" : "🔴 Registration closed for this event."
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update registration status.");
+    }
+  }, [toast]);
+
   /* ── Render ── */
   return (
     <div className="dashboard-layout">
@@ -384,10 +403,11 @@ export default function EventManager() {
                       <th scope="col">Event</th>
                       <th scope="col">Category</th>
                       <th scope="col">Status</th>
+                      <th scope="col">Registration</th>
                       <th scope="col">Featured</th>
                       <th scope="col">Created</th>
                       <th scope="col">Updated</th>
-                      <th scope="col" style={{ minWidth: "280px" }}>Actions</th>
+                      <th scope="col" style={{ minWidth: "310px" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -425,6 +445,15 @@ export default function EventManager() {
                             className={`evt-status-pill ${(ev.status || "draft").toLowerCase()}`}
                           >
                             {ev.status || "Draft"}
+                          </span>
+                        </td>
+
+                        {/* Registration open/closed */}
+                        <td>
+                          <span
+                            className={`evt-reg-badge ${ev.registrationOpen ? "open" : "closed"}`}
+                          >
+                            {ev.registrationOpen ? "🟢 Open" : "🔴 Closed"}
                           </span>
                         </td>
 
@@ -509,6 +538,20 @@ export default function EventManager() {
                               >
                                 <FaCopy />
                                 <span>Dupe</span>
+                              </button>
+                            )}
+
+                            {/* Open / Close Registration */}
+                            {activeTab !== "trash" && ev.status !== "Trashed" && (
+                              <button
+                                type="button"
+                                className={`evt-action-btn ${ev.registrationOpen ? "btn-close-reg" : "btn-open-reg"}`}
+                                onClick={() => handleToggleRegistration(ev)}
+                                title={ev.registrationOpen ? "Close registration" : "Open registration"}
+                                aria-label={ev.registrationOpen ? `Close registration for ${ev.title}` : `Open registration for ${ev.title}`}
+                              >
+                                {ev.registrationOpen ? <FaLock /> : <FaLockOpen />}
+                                <span>{ev.registrationOpen ? "Close Reg" : "Open Reg"}</span>
                               </button>
                             )}
 

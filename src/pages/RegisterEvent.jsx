@@ -16,7 +16,7 @@ export default function RegisterEvent() {
         setLoading(true);
         setError(null);
         const res = await getEventsPage({ pageSize: 12, onlyPublished: true });
-        setEvents(res.events);
+        setEvents(res.events.filter((event) => event.registrationOpen === true));
       } catch (err) {
         console.error("Error loading events for registration:", err);
         setError("Unable to load events at this moment. Please try again.");

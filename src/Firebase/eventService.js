@@ -118,6 +118,7 @@ function formatEventDoc(snapshotDoc) {
     eventStartDate: data.eventStartDate || "",
     eventEndDate: data.eventEndDate || "",
     registrationDeadline: data.registrationDeadline || "",
+    registrationOpen: data.registrationOpen === true,
     maxRegistrations: data.maxRegistrations ? Number(data.maxRegistrations) : null,
     // Pricing / Registration Type (backward-compatible safe defaults)
     isPaid: Boolean(data.isPaid),
@@ -317,6 +318,7 @@ export async function createEvent(eventData, imageFile = null) {
     eventStartDate: eventData.eventStartDate || "",
     eventEndDate: eventData.eventEndDate || "",
     registrationDeadline: eventData.registrationDeadline || "",
+    registrationOpen: Boolean(eventData.registrationOpen),
     maxRegistrations: eventData.maxRegistrations ? Number(eventData.maxRegistrations) : null,
     // Pricing / Registration Type
     isPaid: Boolean(eventData.isPaid),
@@ -376,6 +378,7 @@ export async function updateEvent(id, eventData, imageFile = null) {
     eventStartDate: eventData.eventStartDate || "",
     eventEndDate: eventData.eventEndDate || "",
     registrationDeadline: eventData.registrationDeadline || "",
+    registrationOpen: Boolean(eventData.registrationOpen),
     maxRegistrations: eventData.maxRegistrations ? Number(eventData.maxRegistrations) : null,
     // Pricing / Registration Type
     isPaid: Boolean(eventData.isPaid),
