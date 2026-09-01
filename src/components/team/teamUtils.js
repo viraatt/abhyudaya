@@ -185,24 +185,28 @@ export function normalizeMember(member, index = 0) {
   const hasExplicitLevel = VALID_LEVELS.includes(member.level);
 
   let level = hasExplicitLevel ? member.level : LEVELS.EXECUTIVE;
+
+  // If level or category or department indicates Web Development, lock to WEB_DEV
+  if (
+    member.level === LEVELS.WEB_DEV ||
+    lowerCategory.includes("web dev") ||
+    lowerCategory.includes("web development") ||
+    explicitDept.toLowerCase() === "web development" ||
+    explicitDept.toLowerCase() === "web dev"
+  ) {
+    level = LEVELS.WEB_DEV;
+  }
+
   let department = explicitDept;
 
   // Legacy inference — only runs when the document has no controlled `level`.
-  if (!hasExplicitLevel) {
+  if (!hasExplicitLevel && level !== LEVELS.WEB_DEV) {
     if (
       lowerRole.includes("faculty") ||
       lowerRole.includes("advisor") ||
       lowerCategory.includes("faculty")
     ) {
       level = LEVELS.FACULTY_ADVISOR;
-    } else if (
-      lowerCategory.includes("web dev") ||
-      lowerCategory.includes("web development") ||
-      lowerRole.includes("web dev") ||
-      lowerRole.includes("web developer") ||
-      explicitDept === "Web Development"
-    ) {
-      level = LEVELS.WEB_DEV;
     } else if (
       lowerRole.includes("president") ||
       lowerRole.includes("general secretary") ||
@@ -299,17 +303,24 @@ export function groupTeamMembers(members = []) {
     .filter((m) => m.level === LEVELS.LEADERSHIP)
     .sort(byOrder);
   const core = normalized
-    .filter((m) => m.level === LEVELS.CORE)
+    .filter((m) => m.level === LEVELS.CORE && m.level !== LEVELS.WEB_DEV)
     .sort(byOrder);
   const executives = normalized
-    .filter((m) => m.level === LEVELS.EXECUTIVE)
+    .filter(
+      (m) =>
+        m.level === LEVELS.EXECUTIVE &&
+        m.level !== LEVELS.WEB_DEV &&
+        m.department !== "Web Development" &&
+        !(m.category || "").toLowerCase().includes("web dev")
+    )
     .sort(byOrder);
   const webDev = normalized
     .filter(
       (m) =>
         m.level === LEVELS.WEB_DEV ||
         m.department === "Web Development" ||
-        (m.category || "").toLowerCase().includes("web dev")
+        (m.category || "").toLowerCase().includes("web dev") ||
+        (m.category || "").toLowerCase().includes("web development")
     )
     .sort(byOrder);
 
@@ -321,4 +332,5 @@ export function groupTeamMembers(members = []) {
     webDev,
   };
 }
+
 

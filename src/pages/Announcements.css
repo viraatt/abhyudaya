@@ -71,11 +71,40 @@
   border-radius: 18px;
   box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
   padding: 28px;
-  transition: 0.25s;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
 }
 
 .announcement-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+}
+
+/* ── Banner Image ── */
+.announcement-banner-wrapper {
+  margin: -28px -28px 24px -28px;
+  overflow: hidden;
+  background: #0f172a;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  max-height: 380px;
+}
+
+.announcement-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.announcement-card:hover .announcement-banner-img {
+  transform: scale(1.025);
+}
+
+.announcement-card-body {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Latest announcement is visually prominent */
@@ -87,8 +116,9 @@
 
 .announcement-latest-badge {
   position: absolute;
-  top: -12px;
-  right: 20px;
+  top: 14px;
+  right: 16px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -100,7 +130,7 @@
   font-weight: 800;
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
 .announcement-card-top {
@@ -306,6 +336,11 @@
 
   .announcement-card {
     padding: 20px;
+  }
+
+  .announcement-banner-wrapper {
+    margin: -20px -20px 18px -20px;
+    max-height: 240px;
   }
 
   .announcement-title {
