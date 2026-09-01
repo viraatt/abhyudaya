@@ -245,6 +245,19 @@ export default function Home() {
             <div className="home-announcements">
               {announcements.map((ann) => (
                 <article className="home-announcement" key={ann.id}>
+                  {ann.imageUrl && (
+                    <div className="home-announcement-media">
+                      <img
+                        src={ann.imageUrl}
+                        alt={ann.imageAlt || ann.title || "Announcement banner"}
+                        className="home-announcement-img"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.parentElement.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
                   <span className="home-announcement-type">
                     {ANNOUNCEMENT_TYPE_LABELS[ann.type] || ANNOUNCEMENT_TYPE_LABELS.general}
                   </span>

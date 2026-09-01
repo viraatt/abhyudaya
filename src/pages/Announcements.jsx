@@ -169,24 +169,39 @@ export default function Announcements() {
                 <article
                   className={`announcement-card ${
                     index === 0 ? "announcement-card--latest" : ""
-                  }`}
+                  } ${ann.imageUrl ? "announcement-card--has-banner" : ""}`}
                   key={ann.id}
                 >
                   {index === 0 && (
                     <span className="announcement-latest-badge">Latest</span>
                   )}
 
-                  <div className="announcement-card-top">
-                    <span className={`announcement-type announcement-type-${ann.type}`}>
-                      {TYPE_LABELS[ann.type] || TYPE_LABELS.general}
-                    </span>
-                    <span className="announcement-date">
-                      {formatDate(ann.createdAt)}
-                    </span>
-                  </div>
+                  {ann.imageUrl && (
+                    <div className="announcement-banner-wrapper">
+                      <img
+                        src={ann.imageUrl}
+                        alt={ann.imageAlt || ann.title || "Announcement banner"}
+                        className="announcement-banner-img"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        onError={(e) => {
+                          e.currentTarget.parentElement.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
 
-                  <h2 className="announcement-title">{ann.title}</h2>
-                  <p className="announcement-message">{ann.message}</p>
+                  <div className="announcement-card-body">
+                    <div className="announcement-card-top">
+                      <span className={`announcement-type announcement-type-${ann.type}`}>
+                        {TYPE_LABELS[ann.type] || TYPE_LABELS.general}
+                      </span>
+                      <span className="announcement-date">
+                        {formatDate(ann.createdAt)}
+                      </span>
+                    </div>
+
+                    <h2 className="announcement-title">{ann.title}</h2>
+                    <p className="announcement-message">{ann.message}</p>
 
                   {ann.type === "event" &&
                     ann.linkedEventId &&
@@ -273,25 +288,26 @@ export default function Announcements() {
                       </div>
                     )}
 
-                  {ann.ctaText && ann.ctaLink && (
-                    isInternalLink(ann.ctaLink) ? (
+                  {ann.ctaText?.trim() && ann.ctaLink?.trim() && (
+                    isInternalLink(ann.ctaLink.trim()) ? (
                       <Link
-                        to={ann.ctaLink}
+                        to={ann.ctaLink.trim()}
                         className="announcement-cta"
                       >
-                        {ann.ctaText} →
+                        {ann.ctaText.trim()} →
                       </Link>
                     ) : (
                       <a
-                        href={ann.ctaLink}
+                        href={ann.ctaLink.trim()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="announcement-cta"
                       >
-                        {ann.ctaText} →
+                        {ann.ctaText.trim()} →
                       </a>
                     )
                   )}
+                  </div>
                 </article>
               ))}
             </div>

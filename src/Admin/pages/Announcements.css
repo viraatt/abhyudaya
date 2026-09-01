@@ -42,10 +42,35 @@
   box-shadow: var(--shadow);
   padding: 24px;
   transition: 0.25s;
+  overflow: hidden;
 }
 
 .ann-card:hover {
   transform: translateY(-3px);
+}
+
+.ann-card-media {
+  margin: -24px -24px 18px -24px;
+  background: #f1f5f9;
+  max-height: 200px;
+  overflow: hidden;
+}
+
+.ann-card-thumbnail {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.ann-card:hover .ann-card-thumbnail {
+  transform: scale(1.02);
+}
+
+.ann-card-body {
+  display: flex;
+  flex-direction: column;
 }
 
 .ann-card-top {
@@ -265,6 +290,189 @@
   resize: vertical;
   font-family: inherit;
   line-height: 1.6;
+}
+
+/* ── Banner Upload & Preview ── */
+
+.ann-label-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ann-optional-tag {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted, #64748b);
+}
+
+.ann-dim-hint {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ann-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 26px 20px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ann-upload-zone:hover,
+.ann-upload-zone.dragover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.ann-upload-zone-icon {
+  font-size: 32px;
+  margin-bottom: 2px;
+}
+
+.ann-upload-zone-text {
+  font-size: 14px;
+  color: #334155;
+}
+
+.ann-upload-zone-text strong {
+  color: #2563eb;
+}
+
+.ann-upload-zone-sub {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.ann-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ann-preview-box {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #0f172a;
+  max-height: 220px;
+  aspect-ratio: 16 / 9;
+}
+
+.ann-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ann-uploading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ann-uploading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 200px;
+}
+
+.ann-upload-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ann-upload-bar-fill {
+  height: 100%;
+  background: #38bdf8;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.ann-preview-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ann-img-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.ann-img-action-btn.replace {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.ann-img-action-btn.replace:hover {
+  background: #dbeafe;
+}
+
+.ann-img-action-btn.remove {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.ann-img-action-btn.remove:hover {
+  background: #fee2e2;
+}
+
+.ann-subfield {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.ann-sublabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.ann-error-msg {
+  color: #dc2626;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 2px;
 }
 
 .ann-form-grid-2 {

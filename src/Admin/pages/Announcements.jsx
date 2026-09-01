@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 import { useAuth } from "../../context/AuthContext";
@@ -9,6 +9,7 @@ import {
   setAnnouncementPublished,
   deleteAnnouncement,
 } from "../../Firebase/announcementService";
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
@@ -31,8 +32,18 @@ const EMPTY_FORM = {
   ctaText: "",
   ctaLink: "",
   linkedEventId: "",
+  imageUrl: "",
+  imageAlt: "",
   published: false,
 };
+
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function formatDate(ts) {
   if (!ts) return "—";
@@ -65,10 +76,27 @@ export default function Announcements() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
+  // Image Upload States
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileError, setFileError] = useState("");
+  const fileInputRef = useRef(null);
+
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   /* ── Load announcements + events ── */
   const loadData = useCallback(async () => {
@@ -104,29 +132,103 @@ export default function Announcements() {
     return map;
   }, [events]);
 
+  /* ── File validation and selection ── */
+  const processSelectedFile = (file) => {
+    setFileError("");
+    if (!file) return;
+
+    if (
+      !ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase()) &&
+      !file.type.startsWith("image/")
+    ) {
+      setFileError(
+        "Unsupported format. Please upload a JPG, JPEG, PNG, or WEBP image."
+      );
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setFileError("File is too large. Maximum allowed size is 10 MB.");
+      return;
+    }
+
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
+    setForm((prev) => ({
+      ...prev,
+      imageAlt: prev.imageAlt || prev.title || "",
+    }));
+  };
+
+  const handleRemoveImage = () => {
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setFileError("");
+    setForm((prev) => ({
+      ...prev,
+      imageUrl: "",
+      imageAlt: "",
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   /* ── Form handlers ── */
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setFileError("");
+    setUploadProgress(0);
     setShowForm(true);
   };
 
   const openEdit = (ann) => {
     setEditingId(ann.id);
     setForm({
-      title: ann.title,
-      message: ann.message,
-      type: ann.type,
-      ctaText: ann.ctaText,
-      ctaLink: ann.ctaLink,
+      title: ann.title || "",
+      message: ann.message || "",
+      type: ann.type || "general",
+      ctaText: ann.ctaText || "",
+      ctaLink: ann.ctaLink || "",
       linkedEventId: ann.linkedEventId || "",
-      published: ann.published,
+      imageUrl: ann.imageUrl || "",
+      imageAlt: ann.imageAlt || "",
+      published: Boolean(ann.published),
     });
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(ann.imageUrl || "");
+    setFileError("");
+    setUploadProgress(0);
     setShowForm(true);
   };
 
   const handleFormChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // If user updates title and hasn't explicitly customized alt text, sync alt text
+      if (field === "title" && (!prev.imageAlt || prev.imageAlt === prev.title)) {
+        next.imageAlt = value;
+      }
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -140,22 +242,45 @@ export default function Announcements() {
     }
 
     setSaving(true);
+    setUploadProgress(0);
+
     try {
+      let finalImageUrl = form.imageUrl || "";
+
+      // Upload newly selected image if present
+      if (selectedFile) {
+        const uploadResult = await uploadToCloudinary(selectedFile, (pct) => {
+          setUploadProgress(pct);
+        });
+        finalImageUrl = uploadResult.secure_url;
+      } else if (!previewUrl) {
+        finalImageUrl = "";
+      }
+
+      const payload = {
+        ...form,
+        imageUrl: finalImageUrl,
+        imageAlt: form.imageAlt.trim() || form.title.trim(),
+      };
+
       if (editingId) {
-        await updateAnnouncement(editingId, form);
+        await updateAnnouncement(editingId, payload);
         setSuccessMsg("Announcement updated.");
       } else {
-        await createAnnouncement(form, currentUser?.email || "");
+        await createAnnouncement(payload, currentUser?.email || "");
         setSuccessMsg("Announcement created.");
       }
+
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(null);
+      setPreviewUrl("");
       setShowForm(false);
       await loadData();
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch (err) {
-      // Log the real Firebase error for debugging (no credentials exposed)
-      console.error("Save failed - error.code:", err?.code);
-      console.error("Save failed - error.message:", err?.message);
-      console.error("Save failed - full error:", err);
+      console.error("Save failed - error:", err);
       alert(
         `Failed to save announcement. (${
           err?.code || err?.message || "unknown error"
@@ -163,6 +288,7 @@ export default function Announcements() {
       );
     } finally {
       setSaving(false);
+      setUploadProgress(0);
     }
   };
 
@@ -262,61 +388,77 @@ export default function Announcements() {
                     ANNOUNCEMENT_TYPES[0];
                   return (
                     <div className="ann-card" key={ann.id}>
-                      <div className="ann-card-top">
-                        <span className={`ann-type-badge ann-type-${ann.type}`}>
-                          {typeMeta.label}
-                        </span>
-                        <span
-                          className={`ann-status-badge ${ann.published ? "published" : "draft"}`}
-                        >
-                          {ann.published ? "Published" : "Draft"}
-                        </span>
-                      </div>
-
-                      <h3 className="ann-card-title">{ann.title}</h3>
-                      <p className="ann-card-message">{ann.message}</p>
-
-                      {ann.linkedEventId && eventMap[ann.linkedEventId] && (
-                        <div className="ann-linked-event">
-                          🎯 Linked Event: {eventMap[ann.linkedEventId]}
+                      {ann.imageUrl && (
+                        <div className="ann-card-media">
+                          <img
+                            src={ann.imageUrl}
+                            alt={ann.imageAlt || ann.title}
+                            className="ann-card-thumbnail"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.parentElement.style.display = "none";
+                            }}
+                          />
                         </div>
                       )}
 
-                      {ann.ctaText && ann.ctaLink && (
-                        <a
-                          href={ann.ctaLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ann-cta-link"
-                        >
-                          {ann.ctaText} →
-                        </a>
-                      )}
+                      <div className="ann-card-body">
+                        <div className="ann-card-top">
+                          <span className={`ann-type-badge ann-type-${ann.type}`}>
+                            {typeMeta.label}
+                          </span>
+                          <span
+                            className={`ann-status-badge ${ann.published ? "published" : "draft"}`}
+                          >
+                            {ann.published ? "Published" : "Draft"}
+                          </span>
+                        </div>
 
-                      <div className="ann-card-footer">
-                        <span className="ann-date">Created: {formatDate(ann.createdAt)}</span>
-                        <div className="ann-actions">
-                          <button
-                            type="button"
-                            className="ann-action-btn"
-                            onClick={() => openEdit(ann)}
+                        <h3 className="ann-card-title">{ann.title}</h3>
+                        <p className="ann-card-message">{ann.message}</p>
+
+                        {ann.linkedEventId && eventMap[ann.linkedEventId] && (
+                          <div className="ann-linked-event">
+                            🎯 Linked Event: {eventMap[ann.linkedEventId]}
+                          </div>
+                        )}
+
+                        {ann.ctaText && ann.ctaLink && (
+                          <a
+                            href={ann.ctaLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ann-cta-link"
                           >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="ann-action-btn"
-                            onClick={() => handleTogglePublish(ann)}
-                          >
-                            {ann.published ? "Unpublish" : "Publish"}
-                          </button>
-                          <button
-                            type="button"
-                            className="ann-action-btn danger"
-                            onClick={() => setDeleteTarget(ann)}
-                          >
-                            Delete
-                          </button>
+                            {ann.ctaText} →
+                          </a>
+                        )}
+
+                        <div className="ann-card-footer">
+                          <span className="ann-date">Created: {formatDate(ann.createdAt)}</span>
+                          <div className="ann-actions">
+                            <button
+                              type="button"
+                              className="ann-action-btn"
+                              onClick={() => openEdit(ann)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="ann-action-btn"
+                              onClick={() => handleTogglePublish(ann)}
+                            >
+                              {ann.published ? "Unpublish" : "Publish"}
+                            </button>
+                            <button
+                              type="button"
+                              className="ann-action-btn danger"
+                              onClick={() => setDeleteTarget(ann)}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -369,6 +511,138 @@ export default function Announcements() {
                   onChange={(e) => handleFormChange("message", e.target.value)}
                   placeholder="Announcement message..."
                 />
+              </div>
+
+              {/* ── Announcement Banner / Image (Optional) ── */}
+              <div className="ann-field">
+                <div className="ann-label-header">
+                  <label className="ann-label" htmlFor="ann-image-input">
+                    Announcement Banner / Image <span className="ann-optional-tag">(Optional)</span>
+                  </label>
+                  <span className="ann-dim-hint">
+                    Recommended: 16:9 landscape banner, minimum 1200 × 675 px
+                  </span>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  id="ann-image-input"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      processSelectedFile(e.target.files[0]);
+                    }
+                  }}
+                />
+
+                {previewUrl ? (
+                  <div className="ann-preview-container">
+                    <div className="ann-preview-box">
+                      <img
+                        src={previewUrl}
+                        alt={form.imageAlt || "Banner preview"}
+                        className="ann-preview-img"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      {saving && uploadProgress > 0 && (
+                        <div className="ann-uploading-overlay">
+                          <div className="ann-uploading-spinner">
+                            <span>Uploading image... {uploadProgress}%</span>
+                            <div className="ann-upload-bar">
+                              <div
+                                className="ann-upload-bar-fill"
+                                style={{ width: `${uploadProgress}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ann-preview-actions">
+                      <button
+                        type="button"
+                        className="ann-img-action-btn replace"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={saving}
+                      >
+                        🔄 Replace Banner
+                      </button>
+                      <button
+                        type="button"
+                        className="ann-img-action-btn remove"
+                        onClick={handleRemoveImage}
+                        disabled={saving}
+                      >
+                        🗑️ Remove Banner
+                      </button>
+                    </div>
+
+                    <div className="ann-subfield">
+                      <label className="ann-sublabel" htmlFor="ann-image-alt">
+                        Image Alt Text (Accessibility)
+                      </label>
+                      <input
+                        id="ann-image-alt"
+                        type="text"
+                        className="admin-input"
+                        value={form.imageAlt}
+                        onChange={(e) => handleFormChange("imageAlt", e.target.value)}
+                        placeholder="Describe the image/banner..."
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`ann-upload-zone ${dragActive ? "dragover" : ""}`}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragActive(true);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragActive(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragActive(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragActive(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        processSelectedFile(e.dataTransfer.files[0]);
+                      }
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                  >
+                    <div className="ann-upload-zone-icon">🖼️</div>
+                    <div className="ann-upload-zone-text">
+                      <strong>Click to upload</strong> or drag and drop image here
+                    </div>
+                    <div className="ann-upload-zone-sub">
+                      Supported formats: JPG, JPEG, PNG, WEBP (Max 10 MB)
+                    </div>
+                  </div>
+                )}
+
+                {fileError && <div className="ann-error-msg">⚠️ {fileError}</div>}
               </div>
 
               <div className="ann-form-grid-2">

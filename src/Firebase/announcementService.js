@@ -31,6 +31,9 @@ function formatAnnouncement(snapshotDoc) {
     ctaLink: data.ctaLink || "",
     linkedEventId: data.linkedEventId || null,
 
+    imageUrl: data.imageUrl || "",
+    imageAlt: data.imageAlt || "",
+
     status: data.status || "draft",
     published: Boolean(data.published),
 
@@ -176,6 +179,9 @@ export async function createAnnouncement(
     linkedEventId:
       announcement.linkedEventId || null,
 
+    imageUrl: (announcement.imageUrl || "").trim(),
+    imageAlt: (announcement.imageAlt || "").trim(),
+
     // Keep both fields synchronized
     status: published
       ? "published"
@@ -228,6 +234,9 @@ export async function updateAnnouncement(
 
     linkedEventId:
       announcement.linkedEventId || null,
+
+    imageUrl: (announcement.imageUrl || "").trim(),
+    imageAlt: (announcement.imageAlt || "").trim(),
 
     status: published
       ? "published"
