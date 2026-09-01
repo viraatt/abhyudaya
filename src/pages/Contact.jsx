@@ -1,49 +1,52 @@
-import { useEffect, useRef, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
-import { club, socials } from '../data/club.js'
-import PageHero from '../components/PageHero.jsx'
-import BreadcrumbSchema from '../components/seo/schemas/BreadcrumbSchema.jsx'
-import './Contact.css'
-import { submitContactMessage } from '../Admin/pages/services/contactService.js'
+import { useEffect, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
+import { club, socials } from "../data/club.js";
+import PageHero from "../components/PageHero.jsx";
+import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
+import "./Contact.css";
+import { submitContactMessage } from "../Firebase/contactService.js";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
 function useReveal() {
-  const ref = useRef(null)
+  const ref = useRef(null);
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const items = el.querySelectorAll('.reveal')
+    const el = ref.current;
+    if (!el) return;
+    const items = el.querySelectorAll(".reveal");
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible')
-            io.unobserve(entry.target)
+            entry.target.classList.add("is-visible");
+            io.unobserve(entry.target);
           }
-        })
+        });
       },
       { threshold: 0.15 }
-    )
-    items.forEach((item) => io.observe(item))
-    return () => io.disconnect()
-  }, [])
-  return ref
+    );
+    items.forEach((item) => io.observe(item));
+    return () => io.disconnect();
+  }, []);
+  return ref;
 }
 
-export default function Contact() {
-  const gridRef = useReveal()
-  const faqRef = useReveal()
+const INITIAL_FORM = {
+  name: "",
+  email: "",
+  phone: "",
+  subject: "",
+  message: "",
+};
 
-  const [formState, setFormState] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: '',
-  })
-  const [submitting, setSubmitting] = useState(false)
-  const [submittedStatus, setSubmittedStatus] = useState(null)
+export default function Contact() {
+  const gridRef = useReveal();
+  const faqRef = useReveal();
+
+  const [formState, setFormState] = useState(INITIAL_FORM);
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submittedStatus, setSubmittedStatus] = useState(null);
 
   const breadcrumbItems = [
     { name: "Home", url: SITE_URL },
@@ -89,59 +92,118 @@ export default function Contact() {
     ],
   };
 
+  const validate = () => {
+    const newErrors = {};
+    const nameTrim = formState.name.trim();
+    const emailTrim = formState.email.trim();
+    const messageTrim = formState.message.trim();
+
+    if (!nameTrim) {
+      newErrors.name = "Full name is required.";
+    } else if (nameTrim.length < 2) {
+      newErrors.name = "Name must be at least 2 characters.";
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailTrim) {
+      newErrors.email = "Email address is required.";
+    } else if (!emailRegex.test(emailTrim)) {
+      newErrors.email = "Please enter a valid email address (e.g. name@domain.com).";
+    }
+
+    if (formState.phone.trim()) {
+      const phoneClean = formState.phone.replace(/[\s\-()]/g, "");
+      if (phoneClean.length < 7 || phoneClean.length > 15) {
+        newErrors.phone = "Please enter a valid phone number (7-15 digits).";
+      }
+    }
+
+    if (!messageTrim) {
+      newErrors.message = "Please write a message.";
+    } else if (messageTrim.length < 5) {
+      newErrors.message = "Message must be at least 5 characters.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleInputChange = (e) => {
-    setFormState({ ...formState, [e.target.name]: e.target.value })
-  }
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
+  };
 
   const handleFormSubmit = async (e) => {
-    e.preventDefault()
-    if (!formState.name || !formState.email || !formState.message) return
-    setSubmitting(true)
-    setSubmittedStatus(null)
+    e.preventDefault();
+
+    // Prevent duplicate submissions while in progress
+    if (submitting) return;
+
+    if (!validate()) {
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmittedStatus(null);
 
     try {
-      await submitContactMessage(formState)
+      await submitContactMessage(formState);
       setSubmittedStatus({
         success: true,
-        message: 'Thank you! Your message has been sent successfully. We will get back to you soon.',
-      })
-      setFormState({ name: '', email: '', phone: '', subject: '', message: '' })
+        message: "Thank you! Your message has been sent successfully. Our team will get back to you soon.",
+      });
+      setFormState(INITIAL_FORM);
+      setErrors({});
     } catch (err) {
-      console.error(err)
+      console.error("Error submitting contact message:", err);
       setSubmittedStatus({
         success: false,
-        message: 'Unable to send message at the moment. Please try emailing us directly.',
-      })
+        message: err.message || "Unable to send message at the moment. Please try again or email us directly.",
+      });
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
-  const mapQuery = encodeURIComponent(`${club.institute}, ${club.department}`)
+  const mapQuery = encodeURIComponent(`${club.institute}, ${club.department}`);
 
   return (
     <>
       <Helmet>
         <title>Contact Us | Abhyudaya Club — Get in Touch, MPEC Kanpur</title>
-        <meta name="description" content="Contact Abhyudaya Club at MPEC Kanpur. Reach out for collaborations, sponsorships, queries, or to learn more about joining the club." />
+        <meta
+          name="description"
+          content="Contact Abhyudaya Club at MPEC Kanpur. Reach out for collaborations, sponsorships, queries, or to learn more about joining the club."
+        />
         <link rel="canonical" href={`${SITE_URL}/contact`} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
 
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Contact Abhyudaya Club | MPEC Kanpur" />
-        <meta property="og:description" content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries." />
+        <meta
+          property="og:description"
+          content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries."
+        />
         <meta property="og:url" content={`${SITE_URL}/contact`} />
         <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
         <meta property="og:locale" content="en_IN" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Contact Abhyudaya Club | MPEC Kanpur" />
-        <meta name="twitter:description" content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries." />
+        <meta
+          name="twitter:description"
+          content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries."
+        />
         <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
 
-        <script type="application/ld+json">
-          {JSON.stringify(faqSchema)}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
       </Helmet>
 
       <BreadcrumbSchema items={breadcrumbItems} />
@@ -151,6 +213,7 @@ export default function Contact() {
         title="Let's Connect."
         lede="Have a question, collaboration idea, or want to know more about Abhyudaya Club? We'd love to hear from you."
       />
+
       <section className="section">
         <div className="wrap contact-grid" ref={gridRef}>
           {/* Contact Information */}
@@ -237,82 +300,163 @@ export default function Contact() {
 
           {/* Contact Inquiry Form */}
           <div className="join-card reveal">
-            <span className="join-badge">
-              📩 Send Us a Message
-            </span>
+            <span className="join-badge">📩 Send Us a Message</span>
             <h2>Get in Touch Directly</h2>
-            <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
-              <input
-                type="text"
-                name="name"
-                value={formState.name}
-                onChange={handleInputChange}
-                placeholder="Your Full Name *"
-                required
-                aria-label="Your Full Name"
-                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
-              />
+            <p className="contact-card-sub">
+              Fill out the form below and we will respond as soon as possible.
+            </p>
 
-              <input
-                type="email"
-                name="email"
-                value={formState.email}
-                onChange={handleInputChange}
-                placeholder="Your Email Address *"
-                required
-                aria-label="Your Email Address"
-                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
-              />
+            {submittedStatus && (
+              <div
+                className={`contact-alert ${
+                  submittedStatus.success ? "contact-alert--success" : "contact-alert--error"
+                }`}
+                role="alert"
+              >
+                <div className="contact-alert__icon">
+                  {submittedStatus.success ? "✓" : "⚠"}
+                </div>
+                <div className="contact-alert__content">
+                  <strong className="contact-alert__title">
+                    {submittedStatus.success ? "Message Sent!" : "Submission Error"}
+                  </strong>
+                  <p>{submittedStatus.message}</p>
+                </div>
+              </div>
+            )}
 
-              <input
-                type="tel"
-                name="phone"
-                value={formState.phone}
-                onChange={handleInputChange}
-                placeholder="Phone Number (Optional)"
-                aria-label="Phone Number"
-                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
-              />
+            <form onSubmit={handleFormSubmit} className="contact-form" noValidate>
+              <div className="form-group">
+                <label htmlFor="contact-name" className="form-label">
+                  Full Name <span className="req">*</span>
+                </label>
+                <input
+                  id="contact-name"
+                  type="text"
+                  name="name"
+                  value={formState.name}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Rahul Sharma"
+                  className={`contact-input ${errors.name ? "has-error" : ""}`}
+                  aria-invalid={Boolean(errors.name)}
+                  aria-describedby={errors.name ? "name-error" : undefined}
+                  disabled={submitting}
+                  required
+                />
+                {errors.name && (
+                  <span id="name-error" className="field-error">
+                    {errors.name}
+                  </span>
+                )}
+              </div>
 
-              <input
-                type="text"
-                name="subject"
-                value={formState.subject}
-                onChange={handleInputChange}
-                placeholder="Subject / Topic"
-                aria-label="Subject or Topic"
-                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff" }}
-              />
+              <div className="form-group">
+                <label htmlFor="contact-email" className="form-label">
+                  Email Address <span className="req">*</span>
+                </label>
+                <input
+                  id="contact-email"
+                  type="email"
+                  name="email"
+                  value={formState.email}
+                  onChange={handleInputChange}
+                  placeholder="e.g. rahul@example.com"
+                  className={`contact-input ${errors.email ? "has-error" : ""}`}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                  disabled={submitting}
+                  required
+                />
+                {errors.email && (
+                  <span id="email-error" className="field-error">
+                    {errors.email}
+                  </span>
+                )}
+              </div>
 
-              <textarea
-                rows="4"
-                name="message"
-                value={formState.message}
-                onChange={handleInputChange}
-                placeholder="Write your message here... *"
-                required
-                aria-label="Your message"
-                style={{ padding: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", color: "#fff", resize: "vertical" }}
-              />
+              <div className="form-group">
+                <label htmlFor="contact-phone" className="form-label">
+                  Phone Number <span className="opt">(Optional)</span>
+                </label>
+                <input
+                  id="contact-phone"
+                  type="tel"
+                  name="phone"
+                  value={formState.phone}
+                  onChange={handleInputChange}
+                  placeholder="e.g. +91 98765 43210"
+                  className={`contact-input ${errors.phone ? "has-error" : ""}`}
+                  aria-invalid={Boolean(errors.phone)}
+                  aria-describedby={errors.phone ? "phone-error" : undefined}
+                  disabled={submitting}
+                />
+                {errors.phone && (
+                  <span id="phone-error" className="field-error">
+                    {errors.phone}
+                  </span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="contact-subject" className="form-label">
+                  Subject / Topic <span className="opt">(Optional)</span>
+                </label>
+                <input
+                  id="contact-subject"
+                  type="text"
+                  name="subject"
+                  value={formState.subject}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Event Collaboration, Club Query..."
+                  className="contact-input"
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="contact-message" className="form-label">
+                  Message <span className="req">*</span>
+                </label>
+                <textarea
+                  id="contact-message"
+                  rows="4"
+                  name="message"
+                  value={formState.message}
+                  onChange={handleInputChange}
+                  placeholder="Write your detailed query or proposal here..."
+                  className={`contact-input contact-textarea ${errors.message ? "has-error" : ""}`}
+                  aria-invalid={Boolean(errors.message)}
+                  aria-describedby={errors.message ? "message-error" : undefined}
+                  disabled={submitting}
+                  required
+                />
+                {errors.message && (
+                  <span id="message-error" className="field-error">
+                    {errors.message}
+                  </span>
+                )}
+              </div>
 
               <button
                 type="submit"
-                className="btn btn--solid register-btn"
+                className="btn btn--solid register-btn contact-submit-btn"
                 disabled={submitting}
-                style={{ border: "none", cursor: "pointer", opacity: submitting ? 0.7 : 1 }}
+                aria-busy={submitting}
               >
-                {submitting ? "Sending..." : "Submit Message →"}
+                {submitting ? (
+                  <span className="btn-loading-content">
+                    <span className="btn-spinner" aria-hidden="true" />
+                    Sending Message...
+                  </span>
+                ) : (
+                  "Submit Message →"
+                )}
               </button>
-
-              {submittedStatus && (
-                <p style={{ marginTop: "8px", color: submittedStatus.success ? "#4ade80" : "#f87171", fontSize: "14px" }}>
-                  {submittedStatus.message}
-                </p>
-              )}
             </form>
           </div>
         </div>
       </section>
+
       <section className="section">
         <div className="wrap">
           <div className="faq-card" ref={faqRef}>
@@ -337,5 +481,5 @@ export default function Contact() {
         </div>
       </section>
     </>
-  )
+  );
 }
