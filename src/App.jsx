@@ -139,9 +139,14 @@ export default function App() {
     const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
     if (GA_MEASUREMENT_ID) {
+      // Redact sensitive secret tokens from analytics tracking
+      const safePage = location.pathname.startsWith("/time-capsule/open/")
+        ? "/time-capsule/open/:token"
+        : location.pathname + location.search;
+
       ReactGA.send({
         hitType: "pageview",
-        page: location.pathname + location.search,
+        page: safePage,
       });
     }
 
