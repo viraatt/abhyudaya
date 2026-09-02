@@ -199,5 +199,17 @@ service cloud.firestore {
       && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
       allow read, update, delete: if isAdmin(['super_admin']);
     }
+
+    // ============================================================
+    // TIME CAPSULES
+    // Public creation and opening are validated strictly through serverless
+    // APIs using the Firebase Admin SDK. Browser clients cannot read,
+    // create, update, or delete records directly.
+    // Admins (super_admin, event_admin): read, update, delete.
+    // ============================================================
+    match /time_capsules/{capsuleId} {
+      allow create: if false;
+      allow read, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
   }
 }
