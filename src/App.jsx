@@ -12,6 +12,8 @@ import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import PageLoader from "./components/PageLoader.jsx";
 import { ToastProvider } from "./Admin/components/Toast.jsx";
+import TimeCapsulePopup from "./components/TimeCapsulePopup.jsx";
+
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 import ErrorBoundary from "./Admin/components/ErrorBoundary.jsx";
@@ -42,6 +44,9 @@ const Certificate = lazy(() => import("./pages/Certificate/Certificate.jsx"));
 const VerifyCertificate = lazy(() =>
   import("./pages/VerifyCertificate/VerifyCertificate.jsx")
 );
+
+const TimeCapsule = lazy(() => import("./pages/TimeCapsule.jsx"));
+const TimeCapsuleOpen = lazy(() => import("./pages/TimeCapsuleOpen.jsx"));
 
 const NotFound = lazy(() => import("./pages/NotFound.jsx"));
 
@@ -91,6 +96,10 @@ const AddCertificate = lazy(() =>
 
 const EditCertificate = lazy(() =>
   import("./Admin/pages/Certificates/EditCertificate.jsx")
+);
+
+const AdminTimeCapsules = lazy(() =>
+  import("./Admin/pages/TimeCapsules.jsx")
 );
 
 // ─────────────────────────────────────────────────────────────
@@ -152,6 +161,9 @@ export default function App() {
   return (
     <ToastProvider>
       <ScrollToTop />
+
+      {/* Time Capsule promotional popup — shown once per 7 days on public pages */}
+      <TimeCapsulePopup />
 
       <Suspense fallback={<PageLoader />}>
         <ErrorBoundary key={location.pathname}>
@@ -369,6 +381,16 @@ export default function App() {
               }
             />
 
+            {/* Time Capsules */}
+            <Route
+              path="/admin/time-capsules"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <AdminTimeCapsules />
+                </ProtectedRoute>
+              }
+            />
+
             {/* ================= PUBLIC ROUTES ================= */}
 
             <Route element={<Layout />}>
@@ -420,6 +442,13 @@ export default function App() {
               <Route
                 path="/verify/:certificateId"
                 element={<VerifyCertificate />}
+              />
+
+              {/* Time Capsule */}
+              <Route path="/time-capsule" element={<TimeCapsule />} />
+              <Route
+                path="/time-capsule/open/:token"
+                element={<TimeCapsuleOpen />}
               />
 
               <Route path="*" element={<NotFound />} />

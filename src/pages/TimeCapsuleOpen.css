@@ -1,0 +1,380 @@
+/* ============================================================
+   ABHYUDAYA TIME CAPSULE — OPEN PAGE  (/time-capsule/open/:token)
+   Follows the existing design system (tokens.css + shared.css)
+   ============================================================ */
+
+/* ── Page Shell ── */
+
+.tco-page {
+  background: var(--dawn);
+  color: var(--ink);
+  min-height: 70vh;
+  padding-bottom: 6rem;
+}
+
+/* ── Shared Card Container ── */
+
+.tco-card {
+  max-width: 700px;
+  margin: 4rem auto;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 4px 6px rgba(20, 23, 43, 0.04),
+    0 20px 60px rgba(20, 23, 43, 0.09);
+  overflow: hidden;
+  animation: tcoFadeIn 0.4s ease both;
+}
+
+@keyframes tcoFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Verifying State ── */
+
+.tco-verifying {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.tco-verifying__spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--line-on-light);
+  border-top-color: var(--horizon);
+  border-radius: 50%;
+  animation: tcoSpin 0.8s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+
+@keyframes tcoSpin {
+  to { transform: rotate(360deg); }
+}
+
+.tco-verifying__text {
+  font-size: var(--text-md);
+  color: var(--ink-soft);
+  font-family: var(--font-utility);
+}
+
+/* ── Error State ── */
+
+.tco-error {
+  text-align: center;
+  padding: 3.5rem 2rem;
+}
+
+.tco-error__icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.tco-error h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  color: var(--ink);
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.tco-error__desc {
+  font-size: var(--text-md);
+  color: var(--ink-soft);
+  line-height: 1.7;
+  max-width: 480px;
+  margin: 0 auto 2rem;
+}
+
+/* ── Locked State ── */
+
+.tco-locked {
+  text-align: center;
+  padding: 3.5rem 2rem;
+}
+
+.tco-locked__icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.tco-locked h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  color: var(--ink);
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.tco-locked__tagline {
+  font-size: var(--text-md);
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin-bottom: 2rem;
+  max-width: 460px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tco-locked__meta {
+  background: var(--dawn-dim);
+  border-radius: var(--radius-md);
+  padding: 1.4rem 1.6rem;
+  margin: 0 auto 1.5rem;
+  max-width: 400px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.tco-locked__meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: var(--text-sm);
+}
+
+.tco-locked__meta-label {
+  color: var(--ink-soft);
+  font-family: var(--font-utility);
+  font-weight: 600;
+}
+
+.tco-locked__meta-value {
+  color: var(--ink);
+  font-weight: 700;
+  text-align: right;
+}
+
+.tco-locked__countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--night);
+  color: var(--sun);
+  border-radius: var(--radius-full);
+  padding: 0.6rem 1.4rem;
+  font-family: var(--font-utility);
+  font-weight: 700;
+  font-size: var(--text-md);
+  margin-bottom: 1.5rem;
+}
+
+.tco-locked__message {
+  font-size: var(--text-md);
+  color: var(--ink-soft);
+  font-style: italic;
+  line-height: 1.7;
+}
+
+/* ── Opened State ── */
+
+.tco-opened {
+  animation: tcoFadeIn 0.4s ease both;
+}
+
+/* Header band */
+
+.tco-opened__header {
+  background: var(--night);
+  padding: 3rem 2rem 2rem;
+  text-align: center;
+  position: relative;
+}
+
+.tco-opened__badge {
+  display: inline-block;
+  background: rgba(238, 184, 74, 0.18);
+  border: 1px solid rgba(238, 184, 74, 0.35);
+  color: var(--sun);
+  font-family: var(--font-utility);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+  padding: 0.3rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.tco-opened__header-icon {
+  font-size: 2.6rem;
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+.tco-opened__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--dawn);
+  margin-bottom: 0.4rem;
+}
+
+.tco-opened__subheading {
+  font-size: var(--text-base);
+  color: rgba(251, 244, 232, 0.68);
+  line-height: 1.7;
+}
+
+/* Metadata strip */
+
+.tco-opened__meta {
+  background: var(--night-soft);
+  padding: 1.2rem 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  border-bottom: 1px solid var(--line-on-dark);
+}
+
+.tco-opened__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.tco-opened__meta-key {
+  font-family: var(--font-utility);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: rgba(251, 244, 232, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tco-opened__meta-val {
+  font-family: var(--font-utility);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--dawn);
+}
+
+/* Capsule code highlight */
+.tco-opened__meta-val--code {
+  color: var(--sun);
+}
+
+/* Answers list */
+
+.tco-opened__answers {
+  padding: 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tco-answer {
+  padding: 1.6rem 0;
+  border-bottom: 1px solid var(--line-on-light);
+  animation: tcoAnswerIn 0.4s ease both;
+}
+
+.tco-answer:last-child {
+  border-bottom: none;
+}
+
+@keyframes tcoAnswerIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tco-answer__q-num {
+  font-family: var(--font-utility);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--horizon-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+}
+
+.tco-answer__question {
+  font-family: var(--font-utility);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 0.7rem;
+  line-height: 1.5;
+}
+
+.tco-answer__text {
+  font-size: var(--text-md);
+  color: var(--ink);
+  line-height: 1.85;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Footer band */
+
+.tco-opened__footer {
+  background: var(--night);
+  padding: 2rem;
+  text-align: center;
+  border-top: 1px solid var(--line-on-dark);
+}
+
+.tco-opened__footer-text {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--sun);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.tco-opened__footer-sub {
+  font-size: var(--text-sm);
+  color: rgba(251, 244, 232, 0.55);
+}
+
+/* ── Back Link ── */
+
+.tco-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-utility);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0.5rem 0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.tco-back:hover {
+  color: var(--horizon);
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 740px) {
+  .tco-card {
+    margin: 2rem 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .tco-opened__header,
+  .tco-opened__answers,
+  .tco-opened__footer {
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+  }
+  .tco-opened__meta {
+    padding: 1rem 1.2rem;
+    gap: 1rem;
+  }
+  .tco-locked,
+  .tco-error,
+  .tco-verifying {
+    padding: 2.5rem 1.2rem;
+  }
+}

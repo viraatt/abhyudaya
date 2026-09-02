@@ -24,6 +24,7 @@ export const PERMISSIONS = {
     gallery: true,
     contact: true,
     reviews: true,
+    timeCapsules: true,
   },
 
   [ROLES.BLOG_ADMIN]: {
@@ -36,6 +37,7 @@ export const PERMISSIONS = {
     gallery: true,
     contact: false,
     reviews: false,
+    timeCapsules: false,
   },
 
   [ROLES.EVENT_ADMIN]: {
@@ -48,5 +50,6 @@ export const PERMISSIONS = {
     gallery: true,
     contact: false,
     reviews: false,
+    timeCapsules: true,
   },
 };

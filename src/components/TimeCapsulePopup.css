@@ -1,0 +1,356 @@
+/* ===================================================
+   Abhyudaya Time Capsule — Promotional Entry Popup
+   Uses existing design tokens from tokens.css
+=================================================== */
+
+.tc-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 18, 36, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 9000;
+  animation: tc-overlay-in 0.3s ease forwards;
+}
+
+@keyframes tc-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.tc-popup-overlay.tc-popup-closing {
+  animation: tc-overlay-out 0.25s ease forwards;
+}
+
+@keyframes tc-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ── Modal shell ──────────────────────────────────── */
+.tc-popup {
+  background: var(--night, #0d1224);
+  border: 1px solid rgba(238, 184, 74, 0.18);
+  border-radius: var(--radius-lg, 24px);
+  max-width: 520px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 32px 80px rgba(13, 18, 36, 0.6),
+    0 0 0 1px rgba(238, 184, 74, 0.06);
+  animation: tc-modal-in 0.35s cubic-bezier(0.34, 1.52, 0.64, 1) forwards;
+}
+
+@keyframes tc-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tc-popup-overlay.tc-popup-closing .tc-popup {
+  animation: tc-modal-out 0.22s ease forwards;
+}
+
+@keyframes tc-modal-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+/* ── Background stars decoration ─────────────────── */
+.tc-popup__stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.tc-popup__stars::before,
+.tc-popup__stars::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(238, 184, 74, 0.15) 0%, transparent 70%);
+}
+
+.tc-popup__stars::before {
+  width: 280px;
+  height: 280px;
+  top: -80px;
+  right: -60px;
+}
+
+.tc-popup__stars::after {
+  width: 180px;
+  height: 180px;
+  bottom: -50px;
+  left: -40px;
+  background: radial-gradient(circle, rgba(122, 33, 40, 0.2) 0%, transparent 70%);
+}
+
+/* ── Close button ─────────────────────────────────── */
+.tc-popup__close {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.1rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(251, 244, 232, 0.16);
+  background: rgba(251, 244, 232, 0.05);
+  color: rgba(251, 244, 232, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.05rem;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  z-index: 1;
+  line-height: 1;
+  padding: 0;
+}
+
+.tc-popup__close:hover,
+.tc-popup__close:focus-visible {
+  background: rgba(238, 184, 74, 0.12);
+  color: var(--sun, #eeb84a);
+  border-color: rgba(238, 184, 74, 0.4);
+  outline: none;
+}
+
+.tc-popup__close:focus-visible {
+  outline: 2.5px solid var(--sun, #eeb84a);
+  outline-offset: 2px;
+}
+
+/* ── Body ─────────────────────────────────────────── */
+.tc-popup__body {
+  padding: 2.25rem 2.25rem 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Capsule graphic ──────────────────────────────── */
+.tc-popup__icon {
+  font-size: 3.2rem;
+  line-height: 1;
+  margin-bottom: 1.25rem;
+  display: inline-block;
+  animation: tc-float 3.5s ease-in-out infinite;
+  will-change: transform;
+  user-select: none;
+}
+
+@keyframes tc-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+
+/* ── Eyebrow label ────────────────────────────────── */
+.tc-popup__eyebrow {
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--sun, #eeb84a);
+  margin-bottom: 0.6rem;
+  display: block;
+}
+
+/* ── Heading ──────────────────────────────────────── */
+.tc-popup__heading {
+  font-family: var(--font-display, "Fraunces", serif);
+  font-size: clamp(1.55rem, 4.5vw, 2rem);
+  font-weight: 700;
+  color: var(--dawn, #fbf4e8);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+/* ── Body text ────────────────────────────────────── */
+.tc-popup__text {
+  color: rgba(251, 244, 232, 0.68);
+  font-size: var(--text-md, 1rem);
+  line-height: 1.65;
+  margin-bottom: 0.5rem;
+}
+
+.tc-popup__lines {
+  margin: 1.1rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tc-popup__lines li {
+  color: rgba(251, 244, 232, 0.52);
+  font-size: var(--text-base, 0.875rem);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tc-popup__lines li::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  background: rgba(238, 184, 74, 0.4);
+  flex-shrink: 0;
+}
+
+/* ── Divider ──────────────────────────────────────── */
+.tc-popup__divider {
+  height: 1px;
+  background: rgba(251, 244, 232, 0.08);
+  margin: 1.75rem 0 1.5rem;
+}
+
+/* ── CTA ──────────────────────────────────────────── */
+.tc-popup__cta {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-weight: 700;
+  font-size: var(--text-md, 1rem);
+  letter-spacing: 0.01em;
+  border: none;
+  border-radius: var(--radius-full, 999px);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 18px rgba(238, 184, 74, 0.28);
+  margin-bottom: 0.75rem;
+}
+
+.tc-popup__cta:hover {
+  background: #f7c85a;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(238, 184, 74, 0.38);
+}
+
+.tc-popup__cta:active {
+  transform: translateY(0);
+}
+
+.tc-popup__cta:focus-visible {
+  outline: 2.5px solid var(--sun, #eeb84a);
+  outline-offset: 3px;
+}
+
+/* ── Dismiss ──────────────────────────────────────── */
+.tc-popup__dismiss {
+  display: block;
+  width: 100%;
+  padding: 0.6rem;
+  background: transparent;
+  border: none;
+  color: rgba(251, 244, 232, 0.38);
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: var(--text-base, 0.875rem);
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.2s;
+  border-radius: var(--radius-sm, 8px);
+}
+
+.tc-popup__dismiss:hover {
+  color: rgba(251, 244, 232, 0.65);
+}
+
+.tc-popup__dismiss:focus-visible {
+  outline: 2.5px solid var(--sun, #eeb84a);
+  outline-offset: 2px;
+  color: rgba(251, 244, 232, 0.65);
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 480px) {
+  .tc-popup-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .tc-popup {
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+    animation: tc-modal-in-mobile 0.35s cubic-bezier(0.34, 1.22, 0.64, 1) forwards;
+  }
+
+  @keyframes tc-modal-in-mobile {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .tc-popup-overlay.tc-popup-closing .tc-popup {
+    animation: tc-modal-out-mobile 0.22s ease forwards;
+  }
+
+  @keyframes tc-modal-out-mobile {
+    from { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(40px); opacity: 0; }
+  }
+
+  .tc-popup__body {
+    padding: 1.75rem 1.5rem 2rem;
+  }
+
+  .tc-popup__icon {
+    font-size: 2.75rem;
+  }
+
+  .tc-popup__heading {
+    font-size: 1.55rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .tc-popup__body {
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+}
+
+/* ── Reduced motion: strip all animations ─────────── */
+@media (prefers-reduced-motion: reduce) {
+  .tc-popup-overlay,
+  .tc-popup-overlay.tc-popup-closing,
+  .tc-popup,
+  .tc-popup-overlay.tc-popup-closing .tc-popup {
+    animation: none !important;
+  }
+
+  .tc-popup__icon {
+    animation: none !important;
+  }
+}
