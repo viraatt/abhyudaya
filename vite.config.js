@@ -17,6 +17,14 @@ export default defineConfig({
   // Locally, we proxy /api requests to server.local.js (port 3001) so that
   // the frontend can reach the same handler code without modification.
   server: {
+    fs: {
+      deny: [
+        "**/firebase-service-account.json",
+        "**/.env*",
+        "**/*.pem",
+        "**/*.key",
+      ],
+    },
     proxy: {
       "/api": {
         target: "http://localhost:3001",
