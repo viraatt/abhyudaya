@@ -19,6 +19,14 @@ function loadServiceAccount() {
     process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
     process.env.FIREBASE_ADMIN_CREDENTIALS,
     process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+    process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    process.env.FIREBASE_CREDENTIALS,
+    process.env.FIREBASE_KEY,
+    process.env.SERVICE_ACCOUNT,
+    process.env.SERVICE_ACCOUNT_KEY,
+    process.env.VITE_FIREBASE_SERVICE_ACCOUNT,
+    process.env.FIREBASE_ADMIN_KEY,
+    process.env.GCP_SERVICE_ACCOUNT,
   ];
 
   for (const raw of candidateEnvs) {
@@ -34,6 +42,21 @@ function loadServiceAccount() {
 
     if (typeof raw === "string") {
       let str = raw.trim();
+
+      // Check if it's a file path pointing to a valid JSON file
+      if (str.endsWith(".json") && fs.existsSync(str)) {
+        try {
+          const fileParsed = JSON.parse(fs.readFileSync(str, "utf8"));
+          if (fileParsed && fileParsed.project_id) {
+            if (fileParsed.private_key && typeof fileParsed.private_key === "string") {
+              fileParsed.private_key = fileParsed.private_key.replace(/\\n/g, "\n");
+            }
+            return fileParsed;
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       // Strip surrounding quotes if wrapped
       if (
@@ -72,23 +95,39 @@ function loadServiceAccount() {
       } catch {
         // Not base64
       }
+
+      // 4. Regex extraction fallback in case of unescaped multiline strings
+      try {
+        const pMatch = str.match(/"project_id"\s*:\s*"([^"]+)"/);
+        const eMatch = str.match(/"client_email"\s*:\s*"([^"]+)"/);
+        const kMatch = str.match(/"private_key"\s*:\s*"([\s\S]*?)(?:(?<!\\)")/);
+        if (pMatch && eMatch && kMatch) {
+          return {
+            project_id: pMatch[1],
+            client_email: eMatch[1],
+            private_key: kMatch[1].replace(/\\n/g, "\n"),
+          };
+        }
+      } catch {
+        // ignore
+      }
     }
   }
 
-  // 4. Individual environment variables fallback
-  if (
-    process.env.FIREBASE_PROJECT_ID &&
-    process.env.FIREBASE_CLIENT_EMAIL &&
-    process.env.FIREBASE_PRIVATE_KEY
-  ) {
+  // 5. Individual environment variables fallback
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+
+  if (projectId && clientEmail && privateKey) {
     return {
-      project_id: process.env.FIREBASE_PROJECT_ID,
-      client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      project_id: projectId,
+      client_email: clientEmail,
+      private_key: privateKey.replace(/\\n/g, "\n"),
     };
   }
 
-  // 5. Local development fallback: look for firebase-service-account.json in root
+  // 6. Local development fallback: look for firebase-service-account.json in root
   const localKeyPath = path.resolve(process.cwd(), "firebase-service-account.json");
   if (fs.existsSync(localKeyPath)) {
     try {
@@ -124,8 +163,20 @@ export function getFirebaseAdmin() {
         // In local/GCP environments without serviceAccount, attempt default credentials
         cachedApp = initializeApp();
       } else {
+        const checkedNames = [
+          "FIREBASE_SERVICE_ACCOUNT",
+          "FIREBASE_SERVICE_ACCOUNT_KEY",
+          "FIREBASE_ADMIN_CREDENTIALS",
+          "GOOGLE_APPLICATION_CREDENTIALS",
+          "FIREBASE_PROJECT_ID",
+        ];
+        const presentNames = checkedNames.filter((k) => !!process.env[k]);
+        const reason = presentNames.length === 0
+          ? "No Firebase credential environment variables found in Vercel project settings."
+          : `Credential variable(s) [${presentNames.join(", ")}] detected but could not be parsed as valid Service Account credentials.`;
+
         throw new Error(
-          "FIREBASE_SERVICE_ACCOUNT is not configured or invalid in hosting environment variables."
+          `FIREBASE_SERVICE_ACCOUNT configuration required: ${reason}`
         );
       }
     }
