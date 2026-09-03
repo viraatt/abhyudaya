@@ -9,6 +9,103 @@ let cachedApp = null;
 let cachedDb = null;
 
 /**
+ * Robustly loads Firebase Admin credentials from environment variables or local fallback.
+ * Supports raw JSON, double-escaped JSON, base64-encoded strings, escaped newlines,
+ * alternate variable names, individual credentials, and local files.
+ */
+function loadServiceAccount() {
+  const candidateEnvs = [
+    process.env.FIREBASE_SERVICE_ACCOUNT,
+    process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+    process.env.FIREBASE_ADMIN_CREDENTIALS,
+    process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+  ];
+
+  for (const raw of candidateEnvs) {
+    if (!raw) continue;
+
+    // 1. Already parsed object
+    if (typeof raw === "object" && raw.project_id) {
+      if (raw.private_key && typeof raw.private_key === "string") {
+        raw.private_key = raw.private_key.replace(/\\n/g, "\n");
+      }
+      return raw;
+    }
+
+    if (typeof raw === "string") {
+      let str = raw.trim();
+
+      // Strip surrounding quotes if wrapped
+      if (
+        (str.startsWith('"') && str.endsWith('"')) ||
+        (str.startsWith("'") && str.endsWith("'"))
+      ) {
+        str = str.slice(1, -1).trim();
+      }
+
+      // 2. Direct JSON string
+      try {
+        let parsed = JSON.parse(str);
+        if (typeof parsed === "string") {
+          parsed = JSON.parse(parsed); // Double-escaped JSON
+        }
+        if (parsed && typeof parsed === "object" && parsed.project_id) {
+          if (parsed.private_key && typeof parsed.private_key === "string") {
+            parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+          }
+          return parsed;
+        }
+      } catch {
+        // Not direct JSON
+      }
+
+      // 3. Base64-encoded JSON string
+      try {
+        const decoded = Buffer.from(str, "base64").toString("utf8");
+        const parsed = JSON.parse(decoded);
+        if (parsed && typeof parsed === "object" && parsed.project_id) {
+          if (parsed.private_key && typeof parsed.private_key === "string") {
+            parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+          }
+          return parsed;
+        }
+      } catch {
+        // Not base64
+      }
+    }
+  }
+
+  // 4. Individual environment variables fallback
+  if (
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    return {
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    };
+  }
+
+  // 5. Local development fallback: look for firebase-service-account.json in root
+  const localKeyPath = path.resolve(process.cwd(), "firebase-service-account.json");
+  if (fs.existsSync(localKeyPath)) {
+    try {
+      const localParsed = JSON.parse(fs.readFileSync(localKeyPath, "utf8"));
+      if (localParsed.private_key && typeof localParsed.private_key === "string") {
+        localParsed.private_key = localParsed.private_key.replace(/\\n/g, "\n");
+      }
+      return localParsed;
+    } catch (err) {
+      console.warn("[TimeCapsule] Failed to read local service account file:", err);
+    }
+  }
+
+  return null;
+}
+
+/**
  * Initializes and returns the Firebase Admin Firestore instance and helpers.
  */
 export function getFirebaseAdmin() {
@@ -17,36 +114,19 @@ export function getFirebaseAdmin() {
     if (existingApps.length > 0) {
       cachedApp = existingApps[0];
     } else {
-      let serviceAccount = null;
-
-      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        try {
-          serviceAccount = typeof process.env.FIREBASE_SERVICE_ACCOUNT === "string"
-            ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-            : process.env.FIREBASE_SERVICE_ACCOUNT;
-        } catch (err) {
-          console.warn("[TimeCapsule] Failed to parse FIREBASE_SERVICE_ACCOUNT env:", err);
-        }
-      }
-
-      // Local development fallback: look for firebase-service-account.json in root
-      if (!serviceAccount) {
-        const localKeyPath = path.resolve(process.cwd(), "firebase-service-account.json");
-        if (fs.existsSync(localKeyPath)) {
-          try {
-            serviceAccount = JSON.parse(fs.readFileSync(localKeyPath, "utf8"));
-          } catch (err) {
-            console.warn("[TimeCapsule] Failed to read local service account file:", err);
-          }
-        }
-      }
+      const serviceAccount = loadServiceAccount();
 
       if (serviceAccount && serviceAccount.project_id) {
         cachedApp = initializeApp({
           credential: cert(serviceAccount),
         });
-      } else {
+      } else if (!process.env.VERCEL) {
+        // In local/GCP environments without serviceAccount, attempt default credentials
         cachedApp = initializeApp();
+      } else {
+        throw new Error(
+          "FIREBASE_SERVICE_ACCOUNT is not configured or invalid in hosting environment variables."
+        );
       }
     }
   }
@@ -57,6 +137,7 @@ export function getFirebaseAdmin() {
 
   return {
     app: cachedApp,
+    admin: cachedApp,
     db: cachedDb,
     firestore: () => cachedDb,
     FieldValue,
