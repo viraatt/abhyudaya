@@ -133,6 +133,7 @@ export default async function handler(req, res) {
     return res.status(500).json({
       success: false,
       error: "Unable to verify your Time Capsule right now. Please try again later.",
+      details: error.message || undefined,
     });
   }
 }

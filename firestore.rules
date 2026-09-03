@@ -38,7 +38,8 @@ service cloud.firestore {
     // ============================================================
     match /announcements/{announcementId} {
       allow read: if isAdmin(['super_admin', 'event_admin'])
-        || resource.data.published == true;
+        || resource.data.published == true
+        || resource.data.status == 'published';
 
       allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
     }
