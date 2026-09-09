@@ -422,39 +422,136 @@
   object-fit: contain;
 }
 
-/* Field Pin Overlay */
-.field-marker-overlay {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  cursor: grab;
-  z-index: 10;
-  user-select: none;
+/* Quick Add Variable Bar */
+.quick-add-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
 }
 
-.field-marker-overlay:active {
-  cursor: grabbing;
-}
-
-.field-marker-badge {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(4px);
-  color: #ffffff;
-  border: 1.5px solid #3b82f6;
-  border-radius: 6px;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.74rem;
+.quick-add-label {
+  font-size: 0.78rem;
   font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.25rem;
+}
+
+.quick-add-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.quick-add-btn:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.custom-var-input-group {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Interactive Text Box on Canvas */
+.cert-field-box {
+  position: absolute;
+  box-sizing: border-box;
+  user-select: none;
+  cursor: move;
+  border: 1.5px dashed rgba(37, 99, 235, 0.4);
+  background: rgba(37, 99, 235, 0.03);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  z-index: 5;
+}
+
+.cert-field-box:hover {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.cert-field-box.active {
+  border: 2px solid #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  z-index: 20;
+}
+
+.cert-field-content {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
-.field-marker-overlay.selected .field-marker-badge {
+.cert-field-tag {
+  position: absolute;
+  top: -24px;
+  left: 0;
   background: #2563eb;
-  border-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+  color: #ffffff;
+  font-family: monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Resize Handles (8-points) */
+.resize-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border: 1.5px solid #2563eb;
+  border-radius: 2px;
+  z-index: 25;
+}
+
+.resize-handle.nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.resize-handle.n  { top: -5px; left: calc(50% - 4.5px); cursor: ns-resize; }
+.resize-handle.ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.resize-handle.e  { top: calc(50% - 4.5px); right: -5px; cursor: ew-resize; }
+.resize-handle.se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+.resize-handle.s  { bottom: -5px; left: calc(50% - 4.5px); cursor: ns-resize; }
+.resize-handle.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.resize-handle.w  { top: calc(50% - 4.5px); left: -5px; cursor: ew-resize; }
+
+.editor-scale-pill {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
 }
 
 /* Field Controls Sidebar */

@@ -1,30 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import CertificateStepper from "./CertificateStepper";
 import TemplateUploader from "./TemplateUploader";
 import TemplateEditor from "./TemplateEditor";
 import DataMapper from "./DataMapper";
 import CertificatePreview from "./CertificatePreview";
 import GenerationProgress from "./GenerationProgress";
+import { getCertificateTemplateById } from "../../../Firebase/certificateTemplateService";
 import { DEFAULT_TEMPLATE_FIELDS } from "../../../utils/certificateRenderer";
 import "./CertificateGenerator.css";
 
 export default function CertificateWizard() {
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
+  const [loadingTemplate, setLoadingTemplate] = useState(() =>
+    Boolean(new URLSearchParams(window.location.search).get("templateId"))
+  );
 
   // Template & Event Configuration
   const [templateConfig, setTemplateConfig] = useState({
     templateFile: null,
     templateUrl: "",
+    fileUrl: "",
     storagePath: "",
     savedTemplateId: "",
+    templateId: "",
     templateName: "",
+    name: "",
     eventId: "",
     eventName: "",
     eventDate: "",
     certificateType: "Participation",
+    width: 1920,
+    height: 1080,
     dimensions: { width: 1920, height: 1080 },
     fields: DEFAULT_TEMPLATE_FIELDS,
+    status: "draft",
   });
 
   // Uploaded Participant Dataset
@@ -44,6 +56,50 @@ export default function CertificateWizard() {
     field_id: "__auto_id__",
   });
 
+  // Reopen existing template if templateId is in URL query parameters
+  useEffect(() => {
+    const templateIdParam = searchParams.get("templateId");
+    if (!templateIdParam) return;
+
+    let isMounted = true;
+
+    getCertificateTemplateById(templateIdParam)
+      .then((tpl) => {
+        if (!isMounted || !tpl) return;
+        setTemplateConfig({
+          templateId: tpl.id,
+          savedTemplateId: tpl.id,
+          templateName: tpl.name,
+          name: tpl.name,
+          eventId: tpl.eventId || "",
+          eventName: tpl.eventName || "",
+          eventDate: tpl.eventDate || "",
+          certificateType: tpl.certificateType || "Participation",
+          fileUrl: tpl.fileUrl || tpl.templateUrl,
+          templateUrl: tpl.fileUrl || tpl.templateUrl,
+          storagePath: tpl.storagePath || "",
+          templateFile: null,
+          width: tpl.width || 1920,
+          height: tpl.height || 1080,
+          dimensions: { width: tpl.width || 1920, height: tpl.height || 1080 },
+          fields: tpl.fields || DEFAULT_TEMPLATE_FIELDS,
+          status: tpl.status || "published",
+        });
+        setCurrentStep(2);
+        setMaxStepReached(2);
+      })
+      .catch((err) => {
+        console.error("Failed to restore template by ID:", err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingTemplate(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [searchParams]);
+
   const goToStep = (step) => {
     setCurrentStep(step);
     if (step > maxStepReached) {
@@ -61,15 +117,21 @@ export default function CertificateWizard() {
     setTemplateConfig({
       templateFile: null,
       templateUrl: "",
+      fileUrl: "",
       storagePath: "",
       savedTemplateId: "",
+      templateId: "",
       templateName: "",
+      name: "",
       eventId: "",
       eventName: "",
       eventDate: "",
       certificateType: "Participation",
+      width: 1920,
+      height: 1080,
       dimensions: { width: 1920, height: 1080 },
       fields: DEFAULT_TEMPLATE_FIELDS,
+      status: "draft",
     });
     setDataset({
       fileName: "",
@@ -85,6 +147,17 @@ export default function CertificateWizard() {
       field_id: "__auto_id__",
     });
   };
+
+  if (loadingTemplate) {
+    return (
+      <div className="cert-generator-container">
+        <div className="cert-wizard-body" style={{ alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>⏳</div>
+          <h4>Loading Saved Template from Firestore...</h4>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cert-generator-container">

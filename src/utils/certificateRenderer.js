@@ -152,46 +152,75 @@ export function renderCertificateToCanvas(
   // Draw background template image
   ctx.drawImage(templateImg, 0, 0, targetWidth, targetHeight);
 
-  // Coordinate scaling relative to base width of 1920
-  const scale = targetWidth / 1920;
+  // Target template dimensions
+  const origW = options.originalWidth || options.width || targetWidth;
+  const origH = options.originalHeight || options.height || targetHeight;
+  const scaleX = targetWidth / (origW || 1);
+  const scaleY = targetHeight / (origH || 1);
 
   // Render each text field
   fields.forEach((field) => {
     if (field.visible === false) return;
 
-    // Resolve text value: rowData[mappedColumn] -> rowData[key] -> sampleText -> defaultValue
+    // Resolve text value: rowData[mappedColumn] -> rowData[key] -> rowData[variable] -> sampleText -> defaultValue
     let text = "";
+    const cleanVar = (field.variable || "").replace(/[{}]/g, "");
     if (field.mappedColumn && rowData[field.mappedColumn] !== undefined) {
       text = String(rowData[field.mappedColumn]);
+    } else if (cleanVar && rowData[cleanVar] !== undefined) {
+      text = String(rowData[cleanVar]);
     } else if (field.key && rowData[field.key] !== undefined) {
       text = String(rowData[field.key]);
-    } else if (rowData[field.name] !== undefined) {
-      text = String(rowData[field.name]);
+    } else if (rowData[field.label || field.name] !== undefined) {
+      text = String(rowData[field.label || field.name]);
     } else {
-      text = field.sampleText || field.defaultValue || "";
+      text = field.sampleText || field.defaultValue || field.variable || field.label || "";
     }
 
     if (!text && text !== 0) return;
 
-    // Calculate absolute X and Y from percentage (0-100%) or raw coordinates
-    const posX = (Number(field.x) / 100) * targetWidth;
-    const posY = (Number(field.y) / 100) * targetHeight;
-
-    const fontSize = Math.round((Number(field.fontSize) || 24) * scale);
-    const fontFamily = field.fontFamily || "Inter, sans-serif";
+    const alignment = field.alignment || field.textAlign || "center";
     const fontWeight = field.fontWeight || "normal";
-    const textAlign = field.textAlign || "center";
+    const fontFamily = field.fontFamily || "Inter, sans-serif";
     const color = field.color || "#0f172a";
+
+    // Handle both original-pixel coordinates (with bounding box) and legacy percentage
+    let posX = 0;
+    let posY = 0;
+    let fontSize = 28;
+
+    if (field.width !== undefined && field.height !== undefined) {
+      const boxX = (Number(field.x) || 0) * scaleX;
+      const boxY = (Number(field.y) || 0) * scaleY;
+      const boxW = (Number(field.width) || 400) * scaleX;
+      const boxH = (Number(field.height) || 80) * scaleY;
+
+      if (alignment === "left") {
+        posX = boxX;
+      } else if (alignment === "right") {
+        posX = boxX + boxW;
+      } else {
+        posX = boxX + boxW / 2;
+      }
+
+      posY = boxY + boxH / 2;
+      fontSize = Math.round((Number(field.fontSize) || 32) * scaleX);
+    } else {
+      // Legacy percentage fallback
+      posX = (Number(field.x) / 100) * targetWidth;
+      posY = (Number(field.y) / 100) * targetHeight;
+      fontSize = Math.round((Number(field.fontSize) || 24) * scaleX);
+    }
 
     ctx.save();
     ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     ctx.fillStyle = color;
-    ctx.textAlign = textAlign;
+    ctx.textAlign = alignment;
     ctx.textBaseline = "middle";
 
     // Optional letter spacing
     if (field.letterSpacing && ctx.letterSpacing !== undefined) {
-      ctx.letterSpacing = `${field.letterSpacing}px`;
+      ctx.letterSpacing = `${field.letterSpacing * scaleX}px`;
     }
 
     // Draw text

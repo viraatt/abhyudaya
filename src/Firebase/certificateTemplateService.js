@@ -18,6 +18,35 @@ const JOBS_COLLECTION = "certificateJobs";
 const templatesRef = collection(db, TEMPLATES_COLLECTION);
 const jobsRef = collection(db, JOBS_COLLECTION);
 
+function formatTemplateDoc(docSnap) {
+  const data = docSnap.data();
+  const width = data.width || data.dimensions?.width || 1920;
+  const height = data.height || data.dimensions?.height || 1080;
+  const fileUrl = data.fileUrl || data.templateUrl || "";
+
+  return {
+    id: docSnap.id,
+    templateId: data.templateId || docSnap.id,
+    name: data.name || "Untitled Template",
+    description: data.description || "",
+    eventId: data.eventId || "",
+    eventName: data.eventName || "",
+    eventDate: data.eventDate || "",
+    certificateType: data.certificateType || "Participation",
+    fileUrl,
+    templateUrl: fileUrl,
+    storagePath: data.storagePath || "",
+    width,
+    height,
+    dimensions: { width, height },
+    fields: Array.isArray(data.fields) ? data.fields : [],
+    status: data.status || "published", // 'published' | 'draft'
+    createdBy: data.createdBy || "",
+    createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
+    updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || null,
+  };
+}
+
 /* ============================================================================
    CERTIFICATE TEMPLATES OPERATIONS
    ============================================================================ */
@@ -31,21 +60,11 @@ export async function getCertificateTemplates() {
   try {
     const q = query(templatesRef, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.() || d.data().createdAt || null,
-      updatedAt: d.data().updatedAt?.toDate?.() || d.data().updatedAt || null,
-    }));
+    return snapshot.docs.map(formatTemplateDoc);
   } catch (err) {
     console.warn("getCertificateTemplates orderBy fallback:", err);
     const snapshot = await getDocs(templatesRef);
-    return snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt?.toDate?.() || d.data().createdAt || null,
-      updatedAt: d.data().updatedAt?.toDate?.() || d.data().updatedAt || null,
-    }));
+    return snapshot.docs.map(formatTemplateDoc);
   }
 }
 
@@ -57,16 +76,11 @@ export async function getCertificateTemplates() {
  */
 export async function getCertificateTemplateById(id) {
   if (!id) return null;
-  const docRef = doc(db, TEMPLATES_COLLECTION, id);
+  const cleanId = String(id).trim();
+  const docRef = doc(db, TEMPLATES_COLLECTION, cleanId);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return null;
-  const data = docSnap.data();
-  return {
-    id: docSnap.id,
-    ...data,
-    createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
-    updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || null,
-  };
+  return formatTemplateDoc(docSnap);
 }
 
 /**
@@ -76,25 +90,67 @@ export async function getCertificateTemplateById(id) {
  * @returns {Promise<string>} Template Document ID
  */
 export async function saveCertificateTemplate(templateData) {
-  const templateId = templateData.id || `tpl_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  const templateId =
+    templateData.templateId ||
+    templateData.id ||
+    `tpl_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
   const docRef = doc(db, TEMPLATES_COLLECTION, templateId);
+
+  const width =
+    Number(templateData.width) ||
+    Number(templateData.dimensions?.width) ||
+    1920;
+  const height =
+    Number(templateData.height) ||
+    Number(templateData.dimensions?.height) ||
+    1080;
+  const fileUrl = templateData.fileUrl || templateData.templateUrl || "";
+
+  // Normalize fields
+  const fields = (templateData.fields || []).map((f, idx) => ({
+    id: f.id || `field_${idx + 1}`,
+    variable: f.variable || `{{${f.key || f.label || "var"}}}`,
+    label: f.label || f.name || "Text Field",
+    x: Math.round(Number(f.x) || 0),
+    y: Math.round(Number(f.y) || 0),
+    width: Math.round(Number(f.width) || 400),
+    height: Math.round(Number(f.height) || 80),
+    fontFamily: f.fontFamily || "Inter, sans-serif",
+    fontSize: Math.round(Number(f.fontSize) || 28),
+    fontWeight: f.fontWeight || "normal",
+    color: f.color || "#0f172a",
+    alignment: f.alignment || f.textAlign || "center",
+    letterSpacing: Number(f.letterSpacing) || 0,
+    lineHeight: Number(f.lineHeight) || 1.2,
+    isRequired: f.isRequired ?? true,
+    // legacy support
+    name: f.label || f.name || "Text Field",
+    key: f.key || (f.variable || "").replace(/[{}]/g, ""),
+    textAlign: f.alignment || f.textAlign || "center",
+  }));
 
   const payload = {
     id: templateId,
-    name: (templateData.name || "Untitled Template").trim(),
+    templateId,
+    name: (templateData.name || templateData.templateName || "Untitled Template").trim(),
     description: (templateData.description || "").trim(),
     eventId: templateData.eventId || "",
     eventName: (templateData.eventName || "").trim(),
     eventDate: (templateData.eventDate || "").trim(),
     certificateType: templateData.certificateType || "Participation",
-    templateUrl: templateData.templateUrl || "",
+    fileUrl,
+    templateUrl: fileUrl,
     storagePath: templateData.storagePath || "",
-    dimensions: templateData.dimensions || { width: 1920, height: 1080 },
-    fields: Array.isArray(templateData.fields) ? templateData.fields : [],
+    width,
+    height,
+    dimensions: { width, height },
+    fields,
+    status: templateData.status || "published", // 'published' | 'draft'
+    createdBy: templateData.createdBy || "",
     updatedAt: serverTimestamp(),
   };
 
-  if (!templateData.id) {
+  if (!templateData.id && !templateData.templateId) {
     payload.createdAt = serverTimestamp();
   }
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getEvents } from "../../../Firebase/eventService";
 import { getCertificateTemplates } from "../../../Firebase/certificateTemplateService";
+import { processTemplateFile } from "../../../utils/pdfTemplateHelper";
 
 const CERTIFICATE_TYPES = [
   "Participation",
@@ -19,6 +20,7 @@ export default function TemplateUploader({
   const [events, setEvents] = useState([]);
   const [savedTemplates, setSavedTemplates] = useState([]);
   const [loadingResources, setLoadingResources] = useState(true);
+  const [processingFile, setProcessingFile] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef(null);
@@ -73,14 +75,23 @@ export default function TemplateUploader({
     const tpl = savedTemplates.find((t) => t.id === tplId);
     if (tpl) {
       onUpdateConfig({
+        templateId: tpl.id,
         savedTemplateId: tpl.id,
         templateName: tpl.name,
+        name: tpl.name,
         eventName: tpl.eventName || templateConfig.eventName,
         eventDate: tpl.eventDate || templateConfig.eventDate,
         certificateType: tpl.certificateType || templateConfig.certificateType,
-        templateUrl: tpl.templateUrl,
+        templateUrl: tpl.fileUrl || tpl.templateUrl,
+        fileUrl: tpl.fileUrl || tpl.templateUrl,
+        storagePath: tpl.storagePath || "",
         templateFile: null,
-        dimensions: tpl.dimensions || { width: 1920, height: 1080 },
+        width: tpl.width || tpl.dimensions?.width || 1920,
+        height: tpl.height || tpl.dimensions?.height || 1080,
+        dimensions: tpl.dimensions || {
+          width: tpl.width || 1920,
+          height: tpl.height || 1080,
+        },
         fields: tpl.fields && tpl.fields.length > 0 ? tpl.fields : templateConfig.fields,
       });
     }
@@ -106,45 +117,60 @@ export default function TemplateUploader({
     }
   };
 
-  // Process uploaded image
-  const handleFile = (file) => {
+  // Process uploaded image or PDF
+  const handleFile = async (file) => {
     if (!file) return;
     setErrorMsg("");
 
-    const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    if (!validTypes.includes(file.type)) {
-      setErrorMsg("Please upload a valid image (PNG, JPG, JPEG, or WEBP).");
+    const isPdf =
+      file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const validImg = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+    ].includes(file.type);
+
+    if (!isPdf && !validImg) {
+      setErrorMsg("Please upload a valid template file (PNG, JPG, JPEG, or PDF).");
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      setErrorMsg("Image size should not exceed 15MB.");
+    if (file.size > 25 * 1024 * 1024) {
+      setErrorMsg("Template file size should not exceed 25MB.");
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
+    setProcessingFile(true);
+
+    try {
+      const res = await processTemplateFile(file);
       onUpdateConfig({
-        templateFile: file,
-        templateUrl: objectUrl,
+        templateFile: res.isPdf ? res.imageBlob : file,
+        originalFile: file,
+        templateUrl: res.previewUrl,
+        fileUrl: res.previewUrl,
         savedTemplateId: "",
+        templateId: "",
+        width: res.originalWidth,
+        height: res.originalHeight,
         dimensions: {
-          width: img.naturalWidth || 1920,
-          height: img.naturalHeight || 1080,
+          width: res.originalWidth,
+          height: res.originalHeight,
         },
       });
-    };
-    img.onerror = () => {
-      setErrorMsg("Failed to decode uploaded image. Please try another file.");
-    };
-    img.src = objectUrl;
+    } catch (err) {
+      console.error("Template processing error:", err);
+      setErrorMsg(err.message || "Failed to process template file.");
+    } finally {
+      setProcessingFile(false);
+    }
   };
 
   // Validation before proceed
   const canProceed =
-    (templateConfig.templateUrl || templateConfig.templateFile) &&
-    templateConfig.templateName &&
+    (templateConfig.templateUrl || templateConfig.fileUrl || templateConfig.templateFile) &&
+    (templateConfig.templateName || templateConfig.name) &&
     templateConfig.eventName;
 
   return (
@@ -285,19 +311,23 @@ export default function TemplateUploader({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
+                accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
                 style={{ display: "none" }}
                 onChange={(e) => handleFile(e.target.files?.[0])}
               />
-              <span className="template-dropzone-icon">🖼️</span>
+              <span className="template-dropzone-icon">
+                {processingFile ? "⏳" : "🖼️"}
+              </span>
               <div className="template-dropzone-title">
-                Click to upload certificate template
+                {processingFile
+                  ? "Processing & rendering template..."
+                  : "Click to upload certificate template"}
               </div>
               <div className="template-dropzone-desc">
-                or drag and drop your PNG / JPG image here
+                or drag and drop your PNG, JPG, or PDF file here
               </div>
               <span className="template-dropzone-hint">
-                Recommended: 1920x1080 (16:9) or 3508x2480 (A4 Landscape)
+                Supported: PNG, JPG, JPEG, and PDF (Single page)
               </span>
             </div>
           ) : (
