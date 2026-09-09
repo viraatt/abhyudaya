@@ -8,7 +8,32 @@
 
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
+import QRCode from "qrcode";
 import { resolveFieldValue } from "./fieldMappingHelper.js";
+
+/**
+ * Normalizes unicode quotes, dashes, and whitespace to standard characters.
+ */
+export function sanitizeForPdfFont(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2026]/g, "...")
+    .replace(/[\u00A0]/g, " ")
+    .trim();
+}
+
+/**
+ * Filters out characters not encodable by standard WinAnsi PDF fonts to prevent crashing.
+ */
+export function safeWinAnsiText(text) {
+  const sanitized = sanitizeForPdfFont(text);
+  // Keep ASCII printable + Latin-1 supplement
+  const safe = sanitized.replace(/[^\x20-\x7E\xA0-\xFF]/g, "");
+  return safe || sanitized;
+}
 
 /**
  * Converts Hex or RGB string into pdf-lib normalized RGB object.
@@ -216,25 +241,62 @@ export async function generateCertificatePdf({
     return fontCache.get(fontKey);
   };
 
-  // 6. Draw each text field onto the PDF page
+  // 6. Draw each field (text or QR code) onto the PDF page
   for (const field of fields) {
-    const textValue = resolveFieldValue(field, mapping, row, {
-      ...options,
-      certificateId: certId,
-    });
-
-    if (!textValue) continue;
-
-    const font = await getFont(field.fontFamily, field.fontWeight);
-    const fontSize = Number(field.fontSize) || 32;
-    const textColor = parseColorToRgb(field.color || "#1e293b");
-
-    // Measure text width using pdf-lib font metrics
-    const textWidth = font.widthOfTextAtSize(textValue, fontSize);
     const fieldWidth = Number(field.width) || originalWidth;
     const fieldHeight = Number(field.height) || 60;
     const fieldX = Number(field.x) || 0;
     const fieldY = Number(field.y) || 0;
+
+    // Check if this is a QR code field
+    const isQrField = field.isQr || field.variable === "{{qrCode}}" || field.type === "qr";
+    if (isQrField) {
+      const baseUrl =
+        options.baseUrl ||
+        (typeof window !== "undefined" ? window.location.origin : "https://www.abhyudayaclub.in");
+      const verifyUrl = `${baseUrl}/verify/${certId}`;
+      try {
+        const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+          margin: 1,
+          width: Math.max(128, Math.round(fieldWidth)),
+          errorCorrectionLevel: "M",
+        });
+        const base64Data = qrDataUrl.split(",")[1];
+        const qrPngBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+        const embeddedQr = await pdfDoc.embedPng(qrPngBytes);
+        page.drawImage(embeddedQr, {
+          x: fieldX,
+          y: originalHeight - fieldY - fieldHeight,
+          width: fieldWidth,
+          height: fieldHeight,
+        });
+      } catch (err) {
+        console.warn("Failed to generate and embed QR code:", err);
+      }
+      continue;
+    }
+
+    const rawValue = resolveFieldValue(field, mapping, row, {
+      ...options,
+      certificateId: certId,
+    });
+
+    if (!rawValue) continue;
+
+    const textValue = safeWinAnsiText(rawValue);
+    if (!textValue) continue;
+
+    const font = await getFont(field.fontFamily, field.fontWeight);
+    let fontSize = Number(field.fontSize) || 32;
+    const textColor = parseColorToRgb(field.color || "#1e293b");
+
+    // Auto-scale font size down if text exceeds field width (prevents text overflow)
+    let textWidth = font.widthOfTextAtSize(textValue, fontSize);
+    if (fieldWidth > 0 && textWidth > fieldWidth) {
+      const scaleRatio = (fieldWidth - 4) / textWidth;
+      fontSize = Math.max(8, Math.floor(fontSize * scaleRatio));
+      textWidth = font.widthOfTextAtSize(textValue, fontSize);
+    }
 
     // Horizontal Alignment calculation
     let drawX = fieldX;

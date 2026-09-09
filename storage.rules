@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function checking admin role in Firestore
+    function isAdmin(roles) {
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in roles;
+    }
+
+    // Certificate templates: Restricted to authorized Admins (super_admin, event_admin)
+    match /certificate_templates/{allPaths=**} {
+      allow read, write, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // Generated certificates and bulk ZIP files:
+    // Read is allowed for official student download and verification.
+    // Write and delete are strictly restricted to authorized admins.
+    match /generated_certificates/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // General media assets
+    match /media/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin(['super_admin', 'event_admin', 'blog_admin']);
+    }
+
+    // Gallery assets
+    match /gallery/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin(['super_admin', 'event_admin', 'blog_admin']);
+    }
+  }
+}

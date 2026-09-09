@@ -1,6 +1,36 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
+import QRCode from "qrcode";
 import { resolveFieldValue } from "../../../utils/fieldMappingHelper";
+
+function QrPreviewImage({ certId }) {
+  const [dataUrl, setDataUrl] = useState("");
+
+  useEffect(() => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://www.abhyudayaclub.in";
+    const url = `${origin}/verify/${certId}`;
+    QRCode.toDataURL(url, { margin: 1, width: 256 })
+      .then(setDataUrl)
+      .catch((err) => console.warn("QR preview error:", err));
+  }, [certId]);
+
+  return dataUrl ? (
+    <img
+      src={dataUrl}
+      alt={`Verification QR Code for ${certId}`}
+      style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+      title={`Scannable QR code linking to /verify/${certId}`}
+    />
+  ) : (
+    <div style={{ width: "100%", height: "100%", background: "rgba(255,255,255,0.9)", display: "grid", placeItems: "center", fontSize: "10px", color: "#6366f1" }}>
+      QR
+    </div>
+  );
+}
+
+QrPreviewImage.propTypes = {
+  certId: PropTypes.string.isRequired,
+};
 
 export default function CertificatePreview({
   template,
@@ -134,6 +164,30 @@ export default function CertificatePreview({
               const width = field.width * scale;
               const height = field.height * scale;
               const fontSize = Math.max(9, (field.fontSize || 32) * scale);
+
+              const activeCertId =
+                resolveFieldValue({ variable: "{{certificateId}}" }, mapping, currentRow, { rowIndex: currentRowIndex }) ||
+                `ABH-CERT${new Date().getFullYear().toString().slice(-2)}-${String(currentRowIndex + 1).padStart(4, "0")}`;
+
+              const isQr = field.isQr || field.variable === "{{qrCode}}" || field.type === "qr";
+
+              if (isQr) {
+                return (
+                  <div
+                    key={field.id}
+                    className="cp-field-rendered"
+                    style={{
+                      left: `${left}px`,
+                      top: `${top}px`,
+                      width: `${width}px`,
+                      height: `${height}px`,
+                      padding: 0,
+                    }}
+                  >
+                    <QrPreviewImage certId={activeCertId} />
+                  </div>
+                );
+              }
 
               const resolvedText = resolveFieldValue(field, mapping, currentRow, {
                 eventName,
