@@ -8,6 +8,7 @@ const STANDARD_VARIABLES = [
   { variable: "{{date}}", label: "Event Date", defaultSize: 24, defaultWeight: "400" },
   { variable: "{{rollNo}}", label: "Roll Number", defaultSize: 22, defaultWeight: "500" },
   { variable: "{{certificateId}}", label: "Certificate ID", defaultSize: 18, defaultWeight: "400" },
+  { variable: "{{qrCode}}", label: "Verification QR Code", isQr: true, defaultSize: 130, defaultWeight: "400" },
 ];
 
 const GOOGLE_FONTS = [
@@ -42,6 +43,32 @@ export default function FieldEditor({
 
   const handleAddPreset = (preset) => {
     const rawVar = preset.variable;
+
+    if (preset.isQr) {
+      const qrDim = Math.round(templateHeight * 0.14) || 140;
+      const newField = {
+        id: createFieldId("qr"),
+        label: preset.label,
+        variable: "{{qrCode}}",
+        isQr: true,
+        x: Math.round(templateWidth * 0.82),
+        y: Math.round(templateHeight * 0.72),
+        width: qrDim,
+        height: qrDim,
+        fontFamily: "'Inter', sans-serif",
+        fontSize: 14,
+        fontWeight: "400",
+        color: "#000000",
+        align: "center",
+        letterSpacing: 0,
+        textTransform: "none",
+        required: false,
+        defaultValue: "[QR Code]",
+      };
+      onAddField(newField);
+      return;
+    }
+
     // Calculate reasonable default centered coordinates
     const defaultW = Math.round(templateWidth * 0.6);
     const defaultH = Math.round(templateHeight * 0.08);
@@ -52,6 +79,7 @@ export default function FieldEditor({
       id: createFieldId(rawVar.replace(/[^a-zA-Z0-9]/g, "")),
       label: preset.label,
       variable: rawVar,
+      isQr: false,
       x: defaultX,
       y: defaultY,
       width: defaultW,
@@ -197,105 +225,129 @@ export default function FieldEditor({
           </div>
 
           <div className="fe-grid">
-            {/* Font Family */}
-            <div className="fe-field-group">
-              <label>Font Family</label>
-              <select
-                className="fe-select"
-                value={selectedField.fontFamily || "'Inter', sans-serif"}
-                onChange={(e) =>
-                  onUpdateField(selectedField.id, { fontFamily: e.target.value })
-                }
-              >
-                {GOOGLE_FONTS.map((font) => (
-                  <option key={font.value} value={font.value}>
-                    {font.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Font Size & Weight */}
-            <div className="fe-field-row">
-              <div className="fe-field-group">
-                <label>Size (px)</label>
-                <input
-                  type="number"
-                  className="fe-input"
-                  min="12"
-                  max="160"
-                  value={selectedField.fontSize || 32}
-                  onChange={(e) =>
-                    onUpdateField(selectedField.id, {
-                      fontSize: Math.max(10, Number(e.target.value)),
-                    })
-                  }
-                />
-              </div>
-
-              <div className="fe-field-group">
-                <label>Weight</label>
-                <select
-                  className="fe-select"
-                  value={selectedField.fontWeight || "600"}
-                  onChange={(e) =>
-                    onUpdateField(selectedField.id, { fontWeight: e.target.value })
-                  }
-                >
-                  <option value="400">Regular (400)</option>
-                  <option value="500">Medium (500)</option>
-                  <option value="600">Semi-Bold (600)</option>
-                  <option value="700">Bold (700)</option>
-                  <option value="800">Extra-Bold (800)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Color & Alignment */}
-            <div className="fe-field-row">
-              <div className="fe-field-group">
-                <label>Color</label>
-                <div className="fe-color-picker-wrap">
+            {selectedField.isQr ? (
+              <div className="fe-qr-info-card" style={{ background: "rgba(99, 102, 241, 0.08)", border: "1px solid rgba(99, 102, 241, 0.25)", borderRadius: "8px", padding: "12px", marginBottom: "8px" }}>
+                <p style={{ margin: "0 0 8px 0", fontSize: "13px", color: "var(--color-text-secondary, #cbd5e1)" }}>
+                  📱 <strong>Official Verification QR Code</strong>: Automatically generates scannable codes linking to <code>/verify/[certId]</code> for public credentials verification.
+                </p>
+                <div className="fe-field-group">
+                  <label>QR Dimension (Width & Height px)</label>
                   <input
-                    type="color"
-                    className="fe-color-input"
-                    value={selectedField.color || "#1e293b"}
-                    onChange={(e) =>
-                      onUpdateField(selectedField.id, { color: e.target.value })
-                    }
-                  />
-                  <input
-                    type="text"
-                    className="fe-input fe-color-text"
-                    value={selectedField.color || "#1e293b"}
-                    onChange={(e) =>
-                      onUpdateField(selectedField.id, { color: e.target.value })
-                    }
+                    type="number"
+                    className="fe-input"
+                    min="60"
+                    max="400"
+                    value={Math.round(selectedField.width) || 130}
+                    onChange={(e) => {
+                      const val = Math.max(50, Number(e.target.value));
+                      onUpdateField(selectedField.id, { width: val, height: val });
+                    }}
                   />
                 </div>
               </div>
+            ) : (
+              <>
+                {/* Font Family */}
+                <div className="fe-field-group">
+                  <label>Font Family</label>
+                  <select
+                    className="fe-select"
+                    value={selectedField.fontFamily || "'Inter', sans-serif"}
+                    onChange={(e) =>
+                      onUpdateField(selectedField.id, { fontFamily: e.target.value })
+                    }
+                  >
+                    {GOOGLE_FONTS.map((font) => (
+                      <option key={font.value} value={font.value}>
+                        {font.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="fe-field-group">
-                <label>Alignment</label>
-                <div className="fe-align-group">
-                  {["left", "center", "right"].map((al) => (
-                    <button
-                      key={al}
-                      type="button"
-                      className={`fe-align-btn ${
-                        (selectedField.align || "center") === al ? "active" : ""
-                      }`}
-                      onClick={() =>
-                        onUpdateField(selectedField.id, { align: al })
+                {/* Font Size & Weight */}
+                <div className="fe-field-row">
+                  <div className="fe-field-group">
+                    <label>Size (px)</label>
+                    <input
+                      type="number"
+                      className="fe-input"
+                      min="12"
+                      max="160"
+                      value={selectedField.fontSize || 32}
+                      onChange={(e) =>
+                        onUpdateField(selectedField.id, {
+                          fontSize: Math.max(10, Number(e.target.value)),
+                        })
                       }
-                      title={`Align ${al}`}
+                    />
+                  </div>
+
+                  <div className="fe-field-group">
+                    <label>Weight</label>
+                    <select
+                      className="fe-select"
+                      value={selectedField.fontWeight || "600"}
+                      onChange={(e) =>
+                        onUpdateField(selectedField.id, { fontWeight: e.target.value })
+                      }
                     >
-                      {al === "left" ? "⇤" : al === "center" ? "⇥⇤" : "⇥"}
-                    </button>
-                  ))}
+                      <option value="400">Regular (400)</option>
+                      <option value="500">Medium (500)</option>
+                      <option value="600">Semi-Bold (600)</option>
+                      <option value="700">Bold (700)</option>
+                      <option value="800">Extra-Bold (800)</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                {/* Color & Alignment */}
+                <div className="fe-field-row">
+                  <div className="fe-field-group">
+                    <label>Color</label>
+                    <div className="fe-color-picker-wrap">
+                      <input
+                        type="color"
+                        className="fe-color-input"
+                        value={selectedField.color || "#1e293b"}
+                        onChange={(e) =>
+                          onUpdateField(selectedField.id, { color: e.target.value })
+                        }
+                      />
+                      <input
+                        type="text"
+                        className="fe-input fe-color-text"
+                        value={selectedField.color || "#1e293b"}
+                        onChange={(e) =>
+                          onUpdateField(selectedField.id, { color: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="fe-field-group">
+                    <label>Alignment</label>
+                    <div className="fe-align-group">
+                      {["left", "center", "right"].map((al) => (
+                        <button
+                          key={al}
+                          type="button"
+                          className={`fe-align-btn ${
+                            (selectedField.align || "center") === al ? "active" : ""
+                          }`}
+                          onClick={() =>
+                            onUpdateField(selectedField.id, { align: al })
+                          }
+                          title={`Align ${al}`}
+                        >
+                          {al === "left" ? "⇤" : al === "center" ? "⇥⇤" : "⇥"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Position Coordinates (Read-only / Fine Tuning) */}
             <div className="fe-coords-box">

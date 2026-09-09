@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import CertificateStepper from "./CertificateStepper";
 import TemplateUploader from "./TemplateUploader";
@@ -8,6 +9,11 @@ import DataMapper from "./DataMapper";
 import CertificatePreview from "./CertificatePreview";
 import GenerationProgress from "./GenerationProgress";
 import { autoMapFields } from "../../../utils/fieldMappingHelper";
+import {
+  saveCertificateTemplate,
+  getCertificateTemplateById,
+} from "../../../Firebase/certificateTemplateService";
+import { getEventsPage } from "../../../Firebase/eventService";
 import "./CertificateGenerator.css";
 
 // Initial default fields if admin doesn't configure from scratch
@@ -95,6 +101,10 @@ const DEFAULT_INITIAL_FIELDS = [
 ];
 
 export default function CertificateWizard({ onExit }) {
+  const [searchParams] = useSearchParams();
+  const templateIdParam = searchParams.get("templateId");
+  const stepParam = searchParams.get("step");
+
   const [currentStep, setCurrentStep] = useState(1);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
 
@@ -108,13 +118,71 @@ export default function CertificateWizard({ onExit }) {
   const [dataset, setDataset] = useState(null);
   const [mapping, setMapping] = useState({});
 
-  // Meta information
+  // Meta information & associated event
   const [metaInfo, setMetaInfo] = useState({
+    templateId: "",
     title: "Abhyudaya Certificate Batch",
     eventName: "Abhyudaya 2026",
     eventDate: "09-09-2026",
     certificateType: "Participation",
   });
+
+  const [eventsList, setEventsList] = useState([]);
+  const [saveStatus, setSaveStatus] = useState("");
+
+  // Load available events for dropdown association
+  useEffect(() => {
+    let isMounted = true;
+    getEventsPage({ pageSize: 50, onlyPublished: false })
+      .then((res) => {
+        if (isMounted) setEventsList(res.events || []);
+      })
+      .catch((err) => console.warn("Could not load events list:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Preload template if templateId provided in URL
+  useEffect(() => {
+    if (!templateIdParam) return;
+    let isMounted = true;
+    getCertificateTemplateById(templateIdParam)
+      .then((tpl) => {
+        if (!isMounted || !tpl) return;
+        setTemplate({
+          id: tpl.id,
+          previewUrl: tpl.templateUrl,
+          storagePath: tpl.storagePath || "",
+          originalWidth: Number(tpl.originalWidth) || 1920,
+          originalHeight: Number(tpl.originalHeight) || 1080,
+        });
+
+        if (Array.isArray(tpl.fields) && tpl.fields.length > 0) {
+          setFields(tpl.fields);
+        }
+
+        setMetaInfo((prev) => ({
+          ...prev,
+          templateId: tpl.id,
+          title: tpl.title || prev.title,
+          eventName: tpl.eventName || prev.eventName,
+          eventDate: tpl.eventDate || prev.eventDate,
+          certificateType: tpl.certificateType || prev.certificateType,
+        }));
+
+        const targetStep = stepParam ? Math.min(5, Math.max(1, Number(stepParam))) : 2;
+        setMaxUnlockedStep((prev) => Math.max(prev, targetStep));
+        setCurrentStep(targetStep);
+      })
+      .catch((err) => {
+        console.error("Error loading template from URL parameter:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [templateIdParam, stepParam]);
 
   // Step transitions
   const unlockStep = (step) => {
@@ -125,10 +193,8 @@ export default function CertificateWizard({ onExit }) {
   // Step 1 handlers
   const handleTemplateLoaded = (templateData) => {
     setTemplate(templateData);
-    // Recalculate default positions relative to original image size if needed
     if (templateData.originalWidth) {
       const origW = templateData.originalWidth;
-
       setFields((prev) =>
         prev.map((f) => ({
           ...f,
@@ -141,7 +207,6 @@ export default function CertificateWizard({ onExit }) {
   // Step 3: When spreadsheet data is parsed
   const handleDataParsed = (parsedData) => {
     setDataset(parsedData);
-    // Execute smart auto-mapping between template fields and spreadsheet columns
     const initialMapping = autoMapFields(fields, parsedData.columns);
     setMapping(initialMapping);
   };
@@ -149,6 +214,35 @@ export default function CertificateWizard({ onExit }) {
   const handleClearData = () => {
     setDataset(null);
     setMapping({});
+  };
+
+  // Save template configuration to Cloud Firestore
+  const handleSaveTemplate = async () => {
+    if (!template) return;
+    setSaveStatus("saving");
+    try {
+      const savedId = await saveCertificateTemplate({
+        id: metaInfo.templateId || undefined,
+        title: metaInfo.title || "Certificate Template",
+        eventName: metaInfo.eventName,
+        eventDate: metaInfo.eventDate,
+        certificateType: metaInfo.certificateType,
+        templateUrl: template.previewUrl || "",
+        storagePath: template.storagePath || "",
+        originalWidth: template.originalWidth,
+        originalHeight: template.originalHeight,
+        fields,
+        status: "active",
+      });
+
+      setMetaInfo((prev) => ({ ...prev, templateId: savedId }));
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus(""), 3500);
+    } catch (err) {
+      console.error("Failed to save template:", err);
+      alert("Failed to save template: " + (err.message || "Unknown error"));
+      setSaveStatus("error");
+    }
   };
 
   return (
@@ -168,9 +262,45 @@ export default function CertificateWizard({ onExit }) {
           <span className="cert-meta-tag">
             {metaInfo.eventName || "New Batch"}
           </span>
+          {saveStatus === "saving" && (
+            <span style={{ fontSize: "12px", color: "var(--color-primary-400, #818cf8)", marginLeft: "10px" }}>
+              ⏳ Saving template...
+            </span>
+          )}
+          {saveStatus === "saved" && (
+            <span style={{ fontSize: "12px", color: "#10b981", marginLeft: "10px" }}>
+              ✓ Template saved to Cloud
+            </span>
+          )}
         </div>
 
-        <div className="cert-topbar-actions">
+        <div className="cert-topbar-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          {eventsList.length > 0 && (
+            <select
+              className="cert-meta-input"
+              value={metaInfo.eventName}
+              onChange={(e) => {
+                const selectedTitle = e.target.value;
+                const foundEvent = eventsList.find((ev) => ev.title === selectedTitle);
+                setMetaInfo((prev) => ({
+                  ...prev,
+                  eventName: selectedTitle,
+                  eventDate: foundEvent?.eventStartDate || prev.eventDate,
+                }));
+              }}
+              title="Associated Event"
+              style={{ maxWidth: "220px" }}
+            >
+              <option value="">Select Event...</option>
+              {eventsList.map((ev) => (
+                <option key={ev.id} value={ev.title}>
+                  {ev.title} {ev.eventStartDate ? `(${ev.eventStartDate})` : ""}
+                </option>
+              ))}
+              <option value={metaInfo.eventName}>{metaInfo.eventName || "Custom Event"}</option>
+            </select>
+          )}
+
           <input
             type="text"
             className="cert-meta-input"
@@ -209,6 +339,7 @@ export default function CertificateWizard({ onExit }) {
             fields={fields}
             onFieldsChange={setFields}
             onBack={() => setCurrentStep(1)}
+            onSaveTemplate={handleSaveTemplate}
             onContinue={() => {
               // If dataset already exists, refresh auto-mapping for any newly added fields
               if (dataset?.columns) {

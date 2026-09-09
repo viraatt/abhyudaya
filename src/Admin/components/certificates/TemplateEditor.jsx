@@ -190,9 +190,16 @@ export default function TemplateEditor({
                   title={`Click and drag to position ${field.variable}`}
                 >
                   <span className="te-field-tag">{field.variable}</span>
-                  <div className="te-field-text-content">
-                    {field.defaultValue || field.variable}
-                  </div>
+                  {field.isQr || field.variable === "{{qrCode}}" ? (
+                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", border: "1px dashed #6366f1", borderRadius: "4px" }}>
+                      <span style={{ fontSize: `${Math.max(12, height * 0.35)}px` }}>📱</span>
+                      <span style={{ fontSize: `${Math.max(8, height * 0.16)}px`, fontWeight: "600", color: "#4338ca", textAlign: "center" }}>QR CODE</span>
+                    </div>
+                  ) : (
+                    <div className="te-field-text-content">
+                      {field.defaultValue || field.variable}
+                    </div>
+                  )}
 
                   {/* Resize Handle */}
                   {isSelected && (
@@ -233,6 +240,17 @@ export default function TemplateEditor({
           ← Back to Template
         </button>
 
+        {onSaveTemplate && (
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary"
+            onClick={onSaveTemplate}
+            title="Save template layout to Cloud Firestore"
+          >
+            💾 Save Template
+          </button>
+        )}
+
         <button
           type="button"
           className="admin-btn admin-btn--primary"
@@ -252,4 +270,5 @@ TemplateEditor.propTypes = {
   onFieldsChange: PropTypes.func.isRequired,
   onBack: PropTypes.func.isRequired,
   onContinue: PropTypes.func.isRequired,
+  onSaveTemplate: PropTypes.func,
 };

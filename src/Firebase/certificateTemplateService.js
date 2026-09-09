@@ -116,10 +116,97 @@ export async function deleteCertificateTemplate(templateId) {
   await deleteDoc(docRef);
 }
 
+/**
+ * Duplicate an existing certificate template.
+ *
+ * @param {string} templateId
+ * @returns {Promise<string>} New duplicated template ID
+ */
+export async function duplicateCertificateTemplate(templateId) {
+  const source = await getCertificateTemplateById(templateId);
+  if (!source) {
+    throw new Error(`Template "${templateId}" not found.`);
+  }
+
+  const newTitle = `${source.title || "Template"} (Copy)`;
+  const newTemplateData = {
+    ...source,
+    id: `tpl_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    title: newTitle,
+  };
+  delete newTemplateData.createdAt;
+  delete newTemplateData.updatedAt;
+
+  return await saveCertificateTemplate(newTemplateData);
+}
+
+/**
+ * Rename an existing certificate template.
+ *
+ * @param {string} templateId
+ * @param {string} newTitle
+ */
+export async function renameCertificateTemplate(templateId, newTitle) {
+  if (!templateId) return;
+  const cleanTitle = (newTitle || "").trim();
+  if (!cleanTitle) {
+    throw new Error("Template title cannot be empty.");
+  }
+  const docRef = doc(db, TEMPLATES_COLLECTION, templateId);
+  await setDoc(docRef, { title: cleanTitle, updatedAt: serverTimestamp() }, { merge: true });
+}
+
 // ─────────────────────────────────────────────────────────────
 // Certificate Generation Jobs (certificateJobs collection)
 // ─────────────────────────────────────────────────────────────
 const JOBS_COLLECTION = "certificateJobs";
+const jobsRef = collection(db, JOBS_COLLECTION);
+
+/**
+ * Fetch all certificate generation jobs for Generation History view.
+ *
+ * @returns {Promise<Array<object>>}
+ */
+export async function getCertificateJobs() {
+  try {
+    const q = query(jobsRef, orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+      };
+    });
+  } catch (err) {
+    console.warn("Falling back to un-ordered query for jobs:", err);
+    const snap = await getDocs(jobsRef);
+    const list = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+      };
+    });
+    // In-memory sort fallback
+    return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+}
+
+/**
+ * Delete a generation job record.
+ *
+ * @param {string} jobId
+ */
+export async function deleteCertificateJob(jobId) {
+  if (!jobId) return;
+  const docRef = doc(db, JOBS_COLLECTION, jobId);
+  await deleteDoc(docRef);
+}
 
 /**
  * Initialize a new bulk generation job in Firestore.
