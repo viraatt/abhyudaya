@@ -31,6 +31,7 @@ const ROUTES = [
   { pattern: /^\/api\/time-capsule\/create$/,         module: "./api/time-capsule/create.js" },
   { pattern: /^\/api\/time-capsule\/verify$/,         module: "./api/time-capsule/verify.js" },
   { pattern: /^\/api\/admin\/time-capsules$/,         module: "./api/admin/time-capsules.js" },
+  { pattern: /^\/api\/admin\/generate-certificates$/, module: "./api/admin/generate-certificates.js" },
   { pattern: /^\/api\/gallery$/,                      module: "./api/gallery.js" },
 ];
 
