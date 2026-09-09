@@ -208,9 +208,31 @@ service cloud.firestore {
     // create, update, or delete records directly.
     // Admins (super_admin, event_admin): read, update, delete.
     // ============================================================
-    match /time_capsules/{capsuleId} {
-      allow create: if false;
-      allow read, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    // ============================================================
+    // CERTIFICATES
+    // Public: read (for student verification and viewing).
+    // Admins (super_admin, event_admin): create, update, delete.
+    // ============================================================
+    match /certificates/{certId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // ============================================================
+    // CERTIFICATE TEMPLATES
+    // Admins (super_admin, event_admin): full CRUD.
+    // ============================================================
+    match /certificateTemplates/{templateId} {
+      allow read, create, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // ============================================================
+    // CERTIFICATE JOBS (Bulk generation progress and logs)
+    // Admins (super_admin, event_admin): full CRUD.
+    // ============================================================
+    match /certificateJobs/{jobId} {
+      allow read, create, update, delete: if isAdmin(['super_admin', 'event_admin']);
     }
   }
 }
+
