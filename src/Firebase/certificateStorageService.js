@@ -51,3 +51,72 @@ export async function deleteTemplateAsset(storagePath) {
     console.warn("Failed to delete storage asset:", err);
   }
 }
+
+/**
+ * Upload a single generated certificate PDF to Firebase Storage.
+ *
+ * @param {Uint8Array|Blob} pdfData
+ * @param {string} jobId
+ * @param {string} fileName
+ * @returns {Promise<{ downloadURL: string, storagePath: string }>}
+ */
+export async function uploadGeneratedCertificatePdf(pdfData, jobId = "batch", fileName = "cert.pdf") {
+  try {
+    const cleanJobId = (jobId || "batch").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `generated_certificates/${cleanJobId}/${cleanFileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const blob = pdfData instanceof Blob ? pdfData : new Blob([pdfData], { type: "application/pdf" });
+    const snapshot = await uploadBytes(storageRef, blob, {
+      contentType: "application/pdf",
+    });
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { downloadURL, storagePath };
+  } catch (err) {
+    console.warn(`Storage upload failed for ${fileName}, falling back to local Blob URL:`, err);
+    const blob = pdfData instanceof Blob ? pdfData : new Blob([pdfData], { type: "application/pdf" });
+    const localUrl = URL.createObjectURL(blob);
+    return {
+      downloadURL: localUrl,
+      storagePath: `local_fallback/${jobId}/${fileName}`,
+      isLocalFallback: true,
+    };
+  }
+}
+
+/**
+ * Upload a bulk certificates ZIP archive to Firebase Storage.
+ *
+ * @param {Blob|Uint8Array} zipData
+ * @param {string} jobId
+ * @param {string} zipFileName
+ * @returns {Promise<{ downloadURL: string, storagePath: string }>}
+ */
+export async function uploadCertificateZip(zipData, jobId = "batch", zipFileName = "certificates.zip") {
+  try {
+    const cleanJobId = (jobId || "batch").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const cleanName = zipFileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `generated_certificates/${cleanJobId}/${cleanName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const blob = zipData instanceof Blob ? zipData : new Blob([zipData], { type: "application/zip" });
+    const snapshot = await uploadBytes(storageRef, blob, {
+      contentType: "application/zip",
+    });
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { downloadURL, storagePath };
+  } catch (err) {
+    console.warn("Storage upload failed for ZIP archive, falling back to local Blob URL:", err);
+    const blob = zipData instanceof Blob ? zipData : new Blob([zipData], { type: "application/zip" });
+    const localUrl = URL.createObjectURL(blob);
+    return {
+      downloadURL: localUrl,
+      storagePath: `local_fallback/${jobId}/${zipFileName}`,
+      isLocalFallback: true,
+    };
+  }
+}
+

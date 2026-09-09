@@ -115,3 +115,88 @@ export async function deleteCertificateTemplate(templateId) {
   const docRef = doc(db, TEMPLATES_COLLECTION, templateId);
   await deleteDoc(docRef);
 }
+
+// ─────────────────────────────────────────────────────────────
+// Certificate Generation Jobs (certificateJobs collection)
+// ─────────────────────────────────────────────────────────────
+const JOBS_COLLECTION = "certificateJobs";
+
+/**
+ * Initialize a new bulk generation job in Firestore.
+ *
+ * @param {object} jobData
+ * @returns {Promise<string>} jobId
+ */
+export async function createCertificateJob(jobData) {
+  const jobId = jobData.jobId || `job_${Date.now()}`;
+  const docRef = doc(db, JOBS_COLLECTION, jobId);
+
+  const payload = {
+    jobId,
+    templateId: jobData.templateId || "",
+    templateTitle: jobData.templateTitle || "Certificate Batch",
+    eventName: jobData.eventName || "",
+    eventDate: jobData.eventDate || "",
+    total: Number(jobData.total) || 0,
+    completed: 0,
+    failed: 0,
+    status: jobData.status || "processing", // 'queued' | 'processing' | 'completed' | 'failed'
+    zipUrl: "",
+    errors: [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(docRef, payload);
+  } catch (err) {
+    console.warn("Could not save job document to Firestore (offline fallback):", err);
+  }
+
+  return jobId;
+}
+
+/**
+ * Update progress or completion details of a certificate generation job.
+ *
+ * @param {string} jobId
+ * @param {object} updates
+ */
+export async function updateCertificateJob(jobId, updates = {}) {
+  if (!jobId) return;
+  const docRef = doc(db, JOBS_COLLECTION, jobId);
+
+  const payload = {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(docRef, payload, { merge: true });
+  } catch (err) {
+    console.warn(`Could not update job ${jobId} in Firestore:`, err);
+  }
+}
+
+/**
+ * Fetch a certificate generation job document by ID.
+ *
+ * @param {string} jobId
+ * @returns {Promise<object|null>}
+ */
+export async function getCertificateJob(jobId) {
+  if (!jobId) return null;
+  const docRef = doc(db, JOBS_COLLECTION, jobId);
+  const snap = await getDoc(docRef);
+
+  if (!snap.exists()) return null;
+
+  const data = snap.data();
+  return {
+    id: snap.id,
+    ...data,
+    createdAt: data.createdAt?.toDate?.() || data.createdAt,
+    updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+  };
+}
+

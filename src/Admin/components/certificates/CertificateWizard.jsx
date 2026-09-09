@@ -6,6 +6,7 @@ import TemplateEditor from "./TemplateEditor";
 import DataUploader from "./DataUploader";
 import DataMapper from "./DataMapper";
 import CertificatePreview from "./CertificatePreview";
+import GenerationProgress from "./GenerationProgress";
 import { autoMapFields } from "../../../utils/fieldMappingHelper";
 import "./CertificateGenerator.css";
 
@@ -253,8 +254,21 @@ export default function CertificateWizard({ onExit }) {
             dataset={dataset}
             mapping={mapping}
             onBack={() => setCurrentStep(3)}
+            onContinue={() => unlockStep(5)}
             eventName={metaInfo.eventName}
             eventDate={metaInfo.eventDate}
+          />
+        )}
+
+        {/* Step 5: Real Certificate Generation & Download */}
+        {currentStep === 5 && template && dataset && (
+          <GenerationProgress
+            template={template}
+            fields={fields}
+            dataset={dataset}
+            mapping={mapping}
+            metaInfo={metaInfo}
+            onBack={() => setCurrentStep(4)}
           />
         )}
       </div>

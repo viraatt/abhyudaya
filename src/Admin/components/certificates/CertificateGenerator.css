@@ -1271,3 +1271,332 @@
 .cp-chip-val {
   color: #f8fafc;
 }
+
+/* ==========================================================================
+   Step 4 Enhancements: Participant Selector & Inspection Grid
+   ========================================================================== */
+.cp-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cp-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cp-selector-label {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cp-participant-select {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  min-width: 220px;
+  cursor: pointer;
+}
+
+.cp-participant-select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.cp-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .cp-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cp-canvas-col {
+  display: flex;
+  flex-direction: column;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.cp-canvas-footer-info {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.cp-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cp-variables-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.cp-variables-card h4 {
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+}
+
+.cp-variables-desc {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0 0 0.85rem 0;
+}
+
+.cp-substitution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cp-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.cp-sub-var {
+  color: #818cf8;
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.cp-sub-arrow {
+  color: #64748b;
+  font-weight: bold;
+}
+
+.cp-sub-val {
+  color: #f8fafc;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Step 5: Generation Progress & Completion UI
+   ========================================================================== */
+.gen-progress-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  width: 100%;
+}
+
+.gen-progress-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 640px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+}
+
+.gen-progress-body,
+.gen-complete-body,
+.gen-failed-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.gen-progress-icon-wrap {
+  margin-bottom: 0.5rem;
+}
+
+.gen-progress-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.gen-progress-count {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1;
+}
+
+.gen-count-current {
+  color: #6366f1;
+}
+
+.gen-count-sep {
+  color: #64748b;
+  font-size: 2rem;
+}
+
+.gen-count-total {
+  color: #94a3b8;
+  font-size: 2rem;
+}
+
+.gen-progress-bar-wrap {
+  width: 100%;
+  height: 14px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.gen-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #10b981 100%);
+  border-radius: 20px;
+  transition: width 0.2s ease-out;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+}
+
+.gen-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-size: 0.88rem;
+}
+
+.gen-progress-pct {
+  color: #818cf8;
+  font-weight: 700;
+}
+
+.gen-progress-sub {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+.gen-progress-sub code {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+}
+
+/* Complete State */
+.gen-complete-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.2);
+  border: 2px solid #10b981;
+  color: #34d399;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.4);
+}
+
+.gen-complete-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.gen-complete-desc {
+  color: #94a3b8;
+  font-size: 0.92rem;
+  max-width: 480px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.gen-download-box {
+  margin: 0.75rem 0;
+}
+
+.gen-download-btn {
+  font-size: 1.05rem;
+  padding: 0.75rem 1.75rem;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gen-download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(99, 102, 241, 0.5);
+}
+
+.gen-download-hint {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.gen-failures-box {
+  width: 100%;
+  text-align: left;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.gen-failures-list {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+  font-size: 0.82rem;
+  color: #fde68a;
+}
+
+.gen-complete-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.gen-failed-icon {
+  font-size: 3rem;
+}
+
