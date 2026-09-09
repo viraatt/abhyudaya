@@ -12,7 +12,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * @param {string} text
  * @returns {Array<Record<string, string>>}
  */
-export function parseCSV(text = "") {
+export function parseCSV(text = "", options = {}) {
   const rows = [];
   let row = [];
   let field = "";
@@ -60,8 +60,10 @@ export function parseCSV(text = "") {
     pushRow();
   }
 
-  // Remove completely empty rows
-  const nonEmpty = rows.filter((r) => r.some((cell) => (cell || "").trim() !== ""));
+  // Remove completely empty rows unless options.keepEmptyRows is true
+  const nonEmpty = options.keepEmptyRows
+    ? (rows.length > 0 ? rows : [])
+    : rows.filter((r) => r.some((cell) => (cell || "").trim() !== ""));
 
   if (nonEmpty.length === 0) return [];
 
@@ -152,3 +154,180 @@ export function mapCSVRows(rows = [], mapping = {}) {
     semester: mapping.semester ? row[mapping.semester] || "" : "",
   }));
 }
+
+/**
+ * Universal spreadsheet parser for Bulk Certificate Generator.
+ * Supports .csv, .xlsx, and .xls files using SheetJS (xlsx).
+ *
+ * Performs:
+ * 1. File reading (Binary ArrayBuffer / Text)
+ * 2. Column header detection
+ * 3. Empty row filtering & counting
+ * 4. Duplicate row detection (by RollNo or Name)
+ * 5. Returns parsed rows and first 5 preview rows
+ *
+ * @param {File} file
+ * @returns {Promise<{
+ *   fileName: string,
+ *   fileSize: number,
+ *   fileType: string,
+ *   columns: string[],
+ *   rows: Array<Record<string, string>>,
+ *   totalRows: number,
+ *   emptyRowsSkipped: number,
+ *   duplicates: Array<{ row: number, name: string, rollNo: string, reason: string }>,
+ *   previewRows: Array<Record<string, string>>
+ * }>}
+ */
+export async function parseSpreadsheetFile(file) {
+  if (!file) {
+    throw new Error("No file provided.");
+  }
+
+  const fileName = file.name || "data";
+  const ext = fileName.split(".").pop().toLowerCase();
+
+  if (!["csv", "xlsx", "xls"].includes(ext)) {
+    throw new Error(
+      `Unsupported file format ".${ext}". Please upload a CSV, XLSX, or XLS file.`
+    );
+  }
+
+  let rawRows = [];
+
+  if (ext === "csv") {
+    // For CSV: read as text preserving empty rows so we can track them
+    const text = await file.text();
+    rawRows = parseCSV(text, { keepEmptyRows: true });
+  } else {
+    // For XLSX / XLS: dynamically import or use SheetJS
+    const XLSX = await import("xlsx");
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+      throw new Error("Spreadsheet contains no sheets.");
+    }
+
+    // Read the first sheet
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    // Convert sheet to JSON array of objects using headers
+    // defval: "" ensures empty cells are returned as empty strings
+    rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false, blankrows: true });
+  }
+
+  if (!rawRows || rawRows.length === 0) {
+    throw new Error("Spreadsheet is empty or has no readable participant rows.");
+  }
+
+  // Detect column headers from first row and union of keys
+  const colSet = new Set();
+  rawRows.forEach((r) => {
+    Object.keys(r).forEach((k) => {
+      const cleanKey = (k || "").trim();
+      if (cleanKey) colSet.add(cleanKey);
+    });
+  });
+  const columns = Array.from(colSet);
+
+  if (columns.length === 0) {
+    throw new Error("No column headers detected in the uploaded file.");
+  }
+
+  // Clean rows, remove whitespace, filter completely empty rows
+  let emptyRowsSkipped = 0;
+  const validRows = [];
+  const duplicates = [];
+
+  // Track seen RollNos and Names for duplicate detection
+  const seenRollNos = new Map(); // rollNo -> rowNumber
+  const seenNames = new Map(); // name -> rowNumber
+
+  // Helper to find a field key ignoring case/spaces
+  const findValue = (row, candidates) => {
+    for (const key of Object.keys(row)) {
+      const normalized = key.toLowerCase().replace(/[\s_-]/g, "");
+      for (const cand of candidates) {
+        if (normalized === cand) {
+          return (row[key] || "").toString().trim();
+        }
+      }
+    }
+    return "";
+  };
+
+  rawRows.forEach((row, idx) => {
+    const rowNum = idx + 2; // 1-indexed row number (row 1 = headers)
+    const cleanedRow = {};
+    let hasAnyValue = false;
+
+    columns.forEach((col) => {
+      const val = row[col] !== undefined && row[col] !== null ? String(row[col]).trim() : "";
+      cleanedRow[col] = val;
+      if (val !== "") {
+        hasAnyValue = true;
+      }
+    });
+
+    if (!hasAnyValue) {
+      emptyRowsSkipped++;
+      return; // Skip empty row
+    }
+
+    // Duplicate detection: check rollNo and name independently
+    const rollNoVal = findValue(cleanedRow, ["rollno", "rollnumber", "roll", "regno", "id"]);
+    const nameVal = findValue(cleanedRow, ["name", "fullname", "participantname", "studentname"]);
+    let isRowFlagged = false;
+
+    if (rollNoVal) {
+      const normRoll = rollNoVal.toLowerCase();
+      if (seenRollNos.has(normRoll)) {
+        duplicates.push({
+          row: rowNum,
+          name: nameVal || "N/A",
+          rollNo: rollNoVal,
+          reason: `Duplicate Roll Number "${rollNoVal}" (First seen at row ${seenRollNos.get(normRoll)})`,
+        });
+        isRowFlagged = true;
+      } else {
+        seenRollNos.set(normRoll, rowNum);
+      }
+    }
+
+    if (nameVal) {
+      const normName = nameVal.toLowerCase();
+      if (seenNames.has(normName)) {
+        if (!isRowFlagged) {
+          duplicates.push({
+            row: rowNum,
+            name: nameVal,
+            rollNo: rollNoVal || "",
+            reason: `Duplicate Name "${nameVal}" (First seen at row ${seenNames.get(normName)})`,
+          });
+        }
+      } else {
+        seenNames.set(normName, rowNum);
+      }
+    }
+
+    validRows.push(cleanedRow);
+  });
+
+  if (validRows.length === 0) {
+    throw new Error("Spreadsheet contains only empty rows.");
+  }
+
+  return {
+    fileName,
+    fileSize: file.size,
+    fileType: ext,
+    columns,
+    rows: validRows,
+    totalRows: validRows.length,
+    emptyRowsSkipped,
+    duplicates,
+    previewRows: validRows.slice(0, 5),
+  };
+}
