@@ -1,0 +1,858 @@
+/* ============================================================
+   ABHYUDAYA ADMIN — BULK CERTIFICATE GENERATOR STYLES
+   Harmonized with Abhyudaya Admin Panel Theme & Design Tokens
+   ============================================================ */
+
+.cert-generator-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Page Header */
+.gen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.gen-title-area h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.gen-title-area p {
+  font-size: 0.92rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.gen-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Stepper Container */
+.cert-stepper-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem 1.75rem;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.cert-stepper-list {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+.cert-stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.cert-stepper-item:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.cert-stepper-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.cert-step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 2px solid #cbd5e1;
+  transition: all 0.25s ease;
+}
+
+.cert-stepper-item.active .cert-step-circle {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+}
+
+.cert-stepper-item.completed .cert-step-circle {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
+.cert-step-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.cert-step-num {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.cert-stepper-item.active .cert-step-num {
+  color: #2563eb;
+}
+
+.cert-stepper-item.completed .cert-step-num {
+  color: #10b981;
+}
+
+.cert-step-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.cert-stepper-item.active .cert-step-title {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.cert-step-divider {
+  height: 2px;
+  flex: 0.5;
+  background: #e2e8f0;
+  margin: 0 0.5rem;
+}
+
+.cert-step-divider.completed {
+  background: #10b981;
+}
+
+/* Main Wizard Step Box */
+.cert-wizard-body {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2.2rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-step-header {
+  margin-bottom: 1.8rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.wizard-step-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+.wizard-step-header p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Wizard Footer Navigation */
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ============================================================
+   STEP 1: TEMPLATE UPLOADER
+   ============================================================ */
+
+.uploader-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 2rem;
+}
+
+@media (max-width: 900px) {
+  .uploader-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.uploader-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.form-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.form-label .req {
+  color: #ef4444;
+}
+
+.template-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.template-dropzone:hover,
+.template-dropzone.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.template-dropzone-icon {
+  font-size: 2.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.template-dropzone-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.template-dropzone-desc {
+  font-size: 0.86rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.template-dropzone-hint {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  background: #e2e8f0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+}
+
+/* Template Preview in Step 1 */
+.template-preview-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.template-preview-img-wrap {
+  width: 100%;
+  max-height: 340px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.template-preview-img {
+  max-width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  display: block;
+}
+
+.template-meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.meta-pill {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Saved Templates Dropdown or Picker */
+.saved-templates-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.saved-templates-row span {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #166534;
+}
+
+/* ============================================================
+   STEP 2: SET TEXT FIELDS (EDITOR)
+   ============================================================ */
+
+.field-editor-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .field-editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Canvas Area */
+.canvas-wrapper {
+  background: #0f172a;
+  border-radius: 14px;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+}
+
+.canvas-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.canvas-toolbar-btn {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.canvas-toolbar-btn:hover {
+  background: #334155;
+}
+
+.canvas-inner-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.editor-canvas-element {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+/* Field Pin Overlay */
+.field-marker-overlay {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  z-index: 10;
+  user-select: none;
+}
+
+.field-marker-overlay:active {
+  cursor: grabbing;
+}
+
+.field-marker-badge {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  border: 1.5px solid #3b82f6;
+  border-radius: 6px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.field-marker-overlay.selected .field-marker-badge {
+  background: #2563eb;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+}
+
+/* Field Controls Sidebar */
+.field-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.fields-list-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.field-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.field-list-item:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.field-list-item.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.field-list-item-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.field-list-item-coords {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+/* Field Inspector Properties */
+.field-inspector-card {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inspector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.inspector-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.inspector-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.align-btn-group {
+  display: flex;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.align-btn {
+  flex: 1;
+  padding: 0.4rem;
+  background: #ffffff;
+  border: none;
+  border-right: 1px solid #cbd5e1;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.align-btn:last-child {
+  border-right: none;
+}
+
+.align-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+/* ============================================================
+   STEP 3: DATA UPLOADER & MAPPER
+   ============================================================ */
+
+.data-step-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+.data-dropzone-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+}
+
+.data-stats-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+/* Mapping Table */
+.mapping-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.mapping-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.mapping-table th {
+  background: #f8fafc;
+  padding: 0.85rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mapping-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.field-badge-tag {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #0f172a;
+}
+
+.mapping-select {
+  width: 100%;
+  max-width: 280px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.88rem;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+}
+
+.mapping-select:focus {
+  border-color: #2563eb;
+}
+
+.sample-val-text {
+  font-family: monospace;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+
+/* ============================================================
+   STEP 4: LIVE PREVIEW
+   ============================================================ */
+
+.preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 900px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.8rem 1.25rem;
+}
+
+.preview-student-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.preview-counter {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.preview-canvas-card {
+  width: 100%;
+  max-width: 900px;
+  background: #0f172a;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.15);
+  display: flex;
+  justify-content: center;
+}
+
+.preview-canvas-element {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.preview-summary-card {
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.summary-stat-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.stat-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+/* ============================================================
+   STEP 5: GENERATION PROGRESS & COMPLETE
+   ============================================================ */
+
+.gen-progress-card {
+  max-width: 750px;
+  margin: 1rem auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+.gen-progress-bar-wrap {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.gen-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.gen-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.gen-percent-badge {
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.gen-live-log {
+  background: #0f172a;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.log-line {
+  line-height: 1.4;
+}
+
+.log-line.success {
+  color: #4ade80;
+}
+
+.log-line.error {
+  color: #f87171;
+}
+
+/* Generation Completed Success Box */
+.gen-complete-box {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2.5rem 1rem;
+}
+
+.gen-complete-icon {
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.gen-complete-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.gen-complete-desc {
+  font-size: 0.95rem;
+  color: #475569;
+  max-width: 480px;
+  margin: 0;
+}
+
+.gen-complete-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}

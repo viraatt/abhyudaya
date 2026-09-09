@@ -90,6 +90,10 @@ const Certificates = lazy(() =>
   import("./Admin/pages/Certificates/Certificates.jsx")
 );
 
+const CreateCertificates = lazy(() =>
+  import("./Admin/pages/Certificates/CreateCertificates.jsx")
+);
+
 const AddCertificate = lazy(() =>
   import("./Admin/pages/Certificates/AddCertificate.jsx")
 );
@@ -364,6 +368,15 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
                   <Certificates />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/certificates/create"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <CreateCertificates />
                 </ProtectedRoute>
               }
             />

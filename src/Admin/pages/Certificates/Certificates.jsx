@@ -230,6 +230,13 @@ export default function Certificates() {
               </div>
 
               <div className="header-actions">
+                <Link
+                  to="/admin/certificates/create"
+                  className="admin-btn admin-btn--primary"
+                >
+                  ✨ + Create Certificates
+                </Link>
+
                 <button
                   type="button"
                   className="admin-btn admin-btn--secondary"
@@ -240,7 +247,7 @@ export default function Certificates() {
 
                 <Link
                   to="/admin/certificates/add"
-                  className="admin-btn admin-btn--primary"
+                  className="admin-btn admin-btn--outline"
                 >
                   + Add Single Certificate
                 </Link>
