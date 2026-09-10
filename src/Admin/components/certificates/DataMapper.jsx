@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import PropTypes from "prop-types";
-import { validateMapping, resolveFieldValue } from "../../../utils/fieldMappingHelper";
+import { validateMapping, resolveFieldValue, autoMapFields } from "../../../utils/fieldMappingHelper";
 
 export default function DataMapper({
   fields = [],
@@ -31,6 +31,13 @@ export default function DataMapper({
     });
   };
 
+  const handleResetAutoMap = () => {
+    if (columns.length > 0) {
+      const fresh = autoMapFields(fields, columns);
+      onMappingChange(fresh);
+    }
+  };
+
   return (
     <div className="data-mapper-wrapper">
       <div className="dm-header">
@@ -41,6 +48,14 @@ export default function DataMapper({
             in your spreadsheet. Fields are auto-mapped based on column names.
           </p>
         </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn--outline"
+          onClick={handleResetAutoMap}
+          title="Reset mappings and re-run automatic header detection"
+        >
+          🔄 Re-run Auto-Map
+        </button>
       </div>
 
       {/* Ingestion & Validation Metrics Banner */}

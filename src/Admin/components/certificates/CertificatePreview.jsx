@@ -43,6 +43,7 @@ export default function CertificatePreview({
   eventDate = "",
 }) {
   const [currentRowIndex, setCurrentRowIndex] = useState(0);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const canvasContainerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(800);
 
@@ -61,14 +62,31 @@ export default function CertificatePreview({
 
   useEffect(() => {
     updateScale();
+    if (!canvasContainerRef.current) return;
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect && entry.contentRect.width > 0) {
+            setContainerWidth(entry.contentRect.width);
+          }
+        }
+      });
+      resizeObserver.observe(canvasContainerRef.current);
+    }
+
     window.addEventListener("resize", updateScale);
-    return () => window.removeEventListener("resize", updateScale);
+    return () => {
+      window.removeEventListener("resize", updateScale);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
   }, [updateScale]);
 
-  const originalWidth = template?.originalWidth || 1920;
-  const originalHeight = template?.originalHeight || 1080;
-  const scale = containerWidth / originalWidth;
-  const displayHeight = originalHeight * scale;
+  const originalWidth = Number(template?.originalWidth) || 1920;
+  const originalHeight = Number(template?.originalHeight) || 1080;
+  const scale = containerWidth > 0 ? containerWidth / originalWidth : 1;
+  const displayHeight = Math.round(originalHeight * scale);
 
   return (
     <div className="cert-preview-wrapper">
@@ -120,7 +138,7 @@ export default function CertificatePreview({
               onClick={() => setCurrentRowIndex((prev) => Math.max(0, prev - 1))}
               title="View previous participant"
             >
-              [Previous]
+              ← Previous
             </button>
 
             <span className="cp-page-label">
@@ -136,7 +154,7 @@ export default function CertificatePreview({
               }
               title="View next participant"
             >
-              [Next]
+              Next →
             </button>
           </div>
         </div>
@@ -148,7 +166,10 @@ export default function CertificatePreview({
           <div
             ref={canvasContainerRef}
             className="cp-canvas-stage"
-            style={{ height: `${displayHeight}px` }}
+            style={{
+              height: `${displayHeight}px`,
+              aspectRatio: `${originalWidth} / ${originalHeight}`,
+            }}
           >
             <img
               src={template?.previewUrl}
@@ -156,6 +177,12 @@ export default function CertificatePreview({
               className="cp-canvas-bg"
               onLoad={updateScale}
               draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
             />
 
             {fields.map((field) => {
@@ -226,10 +253,35 @@ export default function CertificatePreview({
 
         {/* Right Column: Live Variable Replacement Inspection Card */}
         <div className="cp-side-col">
+          {/* Summary Info Card */}
+          <div className="cp-batch-card">
+            <h4>Batch Summary</h4>
+            <div className="cp-summary-stats">
+              <div className="cp-stat-item">
+                <span className="cp-stat-label">Participants</span>
+                <span className="cp-stat-value">{totalParticipants}</span>
+              </div>
+              <div className="cp-stat-item">
+                <span className="cp-stat-label">Template</span>
+                <span className="cp-stat-value">{originalWidth}×{originalHeight}</span>
+              </div>
+              <div className="cp-stat-item">
+                <span className="cp-stat-label">Fields</span>
+                <span className="cp-stat-value">{fields.length}</span>
+              </div>
+              <div className="cp-stat-item">
+                <span className="cp-stat-label">Event</span>
+                <span className="cp-stat-value" title={eventName || "Abhyudaya Event"}>
+                  {eventName || "Standard"}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div className="cp-variables-card">
             <h4>Live Variable Substitutions</h4>
             <p className="cp-variables-desc">
-              Values dynamically replaced for the active participant:
+              Values dynamically replaced for participant #{currentRowIndex + 1}:
             </p>
 
             <div className="cp-substitution-list">
@@ -268,6 +320,21 @@ export default function CertificatePreview({
         </div>
       </div>
 
+      {/* Confirmation Checkbox Bar */}
+      <div className="cp-confirmation-bar">
+        <label className="cp-confirm-label">
+          <input
+            type="checkbox"
+            className="cp-confirm-checkbox"
+            checked={isConfirmed}
+            onChange={(e) => setIsConfirmed(e.target.checked)}
+          />
+          <span>
+            I have inspected the certificate layout and verified that text placement and spreadsheet mappings are accurate for all {totalParticipants} participant(s).
+          </span>
+        </label>
+      </div>
+
       {/* Action Footer */}
       <div className="cert-step-footer">
         <button
@@ -275,17 +342,28 @@ export default function CertificatePreview({
           className="admin-btn admin-btn--outline"
           onClick={onBack}
         >
-          [ Back to Field Mapping ]
+          ← Back to Field Mapping
         </button>
 
         <button
           type="button"
           className="admin-btn admin-btn--primary"
           style={{
-            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-            boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
+            background: isConfirmed
+              ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+              : undefined,
+            boxShadow: isConfirmed
+              ? "0 4px 14px rgba(16, 185, 129, 0.4)"
+              : undefined,
+            opacity: isConfirmed ? 1 : 0.65,
           }}
+          disabled={!isConfirmed || totalParticipants === 0}
           onClick={onContinue}
+          title={
+            !isConfirmed
+              ? "Please check the confirmation box above to proceed"
+              : "Generate All Certificates"
+          }
         >
           Generate All Certificates ({totalParticipants}) →
         </button>

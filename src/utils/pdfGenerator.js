@@ -187,9 +187,21 @@ export async function generateCertificatePdf({
   const page = pdfDoc.addPage([originalWidth, originalHeight]);
 
   // 3. Embed background template image or PDF
-  if (template.blob) {
-    const arrayBuffer = await template.blob.arrayBuffer();
-    const isPdfTemplate = template.isPdf || template.blob.type === "application/pdf";
+  let imageBlob = template.blob;
+  if (!imageBlob && template.previewUrl) {
+    try {
+      const resp = await fetch(template.previewUrl);
+      if (resp.ok) {
+        imageBlob = await resp.blob();
+      }
+    } catch (fetchErr) {
+      console.warn("Could not fetch template image blob from previewUrl:", fetchErr);
+    }
+  }
+
+  if (imageBlob) {
+    const arrayBuffer = await imageBlob.arrayBuffer();
+    const isPdfTemplate = template.isPdf || imageBlob.type === "application/pdf";
 
     if (isPdfTemplate) {
       const srcDoc = await PDFDocument.load(arrayBuffer);
@@ -201,15 +213,53 @@ export async function generateCertificatePdf({
         height: originalHeight,
       });
     } else {
-      let embeddedImage;
-      try {
-        embeddedImage = await pdfDoc.embedPng(arrayBuffer);
-      } catch {
+      const mime = (imageBlob.type || template.mimeType || template.format || "").toLowerCase();
+      const isJpg = mime.includes("jpg") || mime.includes("jpeg") || (template.name && /\.(jpe?g)$/i.test(template.name));
+      let embeddedImage = null;
+
+      if (isJpg) {
         try {
           embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
-        } catch {
-          // If neither, fallback to draw white canvas
-          console.warn("Could not embed raw template image directly into PDF page background.");
+        } catch (jpgErr) {
+          try {
+            embeddedImage = await pdfDoc.embedPng(arrayBuffer);
+          } catch {
+            console.warn("Could not embed image as JPG or PNG:", jpgErr);
+          }
+        }
+      } else {
+        try {
+          embeddedImage = await pdfDoc.embedPng(arrayBuffer);
+        } catch (pngErr) {
+          try {
+            embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
+          } catch {
+            console.warn("Could not embed image as PNG or JPG:", pngErr);
+          }
+        }
+      }
+
+      // Final fallback: rasterize via canvas if browser environment
+      if (!embeddedImage && typeof document !== "undefined") {
+        try {
+          const img = new Image();
+          await new Promise((res, rej) => {
+            img.onload = res;
+            img.onerror = rej;
+            img.src = template.previewUrl || URL.createObjectURL(imageBlob);
+          });
+          const canvas = document.createElement("canvas");
+          canvas.width = originalWidth;
+          canvas.height = originalHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+          const pngBlob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+          if (pngBlob) {
+            const pngBuf = await pngBlob.arrayBuffer();
+            embeddedImage = await pdfDoc.embedPng(pngBuf);
+          }
+        } catch (canvasErr) {
+          console.warn("Canvas rasterization fallback failed:", canvasErr);
         }
       }
 

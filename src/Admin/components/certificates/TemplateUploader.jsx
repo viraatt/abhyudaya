@@ -1,7 +1,23 @@
 import { useState, useRef } from "react";
 import PropTypes from "prop-types";
-import { processTemplateFile } from "../../../utils/pdfTemplateHelper";
+import { processTemplateFile, revokeTemplatePreview } from "../../../utils/pdfTemplateHelper";
 import { uploadCertificateTemplate } from "../../../Firebase/certificateStorageService";
+
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getAspectRatioLabel(w, h) {
+  if (!w || !h) return "";
+  const ratio = (w / h).toFixed(2);
+  if (Math.abs(ratio - 1.78) < 0.05) return "16:9 Landscape";
+  if (Math.abs(ratio - 1.41) < 0.05) return "A4 Landscape (1.41:1)";
+  if (Math.abs(ratio - 1.33) < 0.05) return "4:3 Standard";
+  return `${ratio}:1 Ratio`;
+}
 
 export default function TemplateUploader({
   template,
@@ -33,12 +49,15 @@ export default function TemplateUploader({
       onTemplateLoaded({
         name: file.name,
         fileType: processed.isPdf ? "pdf" : "image",
+        format: processed.format,
+        mimeType: processed.mimeType,
+        fileSize: processed.fileSize || file.size,
         originalWidth: processed.originalWidth,
         originalHeight: processed.originalHeight,
         previewUrl: processed.previewUrl,
         storageUrl: storageResult.downloadURL,
         storagePath: storageResult.storagePath,
-        blob: processed.blob,
+        blob: processed.blob || file,
       });
     } catch (err) {
       console.error("Template load error:", err);
@@ -46,6 +65,14 @@ export default function TemplateUploader({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRemoveTemplate = (e) => {
+    e.stopPropagation();
+    if (template?.previewUrl) {
+      revokeTemplatePreview(template.previewUrl);
+    }
+    onTemplateLoaded(null);
   };
 
   const handleDrop = (e) => {
@@ -70,13 +97,21 @@ export default function TemplateUploader({
         <h3>Step 1: Upload Certificate Background Template</h3>
         <p>
           Upload a high-resolution certificate design template (PNG, JPG, JPEG, or single-page PDF).
-          Dynamic text fields will be positioned directly on top of this background.
+          Dynamic text fields and verification QR codes will be positioned directly on top of this background.
         </p>
       </div>
 
       {error && (
         <div className="cert-alert cert-alert--error" role="alert">
           <span>⚠️ {error}</span>
+          <button
+            type="button"
+            className="cert-alert-close"
+            onClick={() => setError("")}
+            title="Dismiss error"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -101,7 +136,7 @@ export default function TemplateUploader({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".png,.jpg,.jpeg,.webp,.pdf,application/pdf,image/*"
+          accept=".png,.jpg,.jpeg,.webp,.pdf,application/pdf,image/png,image/jpeg,image/webp"
           style={{ display: "none" }}
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -117,11 +152,13 @@ export default function TemplateUploader({
           </div>
         ) : template?.previewUrl ? (
           <div className="template-preview-box">
-            <img
-              src={template.previewUrl}
-              alt="Uploaded Certificate Template"
-              className="template-preview-img"
-            />
+            <div className="template-preview-img-container">
+              <img
+                src={template.previewUrl}
+                alt="Uploaded Certificate Template"
+                className="template-preview-img"
+              />
+            </div>
             <div className="template-preview-meta">
               <span className="template-badge">
                 {template.fileType === "pdf" ? "📄 PDF Template" : "🖼️ Image Template"}
@@ -129,17 +166,39 @@ export default function TemplateUploader({
               <span className="template-dims">
                 {template.originalWidth} × {template.originalHeight} px
               </span>
+              {template.originalWidth && template.originalHeight && (
+                <span className="template-ratio-tag">
+                  {getAspectRatioLabel(template.originalWidth, template.originalHeight)}
+                </span>
+              )}
+              {template.fileSize > 0 && (
+                <span className="template-size-tag">
+                  {formatBytes(template.fileSize)}
+                </span>
+              )}
               <span className="template-filename">{template.name}</span>
-              <button
-                type="button"
-                className="cert-btn-text"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  fileInputRef.current?.click();
-                }}
-              >
-                Replace Template
-              </button>
+
+              <div className="template-preview-actions">
+                <button
+                  type="button"
+                  className="cert-btn-text"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  title="Choose a different image file"
+                >
+                  🔄 Replace Template
+                </button>
+                <button
+                  type="button"
+                  className="cert-btn-text cert-btn-text--danger"
+                  onClick={handleRemoveTemplate}
+                  title="Remove uploaded template"
+                >
+                  🗑️ Remove
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -148,8 +207,18 @@ export default function TemplateUploader({
             <h4>Drag & drop certificate template here</h4>
             <p>or click to browse files</p>
             <div className="cert-dropzone-formats">
-              <span>Supports: PNG, JPG, JPEG, WEBP, PDF</span>
-              <small>Recommended: 1920×1080 px or A4 Landscape (3508×2480 px @ 300 DPI)</small>
+              <span className="file-badge">PNG</span>
+              <span className="file-badge">JPG / JPEG</span>
+              <span className="file-badge">WEBP</span>
+              <span className="file-badge">PDF (1 Page)</span>
+            </div>
+            <div className="cert-dropzone-specs">
+              <div className="spec-item">
+                <strong>Standard HD:</strong> 1920 × 1080 px (16:9)
+              </div>
+              <div className="spec-item">
+                <strong>Print A4 Landscape:</strong> 3508 × 2480 px (300 DPI)
+              </div>
             </div>
           </div>
         )}
@@ -161,6 +230,7 @@ export default function TemplateUploader({
           {template?.originalWidth && (
             <span>
               ✓ Master template ready: {template.originalWidth} × {template.originalHeight} px
+              {template.fileSize > 0 && ` (${formatBytes(template.fileSize)})`}
             </span>
           )}
         </div>
@@ -170,7 +240,7 @@ export default function TemplateUploader({
           disabled={!template?.previewUrl || loading}
           onClick={onContinue}
         >
-          Next: Design Text Fields →
+          Next: Position Text Fields →
         </button>
       </div>
     </div>

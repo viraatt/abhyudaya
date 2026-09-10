@@ -1,14 +1,18 @@
 import PropTypes from "prop-types";
 
 const STEPS = [
-  { step: 1, label: "Template", icon: "🎨" },
-  { step: 2, label: "Design Fields", icon: "📐" },
-  { step: 3, label: "Upload & Map Data", icon: "📊" },
-  { step: 4, label: "Preview", icon: "👁️" },
-  { step: 5, label: "Generate", icon: "⚡" },
+  { step: 1, label: "Template", icon: "1", subtitle: "Background Design" },
+  { step: 2, label: "Design Fields", icon: "2", subtitle: "Text & QR Placement" },
+  { step: 3, label: "Participant Data", icon: "3", subtitle: "Upload & Map" },
+  { step: 4, label: "Live Preview", icon: "4", subtitle: "Inspect Output" },
+  { step: 5, label: "Generate", icon: "5", subtitle: "Bulk PDFs & ZIP" },
 ];
 
-export default function CertificateStepper({ currentStep, onStepClick, maxUnlockedStep = 3 }) {
+export default function CertificateStepper({
+  currentStep,
+  onStepClick,
+  maxUnlockedStep = 1,
+}) {
   return (
     <nav className="cert-stepper-container" aria-label="Certificate Generation Progress">
       <div className="cert-stepper">
@@ -27,11 +31,21 @@ export default function CertificateStepper({ currentStep, onStepClick, maxUnlock
                 onClick={() => isClickable && onStepClick?.(s.step)}
                 disabled={!isClickable}
                 aria-current={isActive ? "step" : undefined}
+                title={
+                  isClickable
+                    ? `Jump to Step ${s.step}: ${s.label}`
+                    : isActive
+                    ? `Current Step: ${s.label}`
+                    : `Complete prior steps to unlock ${s.label}`
+                }
               >
                 <span className="cert-step-circle">
                   {isCompleted ? "✓" : s.icon}
                 </span>
-                <span className="cert-step-label">{s.label}</span>
+                <div className="cert-step-text">
+                  <span className="cert-step-label">{s.label}</span>
+                  <span className="cert-step-subtitle">{s.subtitle}</span>
+                </div>
               </button>
 
               {idx < STEPS.length - 1 && (
@@ -54,3 +68,4 @@ CertificateStepper.propTypes = {
   onStepClick: PropTypes.func,
   maxUnlockedStep: PropTypes.number,
 };
+

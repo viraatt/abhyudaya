@@ -51,13 +51,12 @@ export default function Certificates() {
   const csvInputRef = useRef(null);
   const pdfInputRef = useRef(null);
 
-  // Load certificates from Firestore
+  // Load certificates helper
   const loadCertificates = useCallback(async () => {
-    setLoading(true);
-    setError(false);
     try {
       const data = await getCertificates();
       setCertificates(data);
+      setError(false);
     } catch (err) {
       console.error("Failed to load certificates:", err);
       setError(true);
@@ -66,9 +65,8 @@ export default function Certificates() {
     }
   }, []);
 
-  // Load templates from Firestore
+  // Load templates helper
   const loadTemplates = useCallback(async () => {
-    setTemplatesLoading(true);
     try {
       const data = await getCertificateTemplates();
       setTemplates(data);
@@ -79,9 +77,8 @@ export default function Certificates() {
     }
   }, []);
 
-  // Load generation history from Firestore
+  // Load generation history helper
   const loadHistoryJobs = useCallback(async () => {
-    setHistoryLoading(true);
     try {
       const data = await getCertificateJobs();
       setHistoryJobs(data);
@@ -93,16 +90,51 @@ export default function Certificates() {
   }, []);
 
   useEffect(() => {
-    loadCertificates();
-  }, [loadCertificates]);
+    let isMounted = true;
+    getCertificates()
+      .then((data) => {
+        if (isMounted) {
+          setCertificates(data);
+          setError(false);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load certificates:", err);
+        if (isMounted) setError(true);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
+    let isMounted = true;
     if (activeTab === "templates") {
-      loadTemplates();
+      getCertificateTemplates()
+        .then((data) => {
+          if (isMounted) setTemplates(data);
+        })
+        .catch((err) => console.error("Failed to load templates:", err))
+        .finally(() => {
+          if (isMounted) setTemplatesLoading(false);
+        });
     } else if (activeTab === "history") {
-      loadHistoryJobs();
+      getCertificateJobs()
+        .then((data) => {
+          if (isMounted) setHistoryJobs(data);
+        })
+        .catch((err) => console.error("Failed to load history:", err))
+        .finally(() => {
+          if (isMounted) setHistoryLoading(false);
+        });
     }
-  }, [activeTab, loadTemplates, loadHistoryJobs]);
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab]);
 
   // Derived stats
   const stats = useMemo(() => {

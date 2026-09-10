@@ -8,6 +8,7 @@ export default function TemplateEditor({
   onFieldsChange,
   onBack,
   onContinue,
+  onSaveTemplate,
 }) {
   const [selectedFieldId, setSelectedFieldId] = useState(
     fields[0]?.id || null
@@ -18,7 +19,7 @@ export default function TemplateEditor({
   // Active interaction state
   const dragRef = useRef(null);
 
-  // Measure container width dynamically to compute accurate scale factor
+  // Measure container width dynamically using ResizeObserver for precision
   const updateScale = useCallback(() => {
     if (canvasContainerRef.current) {
       const rect = canvasContainerRef.current.getBoundingClientRect();
@@ -30,16 +31,33 @@ export default function TemplateEditor({
 
   useEffect(() => {
     updateScale();
+    if (!canvasContainerRef.current) return;
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect && entry.contentRect.width > 0) {
+            setContainerWidth(entry.contentRect.width);
+          }
+        }
+      });
+      resizeObserver.observe(canvasContainerRef.current);
+    }
+
     window.addEventListener("resize", updateScale);
-    return () => window.removeEventListener("resize", updateScale);
+    return () => {
+      window.removeEventListener("resize", updateScale);
+      if (resizeObserver) resizeObserver.disconnect();
+    };
   }, [updateScale]);
 
-  const originalWidth = template?.originalWidth || 1920;
-  const originalHeight = template?.originalHeight || 1080;
+  const originalWidth = Number(template?.originalWidth) || 1920;
+  const originalHeight = Number(template?.originalHeight) || 1080;
 
   // Scale: 1 original pixel = scale screen pixels
-  const scale = containerWidth / originalWidth;
-  const displayHeight = originalHeight * scale;
+  const scale = containerWidth > 0 ? containerWidth / originalWidth : 1;
+  const displayHeight = Math.round(originalHeight * scale);
 
   const activeFieldId = selectedFieldId || fields[0]?.id || null;
 
@@ -49,11 +67,11 @@ export default function TemplateEditor({
     setSelectedFieldId(newField.id);
   };
 
-  const handleUpdateField = (fieldId, updates) => {
+  const handleUpdateField = useCallback((fieldId, updates) => {
     onFieldsChange(
       fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f))
     );
-  };
+  }, [fields, onFieldsChange]);
 
   const handleDeleteField = (fieldId) => {
     const remaining = fields.filter((f) => f.id !== fieldId);
@@ -63,8 +81,47 @@ export default function TemplateEditor({
     }
   };
 
-  // Drag / Resize mouse handlers
-  const handleMouseDown = (e, field, mode = "drag") => {
+  // Keyboard navigation / nudging for active field
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!activeFieldId) return;
+      // Don't intercept if user is typing in an input/textarea/select
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+
+      const curField = fields.find((f) => f.id === activeFieldId);
+      if (!curField) return;
+
+      const step = e.shiftKey ? 10 : 1;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, { x: Math.max(0, Math.round(curField.x - step)) });
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, {
+          x: Math.min(originalWidth - curField.width, Math.round(curField.x + step)),
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, { y: Math.max(0, Math.round(curField.y - step)) });
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, {
+          y: Math.min(originalHeight - curField.height, Math.round(curField.y + step)),
+        });
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (!e.target.closest(".field-editor-sidebar")) {
+          e.preventDefault();
+          handleDeleteField(activeFieldId);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeFieldId, fields, handleUpdateField, originalWidth, originalHeight]);
+
+  // Pointer drag / resize handlers (handles Mouse, Pen, and Touch)
+  const handlePointerDown = (e, field, mode = "drag") => {
     e.stopPropagation();
     e.preventDefault();
     setSelectedFieldId(field.id);
@@ -80,7 +137,7 @@ export default function TemplateEditor({
       initialHeight: field.height,
     };
 
-    const handleMouseMove = (moveEvent) => {
+    const handlePointerMove = (moveEvent) => {
       if (!dragRef.current) return;
       const {
         fieldId,
@@ -97,34 +154,37 @@ export default function TemplateEditor({
       const deltaScreenY = moveEvent.clientY - startY;
 
       // Convert screen deltas back to original template coordinates
-      const deltaOrigX = deltaScreenX / scale;
-      const deltaOrigY = deltaScreenY / scale;
+      const currentScale = scale || 1;
+      const deltaOrigX = deltaScreenX / currentScale;
+      const deltaOrigY = deltaScreenY / currentScale;
 
       if (curMode === "drag") {
         const newX = Math.max(
           0,
-          Math.min(originalWidth - initialWidth, initialX + deltaOrigX)
+          Math.min(originalWidth - initialWidth, Math.round(initialX + deltaOrigX))
         );
         const newY = Math.max(
           0,
-          Math.min(originalHeight - initialHeight, initialY + deltaOrigY)
+          Math.min(originalHeight - initialHeight, Math.round(initialY + deltaOrigY))
         );
         handleUpdateField(fieldId, { x: newX, y: newY });
       } else if (curMode === "resize") {
-        const newWidth = Math.max(60, initialWidth + deltaOrigX);
-        const newHeight = Math.max(25, initialHeight + deltaOrigY);
+        const newWidth = Math.max(60, Math.round(initialWidth + deltaOrigX));
+        const newHeight = Math.max(25, Math.round(initialHeight + deltaOrigY));
         handleUpdateField(fieldId, { width: newWidth, height: newHeight });
       }
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       dragRef.current = null;
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
   };
 
   return (
@@ -133,8 +193,8 @@ export default function TemplateEditor({
         <div>
           <h3>Step 2: Position Certificate Text Fields</h3>
           <p>
-            Drag and resize text boxes directly on the certificate. Use the right panel
-            to adjust fonts, colors, and add variables like <code>{"{{name}}"}</code> or <code>{"{{college}}"}</code>.
+            Drag and resize text boxes directly on the certificate. Use the sidebar
+            to adjust fonts, weights, colors, and variables like <code>{"{{name}}"}</code> or <code>{"{{position}}"}</code>.
           </p>
         </div>
         <div className="te-header-actions">
@@ -150,7 +210,10 @@ export default function TemplateEditor({
           <div
             ref={canvasContainerRef}
             className="te-canvas-stage"
-            style={{ height: `${displayHeight}px` }}
+            style={{
+              height: `${displayHeight}px`,
+              aspectRatio: `${originalWidth} / ${originalHeight}`,
+            }}
             onClick={() => setSelectedFieldId(null)}
           >
             {/* Background Template Image */}
@@ -160,6 +223,12 @@ export default function TemplateEditor({
               className="te-canvas-bg"
               onLoad={updateScale}
               draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
             />
 
             {/* Draggable Dynamic Fields */}
@@ -185,9 +254,10 @@ export default function TemplateEditor({
                     fontWeight: field.fontWeight || "600",
                     color: field.color || "#1e293b",
                     textAlign: field.align || "center",
+                    touchAction: "none",
                   }}
-                  onMouseDown={(e) => handleMouseDown(e, field, "drag")}
-                  title={`Click and drag to position ${field.variable}`}
+                  onPointerDown={(e) => handlePointerDown(e, field, "drag")}
+                  title={`Click and drag to position ${field.variable} (Use arrow keys to nudge)`}
                 >
                   <span className="te-field-tag">{field.variable}</span>
                   {field.isQr || field.variable === "{{qrCode}}" ? (
@@ -205,8 +275,8 @@ export default function TemplateEditor({
                   {isSelected && (
                     <div
                       className="te-resize-handle"
-                      onMouseDown={(e) => handleMouseDown(e, field, "resize")}
-                      title="Drag to resize"
+                      onPointerDown={(e) => handlePointerDown(e, field, "resize")}
+                      title="Drag to resize box"
                     />
                   )}
                 </div>

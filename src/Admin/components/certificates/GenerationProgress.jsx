@@ -152,29 +152,39 @@ export default function GenerationProgress({
           setZipSizeBytes(sizeBytes);
 
           // Upload ZIP to Firebase Storage
-          const zipUpload = await uploadCertificateZip(
-            zipBlob,
-            currentJobId,
-            `${(metaInfo?.eventName || "Certificates").replace(/\s+/g, "_")}_Batch.zip`
-          );
+          let finalZipUrl = "";
+          try {
+            const zipUpload = await uploadCertificateZip(
+              zipBlob,
+              currentJobId,
+              `${(metaInfo?.eventName || "Certificates").replace(/\s+/g, "_")}_Batch.zip`
+            );
+            finalZipUrl = zipUpload.downloadURL;
+          } catch (uploadErr) {
+            console.warn("Storage upload for ZIP archive failed, creating local blob URL:", uploadErr);
+            finalZipUrl = URL.createObjectURL(zipBlob);
+          }
 
-          setZipDownloadUrl(zipUpload.downloadURL);
+          setZipDownloadUrl(finalZipUrl);
 
           // Update job record in Firestore
-          await updateCertificateJob(currentJobId, {
-            completed: successCounter,
-            failed: failures.length,
-            status: failures.length > 0 && successCounter === 0 ? "failed" : "completed",
-            zipUrl: zipUpload.downloadURL,
-            zipSizeBytes: sizeBytes,
-            errors: failures,
-          });
+          try {
+            await updateCertificateJob(currentJobId, {
+              completed: successCounter,
+              failed: failures.length,
+              status: failures.length > 0 && successCounter === 0 ? "failed" : "completed",
+              zipUrl: finalZipUrl,
+              zipSizeBytes: sizeBytes,
+              errors: failures,
+            });
+          } catch (jobErr) {
+            console.warn("Could not update Firestore job status:", jobErr);
+          }
 
           setStatus("completed");
         } catch (zipErr) {
-          console.error("ZIP creation or upload failed:", zipErr);
-          // Fallback: create local object URL so user can still download
-          setStatus("completed");
+          console.error("ZIP creation failed:", zipErr);
+          setStatus(successCounter > 0 ? "completed" : "failed");
         }
       } else {
         setStatus("failed");
