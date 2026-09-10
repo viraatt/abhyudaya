@@ -349,13 +349,96 @@ export default function FieldEditor({
               </>
             )}
 
-            {/* Position Coordinates (Read-only / Fine Tuning) */}
-            <div className="fe-coords-box">
-              <small>
-                Position (Original Template Pixels): X: {Math.round(selectedField.x)}px, Y:{" "}
-                {Math.round(selectedField.y)}px | W: {Math.round(selectedField.width)}px, H:{" "}
-                {Math.round(selectedField.height)}px
-              </small>
+            {/* Position & Dimension Fine Tuning */}
+            <div className="fe-coords-section">
+              <div className="fe-coords-header">
+                <label>Manual Position & Size (px)</label>
+                <div className="fe-align-tools">
+                  <button
+                    type="button"
+                    className="fe-tool-btn"
+                    onClick={() =>
+                      onUpdateField(selectedField.id, {
+                        x: Math.round((templateWidth - selectedField.width) / 2),
+                      })
+                    }
+                    title="Center horizontally on template"
+                  >
+                    ↔ Center Horiz
+                  </button>
+                  <button
+                    type="button"
+                    className="fe-tool-btn"
+                    onClick={() =>
+                      onUpdateField(selectedField.id, {
+                        y: Math.round((templateHeight - selectedField.height) / 2),
+                      })
+                    }
+                    title="Center vertically on template"
+                  >
+                    ↕ Center Vert
+                  </button>
+                </div>
+              </div>
+
+              <div className="fe-coords-grid">
+                <div className="fe-coord-field">
+                  <span className="fe-coord-label">X</span>
+                  <input
+                    type="number"
+                    className="fe-input fe-coord-input"
+                    value={Math.round(selectedField.x)}
+                    min="0"
+                    max={templateWidth}
+                    onChange={(e) =>
+                      onUpdateField(selectedField.id, { x: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div className="fe-coord-field">
+                  <span className="fe-coord-label">Y</span>
+                  <input
+                    type="number"
+                    className="fe-input fe-coord-input"
+                    value={Math.round(selectedField.y)}
+                    min="0"
+                    max={templateHeight}
+                    onChange={(e) =>
+                      onUpdateField(selectedField.id, { y: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div className="fe-coord-field">
+                  <span className="fe-coord-label">W</span>
+                  <input
+                    type="number"
+                    className="fe-input fe-coord-input"
+                    value={Math.round(selectedField.width)}
+                    min="20"
+                    max={templateWidth}
+                    onChange={(e) =>
+                      onUpdateField(selectedField.id, {
+                        width: Math.max(20, Number(e.target.value)),
+                      })
+                    }
+                  />
+                </div>
+                <div className="fe-coord-field">
+                  <span className="fe-coord-label">H</span>
+                  <input
+                    type="number"
+                    className="fe-input fe-coord-input"
+                    value={Math.round(selectedField.height)}
+                    min="15"
+                    max={templateHeight}
+                    onChange={(e) =>
+                      onUpdateField(selectedField.id, {
+                        height: Math.max(15, Number(e.target.value)),
+                      })
+                    }
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

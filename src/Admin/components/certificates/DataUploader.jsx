@@ -44,6 +44,21 @@ export default function DataUploader({
     setDragOver(false);
   };
 
+  const handleDownloadSampleCsv = (e) => {
+    e.stopPropagation();
+    const sampleHeaders = "Name,RollNo,Event,Position,Date,College\n";
+    const sampleRows = "Ishan Shukla,230101,Abhyudaya 2026,Winner,09-09-2026,GLA University\nPriya Sharma,230102,Abhyudaya 2026,Runner Up,09-09-2026,GLA University\n";
+    const blob = new Blob([sampleHeaders + sampleRows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sample_participant_data.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="data-uploader-section">
       {error && (
@@ -98,15 +113,22 @@ export default function DataUploader({
             <div className="cert-dropzone-empty">
               <div className="cert-dropzone-icon">📊</div>
               <h4>Upload Participant Spreadsheet</h4>
-              <p>Drag & drop your file here, or click to browse</p>
+              <p>Drag & drop your CSV or Excel file here, or click to browse</p>
               <div className="cert-dropzone-formats">
                 <span className="file-badge">.CSV</span>
                 <span className="file-badge">.XLSX</span>
                 <span className="file-badge">.XLS</span>
               </div>
-              <p className="cert-dropzone-note">
-                Example columns: <code>Name</code>, <code>Event</code>, <code>Date</code>, <code>Position</code>, <code>RollNo</code>, <code>College</code>
-              </p>
+              <div className="cert-dropzone-sample-action">
+                <button
+                  type="button"
+                  className="cert-btn-sample-download"
+                  onClick={handleDownloadSampleCsv}
+                  title="Download a formatted sample CSV file"
+                >
+                  📥 Download Sample CSV Template
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -116,19 +138,39 @@ export default function DataUploader({
             <span className="data-file-icon">📄</span>
             <div>
               <h4 className="data-file-name">{dataset.fileName}</h4>
-              <span className="data-file-meta">
-                Format: {dataset.fileType.toUpperCase()} • {(dataset.fileSize / 1024).toFixed(1)} KB
-              </span>
+              <div className="data-file-meta-pills">
+                <span className="data-pill data-pill--type">
+                  {dataset.fileType.toUpperCase()}
+                </span>
+                <span className="data-pill data-pill--size">
+                  {(dataset.fileSize / 1024).toFixed(1)} KB
+                </span>
+                <span className="data-pill data-pill--count">
+                  {dataset.totalRows || dataset.rows?.length || 0} Participants
+                </span>
+                <span className="data-pill data-pill--cols">
+                  {dataset.columns?.length || 0} Columns
+                </span>
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="cert-btn-text cert-btn-text--danger"
-            onClick={onClearData}
-          >
-            Upload Different File
-          </button>
+          <div className="data-file-actions">
+            <button
+              type="button"
+              className="cert-btn-text"
+              onClick={handleDownloadSampleCsv}
+            >
+              📥 Sample Template
+            </button>
+            <button
+              type="button"
+              className="cert-btn-text cert-btn-text--danger"
+              onClick={onClearData}
+            >
+              🔄 Change File
+            </button>
+          </div>
         </div>
       )}
     </div>

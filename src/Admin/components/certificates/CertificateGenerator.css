@@ -1600,3 +1600,305 @@
   font-size: 3rem;
 }
 
+/* ==========================================================================
+   UI Redesign Additions (Part 6)
+   ========================================================================== */
+
+/* Stepper Subtitles & Enhancements */
+.cert-step-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.cert-step-subtitle {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+.cert-step-item.active .cert-step-subtitle {
+  color: #a5b4fc;
+}
+
+.cert-step-item.completed .cert-step-subtitle {
+  color: #94a3b8;
+}
+
+/* Template Preview Enhancements */
+.template-preview-img-container {
+  max-width: 100%;
+  max-height: 440px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.template-ratio-tag,
+.template-size-tag {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.template-preview-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.cert-dropzone-specs {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cert-dropzone-specs .spec-item {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cert-dropzone-specs .spec-item strong {
+  color: #e2e8f0;
+}
+
+/* Sample CSV Download Button & Pill Badges */
+.cert-dropzone-sample-action {
+  margin-top: 1rem;
+}
+
+.cert-btn-sample-download {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #c7d2fe;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cert-btn-sample-download:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #ffffff;
+}
+
+.data-file-meta-pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.data-pill {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.data-pill--type {
+  background: rgba(99, 102, 241, 0.18);
+  color: #a5b4fc;
+}
+
+.data-pill--size {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+.data-pill--count {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+}
+
+.data-pill--cols {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+}
+
+.data-file-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* Field Editor Coordinate Tuning & Centering Tools */
+.fe-coords-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.fe-coords-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fe-coords-header label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+}
+
+.fe-align-tools {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.fe-tool-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fe-tool-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #818cf8;
+  color: #ffffff;
+}
+
+.fe-coords-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.fe-coord-field {
+  display: flex;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.fe-coord-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  padding: 0.25rem 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.fe-coord-input {
+  width: 100%;
+  border: none !important;
+  background: transparent !important;
+  padding: 0.35rem 0.35rem !important;
+  font-size: 0.8rem !important;
+  color: #f8fafc !important;
+  text-align: center;
+}
+
+.fe-coord-input:focus {
+  outline: none !important;
+}
+
+/* Certificate Preview Batch Summary & Confirmation Bar */
+.cp-batch-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  backdrop-filter: blur(10px);
+}
+
+.cp-batch-card h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 0.75rem 0;
+}
+
+.cp-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.cp-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cp-stat-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cp-stat-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #818cf8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-confirmation-bar {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 10px;
+  padding: 0.9rem 1.25rem;
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.cp-confirm-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: #e2e8f0;
+  user-select: none;
+}
+
+.cp-confirm-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #10b981;
+  cursor: pointer;
+}
+

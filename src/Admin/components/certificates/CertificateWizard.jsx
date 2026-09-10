@@ -9,6 +9,7 @@ import DataMapper from "./DataMapper";
 import CertificatePreview from "./CertificatePreview";
 import GenerationProgress from "./GenerationProgress";
 import { autoMapFields } from "../../../utils/fieldMappingHelper";
+import { loadRemoteTemplate, revokeTemplatePreview } from "../../../utils/pdfTemplateHelper";
 import {
   saveCertificateTemplate,
   getCertificateTemplateById,
@@ -148,11 +149,32 @@ export default function CertificateWizard({ onExit }) {
     if (!templateIdParam) return;
     let isMounted = true;
     getCertificateTemplateById(templateIdParam)
-      .then((tpl) => {
+      .then(async (tpl) => {
         if (!isMounted || !tpl) return;
+
+        let previewUrl = tpl.templateUrl;
+        let blob = null;
+
+        // Convert remote template URL to local blob URL to avoid CORS/auth issues with <img>
+        if (tpl.templateUrl) {
+          try {
+            const loaded = await loadRemoteTemplate(tpl.templateUrl, {
+              originalWidth: tpl.originalWidth,
+              originalHeight: tpl.originalHeight,
+              fileName: tpl.title || "template",
+            });
+            previewUrl = loaded.previewUrl;
+            blob = loaded.blob;
+          } catch (loadErr) {
+            console.warn("Failed to convert remote template to blob URL:", loadErr);
+          }
+        }
+
         setTemplate({
           id: tpl.id,
-          previewUrl: tpl.templateUrl,
+          previewUrl,
+          blob,
+          storageUrl: tpl.templateUrl,
           storagePath: tpl.storagePath || "",
           originalWidth: Number(tpl.originalWidth) || 1920,
           originalHeight: Number(tpl.originalHeight) || 1080,
@@ -184,6 +206,15 @@ export default function CertificateWizard({ onExit }) {
     };
   }, [templateIdParam, stepParam]);
 
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (template?.previewUrl && template.previewUrl.startsWith("blob:")) {
+        revokeTemplatePreview(template.previewUrl);
+      }
+    };
+  }, [template?.previewUrl]);
+
   // Step transitions
   const unlockStep = (step) => {
     setMaxUnlockedStep((prev) => Math.max(prev, step));
@@ -192,6 +223,10 @@ export default function CertificateWizard({ onExit }) {
 
   // Step 1 handlers
   const handleTemplateLoaded = (templateData) => {
+    // Revoke previous blob URL if exists
+    if (template?.previewUrl && template.previewUrl.startsWith("blob:") && template.previewUrl !== templateData?.previewUrl) {
+      revokeTemplatePreview(template.previewUrl);
+    }
     setTemplate(templateData);
     if (templateData.originalWidth) {
       const origW = templateData.originalWidth;
