@@ -14,6 +14,7 @@
  * storage.googleapis.com) are proxied to prevent open-proxy abuse.
  */
 
+import { Buffer } from "node:buffer";
 import { authenticateAdminRequest } from "../time-capsule/admin-auth.js";
 
 const ALLOWED_ADMIN_ROLES = ["super_admin", "event_admin"];
@@ -71,8 +72,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { default: nodeFetch } = await import("node-fetch");
-    const upstream = await nodeFetch(targetUrl);
+    const upstream = await fetch(targetUrl);
 
     if (!upstream.ok) {
       return res.status(upstream.status).json({
@@ -81,7 +81,8 @@ export default async function handler(req, res) {
     }
 
     const contentType = upstream.headers.get("content-type") || "application/octet-stream";
-    const buffer = await upstream.buffer();
+    const arrayBuffer = await upstream.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Content-Type", contentType);

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
 import {
-  STANDARD_VARIABLES,
   createTextElement,
   createDynamicTextElement,
   createParagraphElement,
@@ -10,7 +9,6 @@ import {
   createSignatureElement,
   createShapeElement,
   createLineElement,
-  ELEMENT_TYPES,
 } from "./elementSchema";
 
 const SHAPE_OPTIONS = [
@@ -225,7 +223,7 @@ export default function ElementToolbar({
           title="Add a shape (rectangle, circle)"
           onClick={() => {
             setShowShapePicker(!showShapePicker);
-            setShowVarPicker(false);
+            setShowMoreVars(false);
             setShowLinePicker(false);
           }}
         >
@@ -255,7 +253,7 @@ export default function ElementToolbar({
           title="Add a decorative line"
           onClick={() => {
             setShowLinePicker(!showLinePicker);
-            setShowVarPicker(false);
+            setShowMoreVars(false);
             setShowShapePicker(false);
           }}
         >

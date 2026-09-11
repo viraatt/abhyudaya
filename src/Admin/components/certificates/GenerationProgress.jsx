@@ -232,7 +232,7 @@ export default function GenerationProgress({
     }
 
     runGeneration();
-  }, [rows, total, template, fields, mapping, metaInfo, status]);
+  }, [rows, total, template, fields, elements, mapping, metaInfo, status]);
 
   const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0) return "";
