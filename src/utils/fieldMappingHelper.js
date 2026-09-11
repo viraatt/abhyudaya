@@ -3,6 +3,11 @@
  *
  * Maps template variables (e.g. {{name}}, {{event}}, {{rollNo}}, {{college}})
  * to spreadsheet column headers automatically, while allowing manual overrides.
+ *
+ * v2 additions:
+ *  - resolveParagraphContent() — replaces all {{var}} tokens in a paragraph string
+ *  - autoMapElements() — maps variables from new elements[] schema
+ *  - validateMappingForElements() — validates new element model
  */
 
 // Normalized semantic aliases for known standard variables
@@ -229,4 +234,111 @@ export function resolveFieldValue(field, mapping = {}, row = {}, options = {}) {
 
   const val = row[mappedKey];
   return val !== undefined && val !== null ? String(val).trim() : (field.defaultValue || "");
+}
+
+/**
+ * Resolves all {{variable}} tokens in a paragraph content string.
+ * Used for paragraph-type elements in the designer.
+ *
+ * @param {string} content - e.g. "This certifies that {{name}} participated in {{event}}."
+ * @param {Record<string, string>} mapping - variable to column map
+ * @param {Record<string, string>} row - participant row data
+ * @param {object} options - { eventName, eventDate, rowIndex, certPrefix, certificateId }
+ * @returns {string} - Resolved paragraph text with all tokens replaced
+ */
+export function resolveParagraphContent(content = "", mapping = {}, row = {}, options = {}) {
+  if (!content) return "";
+
+  return content.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (match, varName) => {
+    // Build a synthetic field object to reuse resolveFieldValue
+    const syntheticField = {
+      variable: match,
+      defaultValue: match, // show {{var}} if unmapped in design mode
+    };
+    const resolved = resolveFieldValue(syntheticField, mapping, row, options);
+    return resolved !== undefined && resolved !== null ? String(resolved) : match;
+  });
+}
+
+/**
+ * Generates an automatic mapping dictionary from an elements[] array (v2 schema).
+ * Extracts variables from dynamicText and paragraph elements.
+ *
+ * @param {Array} elements - New-format elements array
+ * @param {string[]} columns - Spreadsheet column headers
+ * @returns {Record<string, string>} Mapping object: { [variable]: columnKey }
+ */
+export function autoMapElements(elements = [], columns = []) {
+  const variables = new Set();
+
+  for (const el of elements) {
+    if (el.type === "dynamicText" && el.variable) {
+      const rawVar = String(el.variable).replace(/^\{\{|\}\}$/g, "").trim();
+      if (rawVar) variables.add(rawVar);
+    } else if (el.type === "paragraph" && el.content) {
+      const matches = (el.content || "").match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || [];
+      for (const m of matches) {
+        const rawVar = m.replace(/^\{\{|\}\}$/g, "").trim();
+        if (rawVar) variables.add(rawVar);
+      }
+    } else if (el.type === "qr") {
+      variables.add("certificateId");
+    }
+  }
+
+  const mapping = {};
+  for (const rawVar of variables) {
+    const matchedColumn = findBestColumnMatch(rawVar, columns);
+    if (matchedColumn) {
+      mapping[rawVar] = matchedColumn;
+    } else if (rawVar.toLowerCase() === "certificateid" || rawVar.toLowerCase() === "certid") {
+      mapping[rawVar] = "__auto_id__";
+    } else {
+      mapping[rawVar] = "";
+    }
+  }
+
+  return mapping;
+}
+
+/**
+ * Validates whether all required variables found in elements are mapped.
+ *
+ * @param {Array} elements - New-format elements
+ * @param {Record<string, string>} mapping
+ * @returns {{ isValid: boolean, unmappedFields: string[], errors: string[] }}
+ */
+export function validateMappingForElements(elements = [], mapping = {}) {
+  const unmappedFields = [];
+  const errors = [];
+  const seen = new Set();
+
+  for (const el of elements) {
+    let varsToCheck = [];
+
+    if (el.type === "dynamicText" && el.variable) {
+      varsToCheck = [el.variable];
+    } else if (el.type === "paragraph" && el.content) {
+      varsToCheck = (el.content.match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || []);
+    }
+
+    for (const v of varsToCheck) {
+      if (seen.has(v)) continue;
+      seen.add(v);
+
+      const rawVar = v.replace(/^\{\{|\}\}$/g, "").trim();
+      const mappedValue = (mapping[rawVar] || "").trim();
+
+      if (!mappedValue || mappedValue === "__none__") {
+        unmappedFields.push(v);
+        errors.push(`${v} is not mapped.`);
+      }
+    }
+  }
+
+  return {
+    isValid: unmappedFields.length === 0,
+    unmappedFields,
+    errors,
+  };
 }

@@ -36,6 +36,10 @@ export async function saveCertificateTemplate(templateData) {
     storagePath: templateData.storagePath || "",
     originalWidth: Number(templateData.originalWidth) || 1920,
     originalHeight: Number(templateData.originalHeight) || 1080,
+    // v2 schema: elements[]
+    elements: Array.isArray(templateData.elements) ? templateData.elements : [],
+    version: templateData.version || 1,
+    // Backward compat: also persist legacy fields[]
     fields: Array.isArray(templateData.fields) ? templateData.fields : [],
     status: templateData.status || "draft",
     updatedAt: serverTimestamp(),
