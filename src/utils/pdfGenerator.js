@@ -5,12 +5,27 @@
  * v2: Supports full element schema — text, dynamicText, paragraph (with word-wrap),
  * image, signature, qr, shape, and line elements.
  * Backward-compatible with old fields[] format.
+ *
+ * PERFORMANCE: generateCertificatePdf accepts an optional preloaded `templateAsset`
+ * (from templateAssetLoader.loadTemplateAsset). When provided, the template image
+ * is NEVER re-fetched — eliminating repeated CORS requests to Firebase Storage
+ * during batch generation.
  */
 
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import JSZip from "jszip";
 import QRCode from "qrcode";
 import { resolveFieldValue, resolveParagraphContent, parseTemplateText } from "./fieldMappingHelper.js";
+
+const IS_DEV = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
+
+/** Module-level cache for image/signature element ArrayBuffers within a generation batch. */
+const imageAssetCache = new Map();
+
+/** Clear the image asset cache — call once before starting a new batch. */
+export function clearImageAssetCache() {
+  imageAssetCache.clear();
+}
 
 /**
  * Normalizes unicode quotes, dashes, and whitespace to standard characters.
@@ -303,6 +318,9 @@ async function renderRichTextOnPage({
  *
  * @param {object} params
  * @param {object} params.template - { originalWidth, originalHeight, blob, previewUrl, isPdf }
+ * @param {object} [params.templateAsset] - Preloaded asset from loadTemplateAsset():
+ *   { arrayBuffer, isJpg, isPng, isPdf, mimeType, width, height }
+ *   When provided, skips all template fetching (prevents repeated CORS requests in batch mode).
  * @param {Array<object>} params.fields - Array of field objects with x, y, width, height, fontSize, etc.
  * @param {Record<string, string>} params.mapping - Variable to column map
  * @param {Record<string, string>} params.row - Participant row data
@@ -316,6 +334,7 @@ async function renderRichTextOnPage({
  */
 export async function generateCertificatePdf({
   template,
+  templateAsset = null,
   fields = [],
   mapping = {},
   row = {},
@@ -325,8 +344,8 @@ export async function generateCertificatePdf({
     throw new Error("No template provided for certificate rendering.");
   }
 
-  const originalWidth = Number(template.originalWidth) || 1920;
-  const originalHeight = Number(template.originalHeight) || 1080;
+  const originalWidth = Number(templateAsset?.width || template.originalWidth) || 1920;
+  const originalHeight = Number(templateAsset?.height || template.originalHeight) || 1080;
 
   // 1. Create a new PDF document
   const pdfDoc = await PDFDocument.create();
@@ -334,90 +353,98 @@ export async function generateCertificatePdf({
   // 2. Add page with exact template dimensions (0 distortion)
   const page = pdfDoc.addPage([originalWidth, originalHeight]);
 
-  // 3. Embed background template image or PDF
-  let imageBlob = template.blob;
-  if (!imageBlob && template.previewUrl) {
+  // 3. Embed background template image
+  // PERFORMANCE: If templateAsset is preloaded (batch mode), use the cached ArrayBuffer directly.
+  // This prevents 53 repeated fetch() calls to Firebase Storage during bulk generation.
+  if (templateAsset && templateAsset.arrayBuffer && templateAsset.arrayBuffer.byteLength > 0) {
+    // ── Fast path: use preloaded asset ──────────────────────────────────────
     try {
-      const resp = await fetch(template.previewUrl);
-      if (resp.ok) {
-        imageBlob = await resp.blob();
-      }
-    } catch (fetchErr) {
-      console.warn("Could not fetch template image blob from previewUrl:", fetchErr);
-    }
-  }
-
-  if (imageBlob) {
-    const arrayBuffer = await imageBlob.arrayBuffer();
-    const isPdfTemplate = template.isPdf || imageBlob.type === "application/pdf";
-
-    if (isPdfTemplate) {
-      const srcDoc = await PDFDocument.load(arrayBuffer);
-      const [embeddedPage] = await pdfDoc.embedPages([srcDoc.getPage(0)]);
-      page.drawPage(embeddedPage, {
-        x: 0,
-        y: 0,
-        width: originalWidth,
-        height: originalHeight,
-      });
-    } else {
-      const mime = (imageBlob.type || template.mimeType || template.format || "").toLowerCase();
-      const isJpg = mime.includes("jpg") || mime.includes("jpeg") || (template.name && /\.(jpe?g)$/i.test(template.name));
       let embeddedImage = null;
-
-      if (isJpg) {
+      if (templateAsset.isPdf) {
+        const srcDoc = await PDFDocument.load(templateAsset.arrayBuffer);
+        const [embeddedPage] = await pdfDoc.embedPages([srcDoc.getPage(0)]);
+        page.drawPage(embeddedPage, { x: 0, y: 0, width: originalWidth, height: originalHeight });
+      } else if (templateAsset.isJpg) {
         try {
-          embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
-        } catch (jpgErr) {
-          try {
-            embeddedImage = await pdfDoc.embedPng(arrayBuffer);
-          } catch {
-            console.warn("Could not embed image as JPG or PNG:", jpgErr);
-          }
+          embeddedImage = await pdfDoc.embedJpg(templateAsset.arrayBuffer);
+        } catch {
+          // Try PNG as fallback (some JPEGs have incorrect headers)
+          embeddedImage = await pdfDoc.embedPng(templateAsset.arrayBuffer);
         }
       } else {
+        // PNG or rasterized WebP
         try {
-          embeddedImage = await pdfDoc.embedPng(arrayBuffer);
-        } catch (pngErr) {
-          try {
-            embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
-          } catch {
-            console.warn("Could not embed image as PNG or JPG:", pngErr);
-          }
+          embeddedImage = await pdfDoc.embedPng(templateAsset.arrayBuffer);
+        } catch {
+          embeddedImage = await pdfDoc.embedJpg(templateAsset.arrayBuffer);
         }
       }
-
-      // Final fallback: rasterize via canvas if browser environment
-      if (!embeddedImage && typeof document !== "undefined") {
-        try {
-          const img = new Image();
-          await new Promise((res, rej) => {
-            img.onload = res;
-            img.onerror = rej;
-            img.src = template.previewUrl || URL.createObjectURL(imageBlob);
-          });
-          const canvas = document.createElement("canvas");
-          canvas.width = originalWidth;
-          canvas.height = originalHeight;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
-          const pngBlob = await new Promise((r) => canvas.toBlob(r, "image/png"));
-          if (pngBlob) {
-            const pngBuf = await pngBlob.arrayBuffer();
-            embeddedImage = await pdfDoc.embedPng(pngBuf);
-          }
-        } catch (canvasErr) {
-          console.warn("Canvas rasterization fallback failed:", canvasErr);
-        }
-      }
-
       if (embeddedImage) {
-        page.drawImage(embeddedImage, {
-          x: 0,
-          y: 0,
-          width: originalWidth,
-          height: originalHeight,
-        });
+        page.drawImage(embeddedImage, { x: 0, y: 0, width: originalWidth, height: originalHeight });
+      }
+    } catch (embedErr) {
+      console.warn("[PDF] Failed to embed preloaded template asset:", embedErr);
+    }
+  } else {
+    // ── Fallback path: no preloaded asset (single-certificate mode or direct call) ──
+    // This path should NOT be hit during batch generation with preloaded assets.
+    if (IS_DEV) console.warn("[PDF] No preloaded templateAsset — falling back to blob/fetch. Avoid in batch mode.");
+
+    let imageBlob = template.blob;
+    if (!imageBlob && template.previewUrl) {
+      try {
+        const resp = await fetch(template.previewUrl);
+        if (resp.ok) {
+          imageBlob = await resp.blob();
+        }
+      } catch (fetchErr) {
+        console.warn("[PDF] Could not fetch template image blob from previewUrl:", fetchErr);
+      }
+    }
+
+    if (imageBlob) {
+      const arrayBuffer = await imageBlob.arrayBuffer();
+      const isPdfTemplate = template.isPdf || imageBlob.type === "application/pdf";
+
+      if (isPdfTemplate) {
+        const srcDoc = await PDFDocument.load(arrayBuffer);
+        const [embeddedPage] = await pdfDoc.embedPages([srcDoc.getPage(0)]);
+        page.drawPage(embeddedPage, { x: 0, y: 0, width: originalWidth, height: originalHeight });
+      } else {
+        const mime = (imageBlob.type || template.mimeType || template.format || "").toLowerCase();
+        const isJpg = mime.includes("jpg") || mime.includes("jpeg") || (template.name && /\.(jpe?g)$/i.test(template.name));
+        let embeddedImage = null;
+
+        if (isJpg) {
+          try { embeddedImage = await pdfDoc.embedJpg(arrayBuffer); }
+          catch { try { embeddedImage = await pdfDoc.embedPng(arrayBuffer); } catch {} }
+        } else {
+          try { embeddedImage = await pdfDoc.embedPng(arrayBuffer); }
+          catch { try { embeddedImage = await pdfDoc.embedJpg(arrayBuffer); } catch {} }
+        }
+
+        // Final fallback: rasterize via canvas
+        if (!embeddedImage && typeof document !== "undefined") {
+          try {
+            const img = new Image();
+            await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = template.previewUrl || URL.createObjectURL(imageBlob); });
+            const canvas = document.createElement("canvas");
+            canvas.width = originalWidth; canvas.height = originalHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+            const pngBlob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+            if (pngBlob) {
+              const pngBuf = await pngBlob.arrayBuffer();
+              embeddedImage = await pdfDoc.embedPng(pngBuf);
+            }
+          } catch (canvasErr) {
+            console.warn("[PDF] Canvas rasterization fallback failed:", canvasErr);
+          }
+        }
+
+        if (embeddedImage) {
+          page.drawImage(embeddedImage, { x: 0, y: 0, width: originalWidth, height: originalHeight });
+        }
       }
     }
   }
@@ -483,6 +510,8 @@ export async function generateCertificatePdf({
     }
 
     // ── IMAGE / SIGNATURE element ─────────────────────────────────────────────
+    // PERFORMANCE: Uses imageAssetCache to fetch each unique image URL only ONCE
+    // per batch — not once per participant.
     if (field.type === "image" || field.type === "signature") {
       const imgSrc = field.src || field.storageUrl;
       if (!imgSrc) continue;
@@ -490,16 +519,25 @@ export async function generateCertificatePdf({
       try {
         let imgBytes = null;
 
-        if (imgSrc.startsWith("blob:") || imgSrc.startsWith("data:")) {
-          // Local blob or data URL — fetch as ArrayBuffer
-          const resp = await fetch(imgSrc);
-          if (resp.ok) {
-            imgBytes = await resp.arrayBuffer();
+        // Check module-level cache first
+        if (imageAssetCache.has(imgSrc)) {
+          imgBytes = imageAssetCache.get(imgSrc);
+        } else {
+          if (imgSrc.startsWith("blob:") || imgSrc.startsWith("data:")) {
+            const resp = await fetch(imgSrc);
+            if (resp.ok) imgBytes = await resp.arrayBuffer();
+          } else if (imgSrc.startsWith("http")) {
+            try {
+              const resp = await fetch(imgSrc, { mode: "cors" });
+              if (resp.ok) imgBytes = await resp.arrayBuffer();
+            } catch {
+              // Try proxy fallback for CORS-blocked assets
+              const proxyResp = await fetch(`/api/admin/proxy-asset?url=${encodeURIComponent(imgSrc)}`);
+              if (proxyResp.ok) imgBytes = await proxyResp.arrayBuffer();
+            }
           }
-        } else if (imgSrc.startsWith("http")) {
-          // Remote URL (Firebase Storage)
-          const resp = await fetch(imgSrc, { mode: "cors" });
-          if (resp.ok) imgBytes = await resp.arrayBuffer();
+          // Cache for subsequent participants in this batch
+          if (imgBytes) imageAssetCache.set(imgSrc, imgBytes);
         }
 
         if (!imgBytes) continue;
@@ -511,7 +549,7 @@ export async function generateCertificatePdf({
           try {
             embeddedImg = await pdfDoc.embedJpg(imgBytes);
           } catch (imgErr) {
-            console.warn("Could not embed element image:", imgErr);
+            console.warn("[PDF] Could not embed element image:", imgErr);
           }
         }
 
