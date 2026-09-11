@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { generateCertificatePdf, createCertificatesZip } from "../../../utils/pdfGenerator";
+import { generateCertificatePdf, createCertificatesZip, clearImageAssetCache } from "../../../utils/pdfGenerator";
+import { loadTemplateAsset } from "../../../utils/templateAssetLoader";
 import {
   uploadGeneratedCertificatePdf,
   uploadCertificateZip,
@@ -22,13 +23,14 @@ export default function GenerationProgress({
   metaInfo,
   onBack,
 }) {
-  const [status, setStatus] = useState("idle"); // 'idle' | 'generating' | 'packaging_zip' | 'completed' | 'failed'
+  const [status, setStatus] = useState("idle"); // 'idle' | 'loading_template' | 'generating' | 'packaging_zip' | 'completed' | 'failed' | 'template_error'
   const [completedCount, setCompletedCount] = useState(0);
   const [currentParticipantName, setCurrentParticipantName] = useState("");
   const [zipDownloadUrl, setZipDownloadUrl] = useState("");
   const [zipSizeBytes, setZipSizeBytes] = useState(0);
   const [failedList, setFailedList] = useState([]);
   const [jobId, setJobId] = useState("");
+  const [templateError, setTemplateError] = useState("");
 
   const isGeneratingRef = useRef(false);
 
@@ -41,6 +43,34 @@ export default function GenerationProgress({
     isGeneratingRef.current = true;
 
     async function runGeneration() {
+      // ── STEP 0: Load template asset ONCE before the batch loop ─────────────
+      // This is the key fix: the template image is fetched/decoded ONCE here,
+      // then reused for all 53 certificates without any further network requests.
+      setStatus("loading_template");
+      setCurrentParticipantName("Loading certificate template into memory...");
+
+      console.log("[GENERATION] Starting batch:", total);
+
+      let templateAsset = null;
+      try {
+        templateAsset = await loadTemplateAsset(template);
+        console.log("[GENERATION] Template loaded from memory:", !!template.blob || !!template._cachedArrayBuffer);
+        console.log("[GENERATION] Template MIME:", templateAsset.mimeType, "| Size:", `${(templateAsset.arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
+        console.log("[GENERATION] Template dimensions:", `${templateAsset.width}×${templateAsset.height}`);
+      } catch (templateErr) {
+        console.error("[GENERATION] Template load failed:", templateErr);
+        setTemplateError(
+          templateErr.message ||
+          "Certificate template could not be loaded. Please replace the template or retry."
+        );
+        setStatus("template_error");
+        isGeneratingRef.current = false;
+        return;
+      }
+
+      // Clear per-batch image element cache so each batch starts fresh
+      clearImageAssetCache();
+
       setStatus("generating");
       const currentJobId = `job_${Date.now()}`;
       setJobId(currentJobId);
@@ -84,10 +114,14 @@ export default function GenerationProgress({
             ? elements.filter((el) => el.visible !== false)
             : (fields || []);
 
-          // A. Render single certificate PDF
+          // Log progress in dev
+          console.log(`[GENERATION] Participant ${i + 1}/${total}: ${participantRawName}`);
+
+          // A. Render single certificate PDF — uses preloaded templateAsset (no network calls)
           const { pdfBytes, certificateId, fileName, metadata } =
             await generateCertificatePdf({
               template,
+              templateAsset,
               fields: elementsToRender,
               mapping,
               row,
@@ -134,7 +168,7 @@ export default function GenerationProgress({
           successCounter++;
           setCompletedCount(successCounter);
         } catch (err) {
-          console.error(`Failed to generate certificate for row ${i + 1}:`, err);
+          console.error(`[GENERATION] Failed for participant ${i + 1} (${participantRawName}):`, err);
           failures.push({
             row: i + 1,
             name: participantRawName,
@@ -187,6 +221,7 @@ export default function GenerationProgress({
           }
 
           setStatus("completed");
+          console.log("[GENERATION] Batch completed. Success:", successCounter, "| Failed:", failures.length);
         } catch (zipErr) {
           console.error("ZIP creation failed:", zipErr);
           setStatus(successCounter > 0 ? "completed" : "failed");
@@ -208,6 +243,38 @@ export default function GenerationProgress({
   return (
     <div className="gen-progress-wrapper">
       <div className="gen-progress-card">
+        {/* Template loading state */}
+        {status === "loading_template" && (
+          <div className="gen-progress-body">
+            <div className="gen-progress-icon-wrap">
+              <div className="cert-spinner" />
+            </div>
+            <h3 className="gen-progress-title">Loading Template...</h3>
+            <p className="gen-progress-desc">
+              Fetching and caching the certificate background template. This happens once — not for every participant.
+            </p>
+          </div>
+        )}
+
+        {/* Template load failure — stop immediately, do NOT start the loop */}
+        {status === "template_error" && (
+          <div className="gen-failed-body">
+            <div className="gen-failed-icon">⚠️</div>
+            <h3>Template Load Failed</h3>
+            <p style={{ color: "#f87171", marginBottom: "1rem" }}>
+              {templateError || "Certificate template could not be loaded. Please replace the template and try again."}
+            </p>
+            <p style={{ color: "#94a3b8", fontSize: "0.85rem" }}>
+              Generation has been stopped. No certificates have been created.
+            </p>
+            <div className="gen-complete-actions">
+              <button type="button" className="admin-btn admin-btn--outline" onClick={onBack}>
+                ← Back to Preview
+              </button>
+            </div>
+          </div>
+        )}
+
         {status === "generating" && (
           <div className="gen-progress-body">
             <div className="gen-progress-icon-wrap">
