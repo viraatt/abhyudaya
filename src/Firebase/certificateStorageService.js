@@ -120,3 +120,37 @@ export async function uploadCertificateZip(zipData, jobId = "batch", zipFileName
   }
 }
 
+/**
+ * Upload a designer image asset (logo, signature) to Firebase Storage.
+ * Stored under certificate_assets/{templateId}/
+ *
+ * @param {File|Blob} file - The image file
+ * @param {string} templateId - Template ID for path scoping
+ * @param {string} [fileName] - Optional filename override
+ * @returns {Promise<{ downloadURL: string, storagePath: string }>}
+ */
+export async function uploadDesignerImageAsset(file, templateId = "shared", fileName = null) {
+  try {
+    const cleanTemplateId = (templateId || "shared").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const timestamp = Date.now();
+    const rawName = fileName || (file instanceof File ? file.name : "asset.png");
+    const cleanName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `certificate_assets/${cleanTemplateId}/${timestamp}_${cleanName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const snapshot = await uploadBytes(storageRef, file, {
+      contentType: file.type || "image/png",
+    });
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { downloadURL, storagePath };
+  } catch (err) {
+    console.warn("Designer image asset upload failed, using local blob URL:", err);
+    const localUrl = file instanceof Blob ? URL.createObjectURL(file) : "";
+    return {
+      downloadURL: localUrl,
+      storagePath: `local_fallback/assets/${fileName || "asset.png"}`,
+      isLocalFallback: true,
+    };
+  }
+}
