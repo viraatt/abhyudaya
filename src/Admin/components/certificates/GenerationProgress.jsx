@@ -16,6 +16,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 export default function GenerationProgress({
   template,
   fields,
+  elements,
   dataset,
   mapping,
   metaInfo,
@@ -79,11 +80,15 @@ export default function GenerationProgress({
         seenNames.set(normName, dupIndex);
 
         try {
+          const elementsToRender = (Array.isArray(elements) && elements.length > 0)
+            ? elements.filter((el) => el.visible !== false)
+            : (fields || []);
+
           // A. Render single certificate PDF
           const { pdfBytes, certificateId, fileName, metadata } =
             await generateCertificatePdf({
               template,
-              fields,
+              fields: elementsToRender,
               mapping,
               row,
               options: {
@@ -344,6 +349,7 @@ export default function GenerationProgress({
 GenerationProgress.propTypes = {
   template: PropTypes.object.isRequired,
   fields: PropTypes.array.isRequired,
+  elements: PropTypes.array,
   dataset: PropTypes.object.isRequired,
   mapping: PropTypes.object.isRequired,
   metaInfo: PropTypes.object,

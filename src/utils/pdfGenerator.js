@@ -10,7 +10,7 @@
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import JSZip from "jszip";
 import QRCode from "qrcode";
-import { resolveFieldValue, resolveParagraphContent } from "./fieldMappingHelper.js";
+import { resolveFieldValue, resolveParagraphContent, parseTemplateText } from "./fieldMappingHelper.js";
 
 /**
  * Normalizes unicode quotes, dashes, and whitespace to standard characters.
@@ -148,6 +148,153 @@ export function sanitizeFileName(participantName = "Participant", certificateId 
   }
 
   return `${cleanName}.pdf`;
+}
+
+/**
+ * Renders multi-run rich text onto a pdf-lib page with word-wrap,
+ * font-aware line width measurement, mixed normal/bold fonts, and alignment.
+ */
+async function renderRichTextOnPage({
+  page,
+  originalHeight,
+  field,
+  runs,
+  getFont,
+  fieldX,
+  fieldY,
+  fieldWidth,
+  fieldHeight,
+  fieldOpacity = 1,
+  fieldRotation = 0,
+}) {
+  if (!runs || runs.length === 0) return;
+
+  const fontFamily = field.fontFamily || "'Inter', sans-serif";
+  const baseWeight = field.fontWeight || "400";
+  const fontSize = Number(field.fontSize) || 26;
+  const lineHeight = Number(field.lineHeight) || 1.4;
+  const lineHeightPx = fontSize * lineHeight;
+  const textColor = parseColorToRgb(field.color || "#1e293b");
+  const align = field.align || "center";
+  const vertAlign = field.verticalAlign || (field.type === "paragraph" ? "middle" : "middle");
+
+  const normalFont = await getFont(fontFamily, baseWeight);
+  const boldFont = await getFont(fontFamily, "700");
+
+  // Tokenize runs by whitespace while preserving space characters
+  const tokens = [];
+  for (const run of runs) {
+    if (run.value === undefined || run.value === null) continue;
+    const val = String(run.value);
+    if (!val) continue;
+
+    const font = run.bold ? boldFont : normalFont;
+    const parts = val.split(/(\s+)/);
+
+    for (const part of parts) {
+      if (!part) continue;
+      const isWhitespace = /^\s+$/.test(part);
+      const safe = safeWinAnsiText(part);
+      const textToMeasure = isWhitespace ? " " : (safe || " ");
+      const width = font.widthOfTextAtSize(textToMeasure, fontSize);
+      tokens.push({
+        text: isWhitespace ? " " : safe,
+        isWhitespace,
+        font,
+        width,
+        bold: run.bold,
+      });
+    }
+  }
+
+  if (tokens.length === 0) return;
+
+  // Word wrapping
+  const lines = [];
+  let currentTokens = [];
+  let currentLineWidth = 0;
+
+  for (const token of tokens) {
+    if (token.isWhitespace) {
+      if (currentTokens.length === 0) continue; // skip leading space
+      currentTokens.push(token);
+      currentLineWidth += token.width;
+    } else {
+      if (currentTokens.length > 0 && fieldWidth > 0 && (currentLineWidth + token.width > fieldWidth)) {
+        // Line wrap: trim trailing spaces
+        while (currentTokens.length > 0 && currentTokens[currentTokens.length - 1].isWhitespace) {
+          const popped = currentTokens.pop();
+          currentLineWidth -= popped.width;
+        }
+        if (currentTokens.length > 0) {
+          lines.push({ tokens: currentTokens, width: currentLineWidth });
+        }
+        currentTokens = [token];
+        currentLineWidth = token.width;
+      } else {
+        currentTokens.push(token);
+        currentLineWidth += token.width;
+      }
+    }
+  }
+
+  // Flush remaining tokens
+  while (currentTokens.length > 0 && currentTokens[currentTokens.length - 1].isWhitespace) {
+    const popped = currentTokens.pop();
+    currentLineWidth -= popped.width;
+  }
+  if (currentTokens.length > 0) {
+    lines.push({ tokens: currentTokens, width: currentLineWidth });
+  }
+
+  if (lines.length === 0) return;
+
+  // Vertical position
+  const totalTextHeight = lines.length * lineHeightPx;
+  let startY;
+  if (vertAlign === "top") {
+    startY = originalHeight - fieldY - fontSize;
+  } else if (vertAlign === "bottom") {
+    startY = originalHeight - fieldY - fieldHeight + totalTextHeight - (lineHeightPx - fontSize);
+  } else {
+    // middle
+    const verticalOffset = Math.max(0, (fieldHeight - totalTextHeight) / 2);
+    startY = originalHeight - fieldY - verticalOffset - fontSize;
+  }
+
+  // Draw lines
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const lineY = startY - li * lineHeightPx;
+
+    // Boundary check if fieldHeight specified
+    if (fieldHeight > 0) {
+      if (lineY < originalHeight - fieldY - fieldHeight - 10) break;
+      if (lineY > originalHeight - fieldY + 10) continue;
+    }
+
+    let lineX = fieldX;
+    if (align === "center") {
+      lineX = fieldX + Math.max(0, (fieldWidth - line.width) / 2);
+    } else if (align === "right") {
+      lineX = fieldX + Math.max(0, fieldWidth - line.width);
+    }
+
+    for (const t of line.tokens) {
+      if (!t.isWhitespace && t.text) {
+        page.drawText(t.text, {
+          x: lineX,
+          y: lineY,
+          size: fontSize,
+          font: t.font,
+          color: textColor,
+          opacity: fieldOpacity,
+          rotate: fieldRotation ? degrees(fieldRotation) : undefined,
+        });
+      }
+      lineX += t.width;
+    }
+  }
 }
 
 /**
@@ -454,159 +601,84 @@ export async function generateCertificatePdf({
     // ── PARAGRAPH element ─────────────────────────────────────────────────────
     if (field.type === "paragraph") {
       const rawContent = field.content || "";
-      const resolvedContent = resolveParagraphContent(rawContent, mapping, row, {
-        ...options,
-        certificateId: certId,
+      if (!rawContent) continue;
+      const runs = parseTemplateText(rawContent, {
+        mapping,
+        row,
+        options: { ...options, certificateId: certId },
+        autoBoldVariables: field.autoBoldVariables !== false,
+        isPreview: true,
+        baseFontWeight: field.fontWeight || "400",
       });
-      if (!resolvedContent) continue;
-
-      const sanitized = safeWinAnsiText(resolvedContent);
-      if (!sanitized) continue;
-
-      const font = await getFont(field.fontFamily, field.fontWeight);
-      const fontSize = Number(field.fontSize) || 26;
-      const lineHeight = Number(field.lineHeight) || 1.6;
-      const lineHeightPx = fontSize * lineHeight;
-      const textColor = parseColorToRgb(field.color || "#334155");
-      const align = field.align || "center";
-
-      // Word wrap: split content into lines that fit within fieldWidth
-      const words = sanitized.split(" ");
-      const lines = [];
-      let currentLine = "";
-
-      for (const word of words) {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-        if (testWidth > fieldWidth && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
-
-      // Draw each line
-      const totalTextHeight = lines.length * lineHeightPx;
-      const vertAlign = field.verticalAlign || "middle";
-      let startY;
-      if (vertAlign === "top") {
-        startY = originalHeight - fieldY - fontSize;
-      } else if (vertAlign === "bottom") {
-        startY = originalHeight - fieldY - fieldHeight + (fieldHeight - totalTextHeight) + (lineHeightPx - fontSize);
-      } else {
-        // middle
-        startY = originalHeight - fieldY - (fieldHeight - totalTextHeight) / 2 - fontSize;
-      }
-
-      for (let li = 0; li < lines.length; li++) {
-        const line = lines[li];
-        const lineWidth = font.widthOfTextAtSize(line, fontSize);
-        const lineY = startY - li * lineHeightPx;
-
-        // Clip if outside field
-        if (lineY < originalHeight - fieldY - fieldHeight) break;
-        if (lineY > originalHeight - fieldY) continue;
-
-        let drawX = fieldX;
-        if (align === "center") {
-          drawX = fieldX + Math.max(0, (fieldWidth - lineWidth) / 2);
-        } else if (align === "right") {
-          drawX = fieldX + Math.max(0, fieldWidth - lineWidth);
-        }
-
-        page.drawText(safeWinAnsiText(line), {
-          x: drawX,
-          y: lineY,
-          size: fontSize,
-          font,
-          color: textColor,
-          opacity: fieldOpacity,
-        });
-      }
+      await renderRichTextOnPage({
+        page,
+        originalHeight,
+        field,
+        runs,
+        getFont,
+        fieldX,
+        fieldY,
+        fieldWidth,
+        fieldHeight,
+        fieldOpacity,
+        fieldRotation,
+      });
       continue;
     }
 
-    // ── TEXT element (static) ─────────────────────────────────────────────────
+    // ── TEXT element (static / custom text) ───────────────────────────────────
     if (field.type === "text") {
       const content = field.content || "";
       if (!content) continue;
-      const textValue = safeWinAnsiText(content);
-      if (!textValue) continue;
-
-      const font = await getFont(field.fontFamily, field.fontWeight);
-      let fontSize = Number(field.fontSize) || 32;
-      const textColor = parseColorToRgb(field.color || "#1e293b");
-      const align = field.align || "center";
-
-      let textWidth = font.widthOfTextAtSize(textValue, fontSize);
-      if (fieldWidth > 0 && textWidth > fieldWidth) {
-        fontSize = Math.max(8, Math.floor(fontSize * (fieldWidth / textWidth)));
-        textWidth = font.widthOfTextAtSize(textValue, fontSize);
-      }
-
-      let drawX = fieldX;
-      if (align === "center") drawX = fieldX + Math.max(0, (fieldWidth - textWidth) / 2);
-      else if (align === "right") drawX = fieldX + Math.max(0, fieldWidth - textWidth);
-
-      const verticalCenterOffset = Math.max(0, (fieldHeight - fontSize) / 2);
-      const drawY = originalHeight - fieldY - fontSize - verticalCenterOffset;
-
-      page.drawText(textValue, {
-        x: drawX,
-        y: drawY,
-        size: fontSize,
-        font,
-        color: textColor,
-        opacity: fieldOpacity,
-        rotate: fieldRotation ? degrees(fieldRotation) : undefined,
+      const runs = parseTemplateText(content, {
+        mapping,
+        row,
+        options: { ...options, certificateId: certId },
+        autoBoldVariables: field.autoBoldVariables !== false,
+        isPreview: true,
+        baseFontWeight: field.fontWeight || "400",
+      });
+      await renderRichTextOnPage({
+        page,
+        originalHeight,
+        field,
+        runs,
+        getFont,
+        fieldX,
+        fieldY,
+        fieldWidth,
+        fieldHeight,
+        fieldOpacity,
+        fieldRotation,
       });
       continue;
     }
 
     // ── DYNAMIC TEXT / Legacy field (backward compat) ─────────────────────────
     {
-      const rawValue = resolveFieldValue(field, mapping, row, {
-        ...options,
-        certificateId: certId,
+      const rawVar = field.variable || "";
+      const textToParse = rawVar || field.defaultValue || "";
+      if (!textToParse) continue;
+      const runs = parseTemplateText(textToParse, {
+        mapping,
+        row,
+        options: { ...options, certificateId: certId },
+        autoBoldVariables: field.autoBoldVariables !== false,
+        isPreview: true,
+        baseFontWeight: field.fontWeight || "700",
       });
-
-      if (!rawValue) continue;
-
-      const textValue = safeWinAnsiText(rawValue);
-      if (!textValue) continue;
-
-      const font = await getFont(field.fontFamily, field.fontWeight);
-      let fontSize = Number(field.fontSize) || 32;
-      const textColor = parseColorToRgb(field.color || "#1e293b");
-
-      let textWidth = font.widthOfTextAtSize(textValue, fontSize);
-      if (fieldWidth > 0 && textWidth > fieldWidth) {
-        const scaleRatio = (fieldWidth - 4) / textWidth;
-        fontSize = Math.max(8, Math.floor(fontSize * scaleRatio));
-        textWidth = font.widthOfTextAtSize(textValue, fontSize);
-      }
-
-      let drawX = fieldX;
-      const align = field.align || "center";
-      if (align === "center") {
-        drawX = fieldX + Math.max(0, (fieldWidth - textWidth) / 2);
-      } else if (align === "right") {
-        drawX = fieldX + Math.max(0, fieldWidth - textWidth);
-      }
-
-      const verticalCenterOffset = Math.max(0, (fieldHeight - fontSize) / 2);
-      const drawY = originalHeight - fieldY - fontSize - verticalCenterOffset;
-
-      page.drawText(textValue, {
-        x: drawX,
-        y: drawY,
-        size: fontSize,
-        font,
-        color: textColor,
-        opacity: fieldOpacity,
-        rotate: fieldRotation ? degrees(fieldRotation) : undefined,
+      await renderRichTextOnPage({
+        page,
+        originalHeight,
+        field,
+        runs,
+        getFont,
+        fieldX,
+        fieldY,
+        fieldWidth,
+        fieldHeight,
+        fieldOpacity,
+        fieldRotation,
       });
     }
   } // end for (const field of fields)

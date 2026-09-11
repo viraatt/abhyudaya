@@ -50,6 +50,7 @@ const defaultTextStyle = {
   align: "center",
   lineHeight: 1.4,
   letterSpacing: 0,
+  autoBoldVariables: true,
 };
 
 // ─── Element Factory Functions ────────────────────────────────────────────────
@@ -59,8 +60,14 @@ const defaultTextStyle = {
  * @param {number} canvasWidth
  * @param {number} canvasHeight
  * @param {number} existingCount
+ * @param {string} initialContent
  */
-export function createTextElement(canvasWidth = 1920, canvasHeight = 1080, existingCount = 0) {
+export function createTextElement(
+  canvasWidth = 1920,
+  canvasHeight = 1080,
+  existingCount = 0,
+  initialContent = "Certificate of Participation"
+) {
   const w = Math.round(canvasWidth * 0.5);
   const h = Math.round(canvasHeight * 0.08);
   const x = Math.round((canvasWidth - w) / 2);
@@ -71,11 +78,12 @@ export function createTextElement(canvasWidth = 1920, canvasHeight = 1080, exist
     id: generateElementId("text"),
     type: ELEMENT_TYPES.TEXT,
     x, y, width: w, height: h,
-    content: "Certificate of Participation",
+    content: initialContent || "Certificate of Participation",
     fontSize: 42,
     fontWeight: "700",
     fontFamily: "'Cinzel', serif",
     color: "#ffffff",
+    autoBoldVariables: true,
   };
 }
 
@@ -102,6 +110,7 @@ export function createDynamicTextElement(variable = "{{name}}", canvasWidth = 19
     fontWeight: "700",
     fontFamily: "'Cinzel', serif",
     color: "#1e293b",
+    autoBoldVariables: true,
   };
 }
 
@@ -128,6 +137,7 @@ export function createParagraphElement(canvasWidth = 1920, canvasHeight = 1080) 
     color: "#334155",
     lineHeight: 1.6,
     verticalAlign: "middle",
+    autoBoldVariables: true,
   };
 }
 
@@ -275,12 +285,10 @@ export function extractVariablesFromElements(elements = []) {
     if (!el.visible && el.visible !== undefined) continue; // skip hidden? No, still need mapping
     if (el.type === ELEMENT_TYPES.DYNAMIC_TEXT && el.variable) {
       vars.add(el.variable);
-    } else if (el.type === ELEMENT_TYPES.PARAGRAPH && el.content) {
+    } else if ((el.type === ELEMENT_TYPES.PARAGRAPH || el.type === ELEMENT_TYPES.TEXT) && el.content) {
       for (const v of extractVariablesFromString(el.content)) {
         vars.add(v);
       }
-    } else if (el.type === ELEMENT_TYPES.TEXT) {
-      // Static text — no variables
     } else if (el.type === ELEMENT_TYPES.QR) {
       vars.add("{{certificateId}}");
     }
@@ -317,16 +325,17 @@ export function elementsToLegacyFields(elements = []) {
           fontFamily: el.fontFamily, fontSize: el.fontSize,
           fontWeight: el.fontWeight, color: el.color, align: el.align,
           defaultValue: rawVar,
+          autoBoldVariables: el.autoBoldVariables !== false,
         });
       }
-    } else if (el.type === ELEMENT_TYPES.PARAGRAPH && el.content) {
+    } else if ((el.type === ELEMENT_TYPES.PARAGRAPH || el.type === ELEMENT_TYPES.TEXT) && el.content) {
       const vars = extractVariablesFromString(el.content);
       for (const v of vars) {
         if (!seen.has(v)) {
           seen.add(v);
           const rawVar = v.replace(/^\{\{|\}\}$/g, "");
           fields.push({
-            id: `para_${el.id}_${rawVar}`,
+            id: `${el.type}_${el.id}_${rawVar}`,
             label: rawVar.charAt(0).toUpperCase() + rawVar.slice(1),
             variable: v,
             isQr: false,
@@ -335,6 +344,7 @@ export function elementsToLegacyFields(elements = []) {
             fontFamily: el.fontFamily, fontSize: el.fontSize,
             fontWeight: el.fontWeight, color: el.color, align: el.align,
             defaultValue: rawVar,
+            autoBoldVariables: el.autoBoldVariables !== false,
           });
         }
       }
@@ -382,7 +392,7 @@ export function elementsToLegacyFields(elements = []) {
  * @returns {Array} elements in new format
  */
 export function migrateFieldsToElements(fields = [], canvasWidth = 1920, canvasHeight = 1080) {
-  return fields.map((field, idx) => {
+  return fields.map((field) => {
     const base = {
       ...defaultBase,
       id: field.id || generateElementId("migrated"),
@@ -397,6 +407,7 @@ export function migrateFieldsToElements(fields = [], canvasWidth = 1920, canvasH
       align: field.align || "center",
       lineHeight: Number(field.lineHeight) || 1.4,
       letterSpacing: Number(field.letterSpacing) || 0,
+      autoBoldVariables: field.autoBoldVariables !== undefined ? field.autoBoldVariables : true,
     };
 
     // QR field
@@ -418,6 +429,7 @@ export function migrateFieldsToElements(fields = [], canvasWidth = 1920, canvasH
         variable: field.variable,
         fontStyle: "normal",
         textDecoration: "none",
+        autoBoldVariables: field.autoBoldVariables !== undefined ? field.autoBoldVariables : true,
       };
     }
 
@@ -430,6 +442,7 @@ export function migrateFieldsToElements(fields = [], canvasWidth = 1920, canvasH
         verticalAlign: "middle",
         fontStyle: "normal",
         textDecoration: "none",
+        autoBoldVariables: field.autoBoldVariables !== undefined ? field.autoBoldVariables : true,
       };
     }
 
@@ -440,6 +453,7 @@ export function migrateFieldsToElements(fields = [], canvasWidth = 1920, canvasH
       content: field.content || field.defaultValue || field.label || "Text",
       fontStyle: "normal",
       textDecoration: "none",
+      autoBoldVariables: field.autoBoldVariables !== undefined ? field.autoBoldVariables : true,
     };
   });
 }

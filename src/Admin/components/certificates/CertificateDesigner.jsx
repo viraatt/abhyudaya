@@ -132,6 +132,14 @@ export default function CertificateDesigner({
     );
   }, [elements, onElementsChange]);
 
+  const handleToggleLock = useCallback((id) => {
+    onElementsChange(
+      elements.map((el) =>
+        el.id === id ? { ...el, locked: !el.locked } : el
+      )
+    );
+  }, [elements, onElementsChange]);
+
   const handleReorder = useCallback((newOrder) => {
     onElementsChange(newOrder);
   }, [onElementsChange]);
@@ -357,6 +365,7 @@ export default function CertificateDesigner({
             selectedIds={selectedIds}
             onSelect={setSelectedIds}
             onToggleVisibility={handleToggleVisibility}
+            onToggleLock={handleToggleLock}
             onDelete={handleDeleteElement}
             onReorder={handleReorder}
           />
@@ -389,6 +398,7 @@ export default function CertificateDesigner({
             onDelete={handleDeleteElement}
             onDuplicate={handleDuplicateElement}
             onAlignMultiple={handleAlignMultiple}
+            onReorder={handleReorder}
           />
         </div>
       </div>

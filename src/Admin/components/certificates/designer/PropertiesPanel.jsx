@@ -76,6 +76,7 @@ export default function PropertiesPanel({
   onDelete,
   onDuplicate,
   onAlignMultiple,
+  onReorder,
 }) {
   if (!element) {
     if (selectedIds.length > 1) {
@@ -118,11 +119,42 @@ export default function PropertiesPanel({
   const isLine = type === ELEMENT_TYPES.LINE;
   const isQr = type === ELEMENT_TYPES.QR;
 
+  const handleLayerAction = (action) => {
+    if (!onReorder || !element || !elements) return;
+    const idx = elements.findIndex((el) => el.id === element.id);
+    if (idx === -1) return;
+
+    const next = [...elements];
+    if (action === "front") {
+      const [item] = next.splice(idx, 1);
+      next.push(item);
+    } else if (action === "back") {
+      const [item] = next.splice(idx, 1);
+      next.unshift(item);
+    } else if (action === "forward" && idx < next.length - 1) {
+      const temp = next[idx];
+      next[idx] = next[idx + 1];
+      next[idx + 1] = temp;
+    } else if (action === "backward" && idx > 0) {
+      const temp = next[idx];
+      next[idx] = next[idx - 1];
+      next[idx - 1] = temp;
+    }
+    onReorder(next);
+  };
+
   return (
     <div className="cprop-panel">
       <div className="cprop-title">
         {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1")}
         <div className="cprop-title-actions">
+          <button
+            className={`cprop-action-btn ${element.locked ? "cprop-action-btn--locked" : ""}`}
+            title={element.locked ? "Unlock element" : "Lock element"}
+            onClick={() => upd({ locked: !element.locked })}
+          >
+            {element.locked ? "🔒" : "🔓"}
+          </button>
           <button className="cprop-action-btn" title="Duplicate (Ctrl+D)" onClick={() => onDuplicate(element.id)}>⧉</button>
           <button className="cprop-action-btn cprop-del-btn-sm" title="Delete" onClick={() => onDelete(element.id)}>×</button>
         </div>
@@ -253,6 +285,20 @@ export default function PropertiesPanel({
               <NumInput value={element.letterSpacing || 0} min={-10} max={50} step={0.5} onChange={(v) => upd({ letterSpacing: v })} />
             </FieldGroup>
           </Row>
+
+          {/* Auto-bold variables toggle */}
+          <div className="cprop-checkbox-row" style={{ display: "flex", alignItems: "center", gap: "8px", margin: "10px 0", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              id="auto-bold-toggle"
+              checked={element.autoBoldVariables !== false}
+              onChange={(e) => upd({ autoBoldVariables: e.target.checked })}
+              style={{ cursor: "pointer", accentColor: "#6366f1", width: "16px", height: "16px" }}
+            />
+            <label htmlFor="auto-bold-toggle" style={{ fontSize: "12px", color: "#cbd5e1", cursor: "pointer", userSelect: "none" }}>
+              Automatically bold dynamic variables
+            </label>
+          </div>
 
           {type === ELEMENT_TYPES.PARAGRAPH && (
             <FieldGroup label="Vertical Align">
@@ -417,6 +463,41 @@ export default function PropertiesPanel({
           </button>
         </div>
       </div>
+
+      {/* ── LAYER ORDER ─────────────────────────────── */}
+      <div className="cprop-section">
+        <div className="cprop-section-title">Layer Order</div>
+        <div className="cprop-layer-btns-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+          <button
+            className="cprop-center-btn"
+            title="Bring element to the very top"
+            onClick={() => handleLayerAction("front")}
+          >
+            ⤒ Bring to Front
+          </button>
+          <button
+            className="cprop-center-btn"
+            title="Bring element one step forward"
+            onClick={() => handleLayerAction("forward")}
+          >
+            ↑ Bring Forward
+          </button>
+          <button
+            className="cprop-center-btn"
+            title="Send element one step backward"
+            onClick={() => handleLayerAction("backward")}
+          >
+            ↓ Send Backward
+          </button>
+          <button
+            className="cprop-center-btn"
+            title="Send element to the very bottom"
+            onClick={() => handleLayerAction("back")}
+          >
+            ⤓ Send to Back
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -432,4 +513,5 @@ PropertiesPanel.propTypes = {
   onDelete: PropTypes.func.isRequired,
   onDuplicate: PropTypes.func.isRequired,
   onAlignMultiple: PropTypes.func,
+  onReorder: PropTypes.func,
 };

@@ -206,14 +206,14 @@ export function validateMapping(fields = [], mapping = {}) {
  * @param {object} field - Template field definition
  * @param {Record<string, string>} mapping - Variable to column map
  * @param {Record<string, string>} row - Single participant row data
- * @param {object} options - Optional fixed context ({ eventName, eventDate, rowIndex, certPrefix })
+ * @param {object} options - Optional fixed context ({ eventName, eventDate, rowIndex, certPrefix, certificateId })
  * @returns {string} - Evaluated text value
  */
 export function resolveFieldValue(field, mapping = {}, row = {}, options = {}) {
   const rawVar = String(field.variable || "").replace(/^\{\{|\}\}$/g, "").trim();
   const mappedKey = mapping[rawVar];
 
-  if (!mappedKey || mappedKey === "__none__") {
+  if (mappedKey === "__none__") {
     return field.defaultValue || "";
   }
 
@@ -232,8 +232,40 @@ export function resolveFieldValue(field, mapping = {}, row = {}, options = {}) {
     return options.eventDate || field.defaultValue || "";
   }
 
-  const val = row[mappedKey];
-  return val !== undefined && val !== null ? String(val).trim() : (field.defaultValue || "");
+  // 1. Check explicit mapping
+  if (mappedKey && row && row[mappedKey] !== undefined && row[mappedKey] !== null) {
+    const val = String(row[mappedKey]).trim();
+    if (val) return val;
+  }
+
+  // 2. Generic direct fallback on row keys (e.g. {{college}}, {{venue}}, {{organizer}})
+  if (row && typeof row === "object") {
+    if (row[rawVar] !== undefined && row[rawVar] !== null) {
+      const direct = String(row[rawVar]).trim();
+      if (direct) return direct;
+    }
+
+    const normVar = normalizeKey(rawVar);
+    const matchedRowKey = Object.keys(row).find((k) => normalizeKey(k) === normVar);
+    if (matchedRowKey && row[matchedRowKey] !== undefined && row[matchedRowKey] !== null) {
+      const val = String(row[matchedRowKey]).trim();
+      if (val) return val;
+    }
+  }
+
+  // 3. Fallback for standard context fields
+  const norm = normalizeKey(rawVar);
+  if ((norm === "event" || norm === "eventname") && options.eventName) {
+    return options.eventName;
+  }
+  if ((norm === "date" || norm === "eventdate") && options.eventDate) {
+    return options.eventDate;
+  }
+  if ((norm === "certificateid" || norm === "certid") && options.certificateId) {
+    return options.certificateId;
+  }
+
+  return field.defaultValue !== undefined ? field.defaultValue : "";
 }
 
 /**
@@ -249,20 +281,19 @@ export function resolveFieldValue(field, mapping = {}, row = {}, options = {}) {
 export function resolveParagraphContent(content = "", mapping = {}, row = {}, options = {}) {
   if (!content) return "";
 
-  return content.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (match, varName) => {
-    // Build a synthetic field object to reuse resolveFieldValue
+  return content.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (match) => {
     const syntheticField = {
       variable: match,
-      defaultValue: match, // show {{var}} if unmapped in design mode
+      defaultValue: match,
     };
     const resolved = resolveFieldValue(syntheticField, mapping, row, options);
-    return resolved !== undefined && resolved !== null ? String(resolved) : match;
+    return resolved !== undefined && resolved !== null && resolved !== "" ? String(resolved) : match;
   });
 }
 
 /**
  * Generates an automatic mapping dictionary from an elements[] array (v2 schema).
- * Extracts variables from dynamicText and paragraph elements.
+ * Extracts variables from dynamicText, paragraph, and text elements.
  *
  * @param {Array} elements - New-format elements array
  * @param {string[]} columns - Spreadsheet column headers
@@ -275,7 +306,7 @@ export function autoMapElements(elements = [], columns = []) {
     if (el.type === "dynamicText" && el.variable) {
       const rawVar = String(el.variable).replace(/^\{\{|\}\}$/g, "").trim();
       if (rawVar) variables.add(rawVar);
-    } else if (el.type === "paragraph" && el.content) {
+    } else if ((el.type === "paragraph" || el.type === "text") && el.content) {
       const matches = (el.content || "").match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || [];
       for (const m of matches) {
         const rawVar = m.replace(/^\{\{|\}\}$/g, "").trim();
@@ -318,7 +349,7 @@ export function validateMappingForElements(elements = [], mapping = {}) {
 
     if (el.type === "dynamicText" && el.variable) {
       varsToCheck = [el.variable];
-    } else if (el.type === "paragraph" && el.content) {
+    } else if ((el.type === "paragraph" || el.type === "text") && el.content) {
       varsToCheck = (el.content.match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || []);
     }
 
@@ -342,3 +373,6 @@ export function validateMappingForElements(elements = [], mapping = {}) {
     errors,
   };
 }
+
+export { parseTemplateText, runsToPlainText } from "./templateParser";
+

@@ -1,40 +1,70 @@
 import PropTypes from "prop-types";
 import { ELEMENT_TYPES } from "./elementSchema";
 
-const TYPE_ICONS = {
-  [ELEMENT_TYPES.TEXT]: "T",
-  [ELEMENT_TYPES.DYNAMIC_TEXT]: "{}",
-  [ELEMENT_TYPES.PARAGRAPH]: "¶",
-  [ELEMENT_TYPES.IMAGE]: "⊞",
-  [ELEMENT_TYPES.QR]: "▣",
-  [ELEMENT_TYPES.SIGNATURE]: "✒",
-  [ELEMENT_TYPES.SHAPE]: "◻",
-  [ELEMENT_TYPES.LINE]: "─",
-};
-
-function getElementLabel(el) {
-  switch (el.type) {
-    case ELEMENT_TYPES.TEXT:
-      return el.content ? el.content.slice(0, 24) + (el.content.length > 24 ? "…" : "") : "Text";
-    case ELEMENT_TYPES.DYNAMIC_TEXT:
-      return el.variable || "Dynamic Text";
-    case ELEMENT_TYPES.PARAGRAPH:
-      return el.content ? el.content.slice(0, 24) + "…" : "Paragraph";
-    case ELEMENT_TYPES.IMAGE:
-      return "Image";
-    case ELEMENT_TYPES.QR:
-      return "QR Code";
-    case ELEMENT_TYPES.SIGNATURE:
-      return "Signature";
-    case ELEMENT_TYPES.SHAPE:
-      return el.shape
-        ? el.shape.charAt(0).toUpperCase() + el.shape.slice(1)
-        : "Shape";
-    case ELEMENT_TYPES.LINE:
-      return "Line";
-    default:
-      return el.type || "Element";
+function getElementDetails(el) {
+  if (el.type === ELEMENT_TYPES.DYNAMIC_TEXT) {
+    const rawVar = String(el.variable || "").replace(/^\{\{|\}\}$/g, "").toLowerCase();
+    if (rawVar === "name") return { icon: "👤", title: "Participant Name", subtitle: el.variable };
+    if (rawVar === "event") return { icon: "🏆", title: "Event Name", subtitle: el.variable };
+    if (rawVar === "date") return { icon: "📅", title: "Event Date", subtitle: el.variable };
+    if (rawVar === "position") return { icon: "🎖️", title: "Position / Award", subtitle: el.variable };
+    if (rawVar === "rollno") return { icon: "🆔", title: "Roll Number", subtitle: el.variable };
+    if (rawVar.includes("id")) return { icon: "🏷️", title: "Certificate ID", subtitle: el.variable };
+    return { icon: "{}", title: rawVar.charAt(0).toUpperCase() + rawVar.slice(1), subtitle: el.variable };
   }
+
+  if (el.type === ELEMENT_TYPES.TEXT) {
+    const text = String(el.content || "").trim();
+    const lower = text.toLowerCase();
+    let icon = "📝";
+    let title = "Static Text";
+
+    if (lower.includes("college") || lower.includes("university") || lower.includes("institute")) {
+      icon = "🏫";
+      title = "College Name";
+    } else if (lower.includes("organizer") || lower.includes("organized") || lower.includes("club")) {
+      icon = "📢";
+      title = "Organizer";
+    } else if (lower.includes("department")) {
+      icon = "🎓";
+      title = "Department";
+    } else if (lower.includes("certificate") || lower.includes("participation") || lower.includes("merit")) {
+      icon = "📜";
+      title = "Certificate Title";
+    }
+
+    const sub = text.length > 28 ? text.slice(0, 26) + "…" : (text || "Custom Text");
+    return { icon, title, subtitle: sub };
+  }
+
+  if (el.type === ELEMENT_TYPES.PARAGRAPH) {
+    const text = String(el.content || "").trim();
+    const sub = text.length > 28 ? text.slice(0, 26) + "…" : (text || "Paragraph");
+    return { icon: "¶", title: "Paragraph", subtitle: sub };
+  }
+
+  if (el.type === ELEMENT_TYPES.QR) {
+    return { icon: "▣", title: "QR Code", subtitle: "Verification Link" };
+  }
+
+  if (el.type === ELEMENT_TYPES.IMAGE) {
+    return { icon: "⊞", title: "Image Asset", subtitle: "Logo / Graphic" };
+  }
+
+  if (el.type === ELEMENT_TYPES.SIGNATURE) {
+    return { icon: "✒", title: "Signature", subtitle: "Authority Sign-off" };
+  }
+
+  if (el.type === ELEMENT_TYPES.SHAPE) {
+    const shapeName = el.shape ? el.shape.charAt(0).toUpperCase() + el.shape.slice(1) : "Shape";
+    return { icon: "◻", title: shapeName, subtitle: "Vector Shape" };
+  }
+
+  if (el.type === ELEMENT_TYPES.LINE) {
+    return { icon: "─", title: "Decorative Line", subtitle: "Divider" };
+  }
+
+  return { icon: "·", title: el.type || "Element", subtitle: "" };
 }
 
 export default function LayersPanel({
@@ -42,6 +72,7 @@ export default function LayersPanel({
   selectedIds,
   onSelect,
   onToggleVisibility,
+  onToggleLock,
   onDelete,
   onReorder,
 }) {
@@ -76,7 +107,7 @@ export default function LayersPanel({
   return (
     <div className="cdes-layers-panel">
       <div className="cdes-layers-title">
-        Layers
+        Elements & Layers
         <span className="cdes-layers-count">{elements.length}</span>
       </div>
 
@@ -90,20 +121,18 @@ export default function LayersPanel({
         <div className="cdes-layers-list">
           {reversed.map((el, revIdx) => {
             const isSelected = selectedIds.includes(el.id);
-            const icon = TYPE_ICONS[el.type] || "·";
-            const label = getElementLabel(el);
+            const { icon, title, subtitle } = getElementDetails(el);
 
             return (
               <div
                 key={el.id}
-                className={`cdes-layer-item ${isSelected ? "selected" : ""} ${el.visible === false ? "hidden" : ""}`}
+                className={`cdes-layer-item ${isSelected ? "selected" : ""} ${el.visible === false ? "hidden" : ""} ${el.locked ? "locked" : ""}`}
                 draggable
                 onDragStart={(e) => handleDragStart(e, revIdx)}
                 onDrop={(e) => handleDrop(e, revIdx)}
                 onDragOver={handleDragOver}
                 onClick={(e) => {
                   if (e.ctrlKey || e.metaKey) {
-                    // Multi-select
                     onSelect(
                       isSelected
                         ? selectedIds.filter((id) => id !== el.id)
@@ -113,7 +142,7 @@ export default function LayersPanel({
                     onSelect([el.id]);
                   }
                 }}
-                title={`Click to select. Drag to reorder. ${el.type}`}
+                title={`Click to select · ${title}: ${subtitle}`}
               >
                 {/* Drag handle */}
                 <span className="cdes-layer-drag" title="Drag to reorder">⋮⋮</span>
@@ -121,11 +150,30 @@ export default function LayersPanel({
                 {/* Type icon */}
                 <span className="cdes-layer-icon">{icon}</span>
 
-                {/* Label */}
-                <span className="cdes-layer-label" title={label}>{label}</span>
+                {/* Info */}
+                <div className="cdes-layer-info">
+                  <div className="cdes-layer-name">{title}</div>
+                  {subtitle && <div className="cdes-layer-sub">{subtitle}</div>}
+                </div>
+
+                {/* Lock toggle */}
+                {onToggleLock && (
+                  <button
+                    type="button"
+                    className={`cdes-layer-lock-btn ${el.locked ? "locked" : ""}`}
+                    title={el.locked ? "Unlock element" : "Lock element"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleLock(el.id);
+                    }}
+                  >
+                    {el.locked ? "🔒" : "🔓"}
+                  </button>
+                )}
 
                 {/* Visibility toggle */}
                 <button
+                  type="button"
                   className={`cdes-layer-vis-btn ${el.visible === false ? "hidden" : ""}`}
                   title={el.visible === false ? "Show element" : "Hide element"}
                   onClick={(e) => {
@@ -138,6 +186,7 @@ export default function LayersPanel({
 
                 {/* Delete */}
                 <button
+                  type="button"
                   className="cdes-layer-del-btn"
                   title="Delete element"
                   onClick={(e) => {
@@ -161,6 +210,7 @@ LayersPanel.propTypes = {
   selectedIds: PropTypes.arrayOf(PropTypes.string).isRequired,
   onSelect: PropTypes.func.isRequired,
   onToggleVisibility: PropTypes.func.isRequired,
+  onToggleLock: PropTypes.func,
   onDelete: PropTypes.func.isRequired,
   onReorder: PropTypes.func.isRequired,
 };
