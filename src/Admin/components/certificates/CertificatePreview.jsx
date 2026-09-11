@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import QRCode from "qrcode";
-import { resolveFieldValue, resolveParagraphContent } from "../../../utils/fieldMappingHelper";
+import { resolveFieldValue, resolveParagraphContent, parseTemplateText } from "../../../utils/fieldMappingHelper";
 import { ELEMENT_TYPES } from "./designer/elementSchema";
 
 function QrPreviewImage({ certId }) {
@@ -64,7 +64,14 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
   if (field.type === ELEMENT_TYPES.PARAGRAPH) {
     const fontSize = Math.max(6, (field.fontSize || 26) * scale);
     const lineHeight = field.lineHeight || 1.6;
-    const displayText = resolveParagraphContent(field.content || "", mapping, currentRow, options);
+    const runs = parseTemplateText(field.content || "", {
+      mapping,
+      row: currentRow,
+      options,
+      autoBoldVariables: field.autoBoldVariables !== false,
+      isPreview: true,
+      baseFontWeight: field.fontWeight || "400",
+    });
     const vertAlign = field.verticalAlign || "middle";
     return (
       <div
@@ -87,7 +94,18 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
           wordBreak: "break-word",
         }}
       >
-        {displayText}
+        <span>
+          {runs.map((run, rIdx) => (
+            <span
+              key={rIdx}
+              style={{
+                fontWeight: run.bold ? "700" : (field.fontWeight || "400"),
+              }}
+            >
+              {run.value}
+            </span>
+          ))}
+        </span>
       </div>
     );
   }
@@ -140,6 +158,14 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
   // ── STATIC TEXT ──
   if (field.type === ELEMENT_TYPES.TEXT) {
     const fontSize = Math.max(6, (field.fontSize || 32) * scale);
+    const runs = parseTemplateText(field.content || "", {
+      mapping,
+      row: currentRow,
+      options,
+      autoBoldVariables: field.autoBoldVariables !== false,
+      isPreview: true,
+      baseFontWeight: field.fontWeight || "400",
+    });
     return (
       <div
         key={field.id}
@@ -157,14 +183,33 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
           justifyContent: field.align === "left" ? "flex-start" : field.align === "right" ? "flex-end" : "center",
         }}
       >
-        {field.content || ""}
+        <span>
+          {runs.map((run, rIdx) => (
+            <span
+              key={rIdx}
+              style={{
+                fontWeight: run.bold ? "700" : (field.fontWeight || "400"),
+              }}
+            >
+              {run.value}
+            </span>
+          ))}
+        </span>
       </div>
     );
   }
 
   // ── DYNAMIC TEXT / legacy field ──
   const fontSize = Math.max(6, (field.fontSize || 32) * scale);
-  const resolvedText = resolveFieldValue(field, mapping, currentRow, options);
+  const rawVar = field.variable || field.defaultValue || "";
+  const runs = parseTemplateText(rawVar, {
+    mapping,
+    row: currentRow,
+    options,
+    autoBoldVariables: field.autoBoldVariables !== false,
+    isPreview: true,
+    baseFontWeight: field.fontWeight || "700",
+  });
   return (
     <div
       key={field.id}
@@ -182,7 +227,18 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
         justifyContent: field.align === "left" ? "flex-start" : field.align === "right" ? "flex-end" : "center",
       }}
     >
-      {resolvedText}
+      <span>
+        {runs.map((run, rIdx) => (
+          <span
+            key={rIdx}
+            style={{
+              fontWeight: run.bold ? "700" : (field.fontWeight || "600"),
+            }}
+          >
+            {run.value}
+          </span>
+        ))}
+      </span>
     </div>
   );
 }

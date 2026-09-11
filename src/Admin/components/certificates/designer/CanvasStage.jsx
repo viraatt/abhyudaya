@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import PropTypes from "prop-types";
 import QRCode from "qrcode";
 import { ELEMENT_TYPES } from "./elementSchema";
-import { resolveParagraphContent, resolveFieldValue } from "../../../../utils/fieldMappingHelper";
+import { resolveParagraphContent, resolveFieldValue, parseTemplateText } from "../../../../utils/fieldMappingHelper";
 
 // ── QR Code Preview Image ─────────────────────────────────────────────────────
 function QrPreview({ certId, width, height }) {
@@ -91,19 +91,15 @@ function RenderElement({
   // ── TEXT / DYNAMIC TEXT ─────────────────────────────────────────────────
   if (el.type === ELEMENT_TYPES.TEXT || el.type === ELEMENT_TYPES.DYNAMIC_TEXT) {
     const fontSize = Math.max(6, (el.fontSize || 32) * scale);
-    let displayText = "";
-
-    if (el.type === ELEMENT_TYPES.TEXT) {
-      displayText = el.content || "Text";
-    } else {
-      // Dynamic text
-      if (isPreview && previewRow && mapping) {
-        const syntheticField = { variable: el.variable, defaultValue: el.variable };
-        displayText = resolveFieldValue(syntheticField, mapping, previewRow, previewOptions) || el.variable;
-      } else {
-        displayText = el.variable || "{{variable}}";
-      }
-    }
+    const rawContent = el.type === ELEMENT_TYPES.TEXT ? (el.content || "Text") : (el.variable || "{{variable}}");
+    const runs = parseTemplateText(rawContent, {
+      mapping,
+      row: isPreview ? previewRow : null,
+      options: previewOptions,
+      autoBoldVariables: el.autoBoldVariables !== false,
+      isPreview,
+      baseFontWeight: el.fontWeight || (el.type === ELEMENT_TYPES.DYNAMIC_TEXT ? "700" : "400"),
+    });
 
     return (
       <div
@@ -130,7 +126,18 @@ function RenderElement({
         {!isSelected && !isPreview && el.type === ELEMENT_TYPES.DYNAMIC_TEXT && (
           <span className="cdes-element-type-tag">{el.type === ELEMENT_TYPES.DYNAMIC_TEXT ? "{}" : "T"}</span>
         )}
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayText}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {runs.map((run, rIdx) => (
+            <span
+              key={rIdx}
+              style={{
+                fontWeight: run.bold ? "700" : (el.fontWeight || "400"),
+              }}
+            >
+              {run.value}
+            </span>
+          ))}
+        </span>
         {isSelected && !el.locked && (
           <div className="cdes-resize-handle" onPointerDown={(e) => onResizePointerDown(e, el.id)} />
         )}
@@ -141,15 +148,20 @@ function RenderElement({
   // ── PARAGRAPH ─────────────────────────────────────────────────────────────
   if (el.type === ELEMENT_TYPES.PARAGRAPH) {
     const fontSize = Math.max(6, (el.fontSize || 26) * scale);
-    let displayText = el.content || "";
+    const rawContent = el.content || "";
+    const runs = parseTemplateText(rawContent, {
+      mapping,
+      row: isPreview ? previewRow : null,
+      options: previewOptions,
+      autoBoldVariables: el.autoBoldVariables !== false,
+      isPreview,
+      baseFontWeight: el.fontWeight || "400",
+    });
 
-    if (isPreview && previewRow && mapping) {
-      displayText = resolveParagraphContent(el.content || "", mapping, previewRow, previewOptions);
-    }
-
+    const fullResolvedText = runs.map((r) => r.value).join("");
     const lineHeight = el.lineHeight || 1.6;
     const lineHeightPx = fontSize * lineHeight;
-    const totalTextHeight = wrapText(displayText, width, fontSize, lineHeight).length * lineHeightPx;
+    const totalTextHeight = wrapText(fullResolvedText, width, fontSize, lineHeight).length * lineHeightPx;
     const overflowing = totalTextHeight > height;
 
     const vertAlign = el.verticalAlign || "middle";
@@ -182,7 +194,18 @@ function RenderElement({
         {!isSelected && !isPreview && (
           <span className="cdes-element-type-tag">¶</span>
         )}
-        <span>{displayText}</span>
+        <span>
+          {runs.map((run, rIdx) => (
+            <span
+              key={rIdx}
+              style={{
+                fontWeight: run.bold ? "700" : (el.fontWeight || "400"),
+              }}
+            >
+              {run.value}
+            </span>
+          ))}
+        </span>
         {overflowing && !isPreview && (
           <div className="cdes-overflow-warn" title="Text overflows the box">⚠ Overflow</div>
         )}
@@ -425,14 +448,6 @@ export default function CanvasStage({
     }
   };
 
-  // Separate: shape/line render behind text elements
-  const shapeElements = elements.filter((el) =>
-    el.type === ELEMENT_TYPES.SHAPE || el.type === ELEMENT_TYPES.LINE
-  );
-  const otherElements = elements.filter((el) =>
-    el.type !== ELEMENT_TYPES.SHAPE && el.type !== ELEMENT_TYPES.LINE
-  );
-
   return (
     <div className="cdes-canvas-wrap" ref={containerRef}>
       <div
@@ -450,26 +465,8 @@ export default function CanvasStage({
           style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none" }}
         />
 
-        {/* Shapes/Lines (behind other elements) */}
-        {shapeElements
-          .filter((el) => el.visible !== false)
-          .map((el) => (
-            <RenderElement
-              key={el.id}
-              el={el}
-              scale={scale}
-              isSelected={selectedIds.includes(el.id)}
-              isPreview={isPreview}
-              previewRow={previewRow}
-              mapping={mapping}
-              previewOptions={previewOptions}
-              onPointerDown={handlePointerDown}
-              onResizePointerDown={handleResizePointerDown}
-            />
-          ))}
-
-        {/* All other elements */}
-        {otherElements
+        {/* Elements rendered strictly by array order (layer order) */}
+        {elements
           .filter((el) => el.visible !== false)
           .map((el) => (
             <RenderElement

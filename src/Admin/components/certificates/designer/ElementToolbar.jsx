@@ -31,25 +31,39 @@ export default function ElementToolbar({
   customVariables = [],
   onAddElement,
 }) {
-  const [showVarPicker, setShowVarPicker] = useState(false);
+  const [staticText, setStaticText] = useState("");
+  const [showMoreVars, setShowMoreVars] = useState(false);
   const [showShapePicker, setShowShapePicker] = useState(false);
   const [showLinePicker, setShowLinePicker] = useState(false);
   const [customVar, setCustomVar] = useState("");
 
-  const allVariables = [
-    ...STANDARD_VARIABLES,
-    ...customVariables.map((v) => ({
-      variable: v.startsWith("{{") ? v : `{{${v}}}`,
-      label: v.replace(/^\{\{|\}\}$/g, ""),
-      group: "Custom",
-    })),
+  const quickVariables = [
+    { variable: "{{name}}", label: "Name" },
+    { variable: "{{event}}", label: "Event" },
+    { variable: "{{date}}", label: "Date" },
+    { variable: "{{position}}", label: "Position" },
+    { variable: "{{rollNo}}", label: "Roll No" },
+    { variable: "{{certificateId}}", label: "Cert ID" },
+    { variable: "{{qrCode}}", label: "QR Code", isQr: true },
   ];
+
+  const customVarList = customVariables.map((v) => ({
+    variable: v.startsWith("{{") ? v : `{{${v}}}`,
+    label: v.replace(/^\{\{|\}\}$/g, ""),
+  }));
 
   const add = (el) => {
     onAddElement(el);
-    setShowVarPicker(false);
+    setShowMoreVars(false);
     setShowShapePicker(false);
     setShowLinePicker(false);
+  };
+
+  const handleAddStaticText = (e) => {
+    if (e) e.preventDefault();
+    const textToAdd = staticText.trim() || "Custom Text";
+    add(createTextElement(canvasWidth, canvasHeight, elementCount, textToAdd));
+    setStaticText("");
   };
 
   const handleAddCustomVar = (e) => {
@@ -63,82 +77,80 @@ export default function ElementToolbar({
 
   return (
     <div className="cdes-toolbar">
+      {/* ── SECTION 1: ADD ELEMENT (QUICK VARIABLES & QR) ── */}
       <div className="cdes-toolbar-title">Add Element</div>
+      <div className="cdes-quick-vars-grid">
+        {quickVariables.map((item) => (
+          <button
+            key={item.variable}
+            type="button"
+            className="cdes-quick-chip"
+            onClick={() => {
+              if (item.isQr) {
+                add(createQrElement(canvasWidth, canvasHeight));
+              } else {
+                add(createDynamicTextElement(item.variable, canvasWidth, canvasHeight, elementCount));
+              }
+            }}
+            title={`Add ${item.label} (${item.variable})`}
+          >
+            <span className="cdes-quick-chip-code">{item.variable}</span>
+          </button>
+        ))}
 
-      {/* Static Text */}
-      <button
-        className="cdes-tool-btn"
-        title="Add a static text element"
-        onClick={() => add(createTextElement(canvasWidth, canvasHeight, elementCount))}
-      >
-        <span className="cdes-tool-icon">T</span>
-        <span className="cdes-tool-label">Text</span>
-      </button>
-
-      {/* Dynamic Text / Variable */}
-      <div className="cdes-tool-group">
-        <button
-          className={`cdes-tool-btn ${showVarPicker ? "active" : ""}`}
-          title="Add a dynamic text field with a variable"
-          onClick={() => {
-            setShowVarPicker(!showVarPicker);
-            setShowShapePicker(false);
-            setShowLinePicker(false);
-          }}
-        >
-          <span className="cdes-tool-icon">{"{ }"}</span>
-          <span className="cdes-tool-label">Dynamic Text</span>
-          <span className="cdes-tool-chevron">{showVarPicker ? "▲" : "▼"}</span>
-        </button>
-
-        {showVarPicker && (
-          <div className="cdes-var-picker">
-            <div className="cdes-var-picker-title">Available Variables</div>
-
-            {allVariables.filter(v => v.group === "Standard").map((v) => (
-              <button
-                key={v.variable}
-                className="cdes-var-chip"
-                title={v.label}
-                onClick={() => add(createDynamicTextElement(v.variable, canvasWidth, canvasHeight, elementCount))}
-              >
-                <code className="cdes-var-code">{v.variable}</code>
-                <span className="cdes-var-name">{v.label}</span>
-              </button>
-            ))}
-
-            {allVariables.filter(v => v.group === "Custom").length > 0 && (
-              <>
-                <div className="cdes-var-picker-title" style={{ marginTop: "8px" }}>Custom Variables</div>
-                {allVariables.filter(v => v.group === "Custom").map((v) => (
-                  <button
-                    key={v.variable}
-                    className="cdes-var-chip"
-                    title={v.label}
-                    onClick={() => add(createDynamicTextElement(v.variable, canvasWidth, canvasHeight, elementCount))}
-                  >
-                    <code className="cdes-var-code">{v.variable}</code>
-                    <span className="cdes-var-name">{v.label}</span>
-                  </button>
-                ))}
-              </>
-            )}
-
-            <form className="cdes-custom-var-form" onSubmit={handleAddCustomVar}>
-              <input
-                className="cdes-custom-var-input"
-                type="text"
-                placeholder="e.g. college, department"
-                value={customVar}
-                onChange={(e) => setCustomVar(e.target.value)}
-              />
-              <button type="submit" className="cdes-custom-var-add" disabled={!customVar.trim()}>
-                + Add
-              </button>
-            </form>
-          </div>
-        )}
+        {/* Display custom CSV columns if available */}
+        {customVarList.map((item) => (
+          <button
+            key={item.variable}
+            type="button"
+            className="cdes-quick-chip cdes-quick-chip--custom"
+            onClick={() => add(createDynamicTextElement(item.variable, canvasWidth, canvasHeight, elementCount))}
+            title={`Add ${item.label} (${item.variable}) from CSV`}
+          >
+            <span className="cdes-quick-chip-code">{item.variable}</span>
+          </button>
+        ))}
       </div>
+
+      {/* Dynamic Variable Input Form */}
+      <form className="cdes-custom-var-form" onSubmit={handleAddCustomVar} style={{ marginTop: "4px" }}>
+        <input
+          className="cdes-custom-var-input"
+          type="text"
+          placeholder="New variable (e.g. college)..."
+          value={customVar}
+          onChange={(e) => setCustomVar(e.target.value)}
+        />
+        <button type="submit" className="cdes-custom-var-add" disabled={!customVar.trim()} title="Add custom variable">
+          +
+        </button>
+      </form>
+
+      <div className="cdes-toolbar-divider" />
+
+      {/* ── SECTION 2: ADD STATIC TEXT ── */}
+      <div className="cdes-toolbar-title">Add Static Text</div>
+      <form className="cdes-static-text-form" onSubmit={handleAddStaticText}>
+        <input
+          type="text"
+          className="cdes-static-text-input"
+          placeholder="Enter custom text..."
+          value={staticText}
+          onChange={(e) => setStaticText(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="cdes-static-text-add-btn"
+          title="Add this text to canvas"
+        >
+          + Add Text
+        </button>
+      </form>
+
+      <div className="cdes-toolbar-divider" />
+
+      {/* ── SECTION 3: OTHER ELEMENTS ── */}
+      <div className="cdes-toolbar-title">Other Elements</div>
 
       {/* Paragraph */}
       <button
