@@ -2,14 +2,15 @@
  * High-fidelity PDF Rendering and Generation Engine for Bulk Certificate Generator.
  * Built on pdf-lib and jszip.
  *
- * Preserves exact original certificate dimensions, text coordinates, font styles,
- * alignments, and generates collision-safe filenames and standardized Certificate IDs.
+ * v2: Supports full element schema — text, dynamicText, paragraph (with word-wrap),
+ * image, signature, qr, shape, and line elements.
+ * Backward-compatible with old fields[] format.
  */
 
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import JSZip from "jszip";
 import QRCode from "qrcode";
-import { resolveFieldValue } from "./fieldMappingHelper.js";
+import { resolveFieldValue, resolveParagraphContent } from "./fieldMappingHelper.js";
 
 /**
  * Normalizes unicode quotes, dashes, and whitespace to standard characters.
@@ -291,14 +292,19 @@ export async function generateCertificatePdf({
     return fontCache.get(fontKey);
   };
 
-  // 6. Draw each field (text or QR code) onto the PDF page
+  // 6. Draw each element onto the PDF page
   for (const field of fields) {
+    // Skip hidden elements
+    if (field.visible === false) continue;
+
     const fieldWidth = Number(field.width) || originalWidth;
     const fieldHeight = Number(field.height) || 60;
     const fieldX = Number(field.x) || 0;
     const fieldY = Number(field.y) || 0;
+    const fieldOpacity = field.opacity !== undefined ? Number(field.opacity) : 1;
+    const fieldRotation = Number(field.rotation) || 0;
 
-    // Check if this is a QR code field
+    // ── QR CODE element ──────────────────────────────────────────────────────
     const isQrField = field.isQr || field.variable === "{{qrCode}}" || field.type === "qr";
     if (isQrField) {
       const baseUrl =
@@ -314,11 +320,14 @@ export async function generateCertificatePdf({
         const base64Data = qrDataUrl.split(",")[1];
         const qrPngBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
         const embeddedQr = await pdfDoc.embedPng(qrPngBytes);
+        const pdfY = originalHeight - fieldY - fieldHeight;
         page.drawImage(embeddedQr, {
           x: fieldX,
-          y: originalHeight - fieldY - fieldHeight,
+          y: pdfY,
           width: fieldWidth,
           height: fieldHeight,
+          opacity: fieldOpacity,
+          rotate: fieldRotation ? degrees(fieldRotation) : undefined,
         });
       } catch (err) {
         console.warn("Failed to generate and embed QR code:", err);
@@ -326,52 +335,281 @@ export async function generateCertificatePdf({
       continue;
     }
 
-    const rawValue = resolveFieldValue(field, mapping, row, {
-      ...options,
-      certificateId: certId,
-    });
+    // ── IMAGE / SIGNATURE element ─────────────────────────────────────────────
+    if (field.type === "image" || field.type === "signature") {
+      const imgSrc = field.src || field.storageUrl;
+      if (!imgSrc) continue;
 
-    if (!rawValue) continue;
+      try {
+        let imgBytes = null;
 
-    const textValue = safeWinAnsiText(rawValue);
-    if (!textValue) continue;
+        if (imgSrc.startsWith("blob:") || imgSrc.startsWith("data:")) {
+          // Local blob or data URL — fetch as ArrayBuffer
+          const resp = await fetch(imgSrc);
+          if (resp.ok) {
+            imgBytes = await resp.arrayBuffer();
+          }
+        } else if (imgSrc.startsWith("http")) {
+          // Remote URL (Firebase Storage)
+          const resp = await fetch(imgSrc, { mode: "cors" });
+          if (resp.ok) imgBytes = await resp.arrayBuffer();
+        }
 
-    const font = await getFont(field.fontFamily, field.fontWeight);
-    let fontSize = Number(field.fontSize) || 32;
-    const textColor = parseColorToRgb(field.color || "#1e293b");
+        if (!imgBytes) continue;
 
-    // Auto-scale font size down if text exceeds field width (prevents text overflow)
-    let textWidth = font.widthOfTextAtSize(textValue, fontSize);
-    if (fieldWidth > 0 && textWidth > fieldWidth) {
-      const scaleRatio = (fieldWidth - 4) / textWidth;
-      fontSize = Math.max(8, Math.floor(fontSize * scaleRatio));
-      textWidth = font.widthOfTextAtSize(textValue, fontSize);
+        let embeddedImg = null;
+        try {
+          embeddedImg = await pdfDoc.embedPng(imgBytes);
+        } catch {
+          try {
+            embeddedImg = await pdfDoc.embedJpg(imgBytes);
+          } catch (imgErr) {
+            console.warn("Could not embed element image:", imgErr);
+          }
+        }
+
+        if (embeddedImg) {
+          const pdfY = originalHeight - fieldY - fieldHeight;
+          page.drawImage(embeddedImg, {
+            x: fieldX,
+            y: pdfY,
+            width: fieldWidth,
+            height: fieldHeight,
+            opacity: fieldOpacity,
+            rotate: fieldRotation ? degrees(fieldRotation) : undefined,
+          });
+        }
+      } catch (imgErr) {
+        console.warn("Failed to embed image/signature element:", imgErr);
+      }
+      continue;
     }
 
-    // Horizontal Alignment calculation
-    let drawX = fieldX;
-    const align = field.align || "center";
-    if (align === "center") {
-      drawX = fieldX + Math.max(0, (fieldWidth - textWidth) / 2);
-    } else if (align === "right") {
-      drawX = fieldX + Math.max(0, fieldWidth - textWidth);
+    // ── SHAPE element ─────────────────────────────────────────────────────────
+    if (field.type === "shape") {
+      const fillColor = field.fillColor && field.fillColor !== "transparent"
+        ? parseColorToRgb(field.fillColor)
+        : null;
+      const borderColor = field.borderColor ? parseColorToRgb(field.borderColor) : null;
+      const borderWidth = Number(field.borderWidth) || 0;
+      const pdfY = originalHeight - fieldY - fieldHeight;
+
+      if (field.shape === "circle") {
+        const cx = fieldX + fieldWidth / 2;
+        const cy = pdfY + fieldHeight / 2;
+        const rx = fieldWidth / 2;
+        const ry = fieldHeight / 2;
+        // pdf-lib drawEllipse
+        try {
+          page.drawEllipse({
+            x: cx, y: cy,
+            xScale: rx, yScale: ry,
+            color: fillColor || undefined,
+            borderColor: borderColor || undefined,
+            borderWidth: borderWidth || undefined,
+            opacity: fieldOpacity,
+          });
+        } catch {
+          // Fallback for older pdf-lib
+          page.drawCircle({
+            x: cx, y: cy,
+            size: Math.min(rx, ry),
+            color: fillColor || undefined,
+            borderColor: borderColor || undefined,
+            borderWidth: borderWidth || undefined,
+            opacity: fieldOpacity,
+          });
+        }
+      } else {
+        // rectangle / rounded rectangle
+        page.drawRectangle({
+          x: fieldX, y: pdfY,
+          width: fieldWidth, height: fieldHeight,
+          color: fillColor || undefined,
+          borderColor: borderColor || undefined,
+          borderWidth: borderWidth || undefined,
+          borderLineCap: 0,
+          opacity: fieldOpacity,
+          rotate: fieldRotation ? degrees(fieldRotation) : undefined,
+        });
+      }
+      continue;
     }
 
-    // Vertical Positioning conversion:
-    // Web coordinates: (0, 0) top-left, Y goes DOWN.
-    // PDF coordinates: (0, 0) bottom-left, Y goes UP.
-    // Baseline approximation: place text in vertical middle of field box
-    const verticalCenterOffset = Math.max(0, (fieldHeight - fontSize) / 2);
-    const drawY = originalHeight - fieldY - fontSize - verticalCenterOffset;
+    // ── LINE element ──────────────────────────────────────────────────────────
+    if (field.type === "line") {
+      const lineColor = parseColorToRgb(field.color || "#c0a060");
+      const lineThickness = Number(field.thickness) || 3;
+      const pdfY = originalHeight - fieldY - lineThickness / 2;
+      page.drawLine({
+        start: { x: fieldX, y: pdfY },
+        end: { x: fieldX + fieldWidth, y: pdfY },
+        thickness: lineThickness,
+        color: lineColor,
+        opacity: fieldOpacity,
+      });
+      continue;
+    }
 
-    page.drawText(textValue, {
-      x: drawX,
-      y: drawY,
-      size: fontSize,
-      font,
-      color: textColor,
-    });
-  }
+    // ── PARAGRAPH element ─────────────────────────────────────────────────────
+    if (field.type === "paragraph") {
+      const rawContent = field.content || "";
+      const resolvedContent = resolveParagraphContent(rawContent, mapping, row, {
+        ...options,
+        certificateId: certId,
+      });
+      if (!resolvedContent) continue;
+
+      const sanitized = safeWinAnsiText(resolvedContent);
+      if (!sanitized) continue;
+
+      const font = await getFont(field.fontFamily, field.fontWeight);
+      const fontSize = Number(field.fontSize) || 26;
+      const lineHeight = Number(field.lineHeight) || 1.6;
+      const lineHeightPx = fontSize * lineHeight;
+      const textColor = parseColorToRgb(field.color || "#334155");
+      const align = field.align || "center";
+
+      // Word wrap: split content into lines that fit within fieldWidth
+      const words = sanitized.split(" ");
+      const lines = [];
+      let currentLine = "";
+
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+        if (testWidth > fieldWidth && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+
+      // Draw each line
+      const totalTextHeight = lines.length * lineHeightPx;
+      const vertAlign = field.verticalAlign || "middle";
+      let startY;
+      if (vertAlign === "top") {
+        startY = originalHeight - fieldY - fontSize;
+      } else if (vertAlign === "bottom") {
+        startY = originalHeight - fieldY - fieldHeight + (fieldHeight - totalTextHeight) + (lineHeightPx - fontSize);
+      } else {
+        // middle
+        startY = originalHeight - fieldY - (fieldHeight - totalTextHeight) / 2 - fontSize;
+      }
+
+      for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
+        const lineWidth = font.widthOfTextAtSize(line, fontSize);
+        const lineY = startY - li * lineHeightPx;
+
+        // Clip if outside field
+        if (lineY < originalHeight - fieldY - fieldHeight) break;
+        if (lineY > originalHeight - fieldY) continue;
+
+        let drawX = fieldX;
+        if (align === "center") {
+          drawX = fieldX + Math.max(0, (fieldWidth - lineWidth) / 2);
+        } else if (align === "right") {
+          drawX = fieldX + Math.max(0, fieldWidth - lineWidth);
+        }
+
+        page.drawText(safeWinAnsiText(line), {
+          x: drawX,
+          y: lineY,
+          size: fontSize,
+          font,
+          color: textColor,
+          opacity: fieldOpacity,
+        });
+      }
+      continue;
+    }
+
+    // ── TEXT element (static) ─────────────────────────────────────────────────
+    if (field.type === "text") {
+      const content = field.content || "";
+      if (!content) continue;
+      const textValue = safeWinAnsiText(content);
+      if (!textValue) continue;
+
+      const font = await getFont(field.fontFamily, field.fontWeight);
+      let fontSize = Number(field.fontSize) || 32;
+      const textColor = parseColorToRgb(field.color || "#1e293b");
+      const align = field.align || "center";
+
+      let textWidth = font.widthOfTextAtSize(textValue, fontSize);
+      if (fieldWidth > 0 && textWidth > fieldWidth) {
+        fontSize = Math.max(8, Math.floor(fontSize * (fieldWidth / textWidth)));
+        textWidth = font.widthOfTextAtSize(textValue, fontSize);
+      }
+
+      let drawX = fieldX;
+      if (align === "center") drawX = fieldX + Math.max(0, (fieldWidth - textWidth) / 2);
+      else if (align === "right") drawX = fieldX + Math.max(0, fieldWidth - textWidth);
+
+      const verticalCenterOffset = Math.max(0, (fieldHeight - fontSize) / 2);
+      const drawY = originalHeight - fieldY - fontSize - verticalCenterOffset;
+
+      page.drawText(textValue, {
+        x: drawX,
+        y: drawY,
+        size: fontSize,
+        font,
+        color: textColor,
+        opacity: fieldOpacity,
+        rotate: fieldRotation ? degrees(fieldRotation) : undefined,
+      });
+      continue;
+    }
+
+    // ── DYNAMIC TEXT / Legacy field (backward compat) ─────────────────────────
+    {
+      const rawValue = resolveFieldValue(field, mapping, row, {
+        ...options,
+        certificateId: certId,
+      });
+
+      if (!rawValue) continue;
+
+      const textValue = safeWinAnsiText(rawValue);
+      if (!textValue) continue;
+
+      const font = await getFont(field.fontFamily, field.fontWeight);
+      let fontSize = Number(field.fontSize) || 32;
+      const textColor = parseColorToRgb(field.color || "#1e293b");
+
+      let textWidth = font.widthOfTextAtSize(textValue, fontSize);
+      if (fieldWidth > 0 && textWidth > fieldWidth) {
+        const scaleRatio = (fieldWidth - 4) / textWidth;
+        fontSize = Math.max(8, Math.floor(fontSize * scaleRatio));
+        textWidth = font.widthOfTextAtSize(textValue, fontSize);
+      }
+
+      let drawX = fieldX;
+      const align = field.align || "center";
+      if (align === "center") {
+        drawX = fieldX + Math.max(0, (fieldWidth - textWidth) / 2);
+      } else if (align === "right") {
+        drawX = fieldX + Math.max(0, fieldWidth - textWidth);
+      }
+
+      const verticalCenterOffset = Math.max(0, (fieldHeight - fontSize) / 2);
+      const drawY = originalHeight - fieldY - fontSize - verticalCenterOffset;
+
+      page.drawText(textValue, {
+        x: drawX,
+        y: drawY,
+        size: fontSize,
+        font,
+        color: textColor,
+        opacity: fieldOpacity,
+        rotate: fieldRotation ? degrees(fieldRotation) : undefined,
+      });
+    }
+  } // end for (const field of fields)
 
   // 7. Save PDF bytes
   const pdfBytes = await pdfDoc.save();

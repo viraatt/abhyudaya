@@ -3,12 +3,17 @@ import { useSearchParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import CertificateStepper from "./CertificateStepper";
 import TemplateUploader from "./TemplateUploader";
-import TemplateEditor from "./TemplateEditor";
+import CertificateDesigner from "./CertificateDesigner";
 import DataUploader from "./DataUploader";
 import DataMapper from "./DataMapper";
 import CertificatePreview from "./CertificatePreview";
 import GenerationProgress from "./GenerationProgress";
-import { autoMapFields } from "../../../utils/fieldMappingHelper";
+import {
+  normalizeTemplateElements,
+  elementsToLegacyFields,
+  SCHEMA_VERSION,
+} from "./designer/elementSchema";
+import { autoMapFields, autoMapElements } from "../../../utils/fieldMappingHelper";
 import { loadRemoteTemplate, revokeTemplatePreview } from "../../../utils/pdfTemplateHelper";
 import {
   saveCertificateTemplate,
@@ -16,90 +21,6 @@ import {
 } from "../../../Firebase/certificateTemplateService";
 import { getEventsPage } from "../../../Firebase/eventService";
 import "./CertificateGenerator.css";
-
-// Initial default fields if admin doesn't configure from scratch
-const DEFAULT_INITIAL_FIELDS = [
-  {
-    id: "field_name",
-    label: "Participant Name",
-    variable: "{{name}}",
-    x: 300,
-    y: 420,
-    width: 1320,
-    height: 100,
-    fontFamily: "'Cinzel', serif",
-    fontSize: 48,
-    fontWeight: "700",
-    color: "#1e293b",
-    align: "center",
-    required: true,
-    defaultValue: "Ishan Shukla",
-  },
-  {
-    id: "field_event",
-    label: "Event Name",
-    variable: "{{event}}",
-    x: 400,
-    y: 560,
-    width: 1120,
-    height: 70,
-    fontFamily: "'Montserrat', sans-serif",
-    fontSize: 32,
-    fontWeight: "600",
-    color: "#334155",
-    align: "center",
-    required: true,
-    defaultValue: "Abhyudaya 2026",
-  },
-  {
-    id: "field_position",
-    label: "Position / Award",
-    variable: "{{position}}",
-    x: 500,
-    y: 650,
-    width: 920,
-    height: 60,
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 26,
-    fontWeight: "500",
-    color: "#475569",
-    align: "center",
-    required: true,
-    defaultValue: "Winner",
-  },
-  {
-    id: "field_date",
-    label: "Event Date",
-    variable: "{{date}}",
-    x: 300,
-    y: 800,
-    width: 400,
-    height: 50,
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 22,
-    fontWeight: "400",
-    color: "#64748b",
-    align: "center",
-    required: true,
-    defaultValue: "09-09-2026",
-  },
-  {
-    id: "field_rollno",
-    label: "Roll Number",
-    variable: "{{rollNo}}",
-    x: 1220,
-    y: 800,
-    width: 400,
-    height: 50,
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 22,
-    fontWeight: "500",
-    color: "#64748b",
-    align: "center",
-    required: true,
-    defaultValue: "2301234567",
-  },
-];
 
 export default function CertificateWizard({ onExit }) {
   const [searchParams] = useSearchParams();
@@ -109,17 +30,17 @@ export default function CertificateWizard({ onExit }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
 
-  // Step 1: Template
+  // Step 1: Template background
   const [template, setTemplate] = useState(null);
 
-  // Step 2: Dynamic Fields
-  const [fields, setFields] = useState(DEFAULT_INITIAL_FIELDS);
+  // Step 2: Elements (new v2 schema)
+  const [elements, setElements] = useState([]);
 
-  // Step 3: Participant Dataset & Mapping
+  // Step 3: Participant data & mapping
   const [dataset, setDataset] = useState(null);
   const [mapping, setMapping] = useState({});
 
-  // Meta information & associated event
+  // Meta information
   const [metaInfo, setMetaInfo] = useState({
     templateId: "",
     title: "Abhyudaya Certificate Batch",
@@ -131,20 +52,16 @@ export default function CertificateWizard({ onExit }) {
   const [eventsList, setEventsList] = useState([]);
   const [saveStatus, setSaveStatus] = useState("");
 
-  // Load available events for dropdown association
+  // Load available events
   useEffect(() => {
     let isMounted = true;
     getEventsPage({ pageSize: 50, onlyPublished: false })
-      .then((res) => {
-        if (isMounted) setEventsList(res.events || []);
-      })
+      .then((res) => { if (isMounted) setEventsList(res.events || []); })
       .catch((err) => console.warn("Could not load events list:", err));
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  // Preload template if templateId provided in URL
+  // Preload template if templateId in URL
   useEffect(() => {
     if (!templateIdParam) return;
     let isMounted = true;
@@ -155,7 +72,6 @@ export default function CertificateWizard({ onExit }) {
         let previewUrl = tpl.templateUrl;
         let blob = null;
 
-        // Convert remote template URL to local blob URL to avoid CORS/auth issues with <img>
         if (tpl.templateUrl) {
           try {
             const loaded = await loadRemoteTemplate(tpl.templateUrl, {
@@ -170,7 +86,7 @@ export default function CertificateWizard({ onExit }) {
           }
         }
 
-        setTemplate({
+        const tplObj = {
           id: tpl.id,
           previewUrl,
           blob,
@@ -178,11 +94,17 @@ export default function CertificateWizard({ onExit }) {
           storagePath: tpl.storagePath || "",
           originalWidth: Number(tpl.originalWidth) || 1920,
           originalHeight: Number(tpl.originalHeight) || 1080,
-        });
+        };
 
-        if (Array.isArray(tpl.fields) && tpl.fields.length > 0) {
-          setFields(tpl.fields);
-        }
+        setTemplate(tplObj);
+
+        // Normalize elements — handles both v2 (elements[]) and old (fields[])
+        const normalizedElements = normalizeTemplateElements(
+          tpl,
+          Number(tpl.originalWidth) || 1920,
+          Number(tpl.originalHeight) || 1080
+        );
+        setElements(normalizedElements);
 
         setMetaInfo((prev) => ({
           ...prev,
@@ -197,13 +119,9 @@ export default function CertificateWizard({ onExit }) {
         setMaxUnlockedStep((prev) => Math.max(prev, targetStep));
         setCurrentStep(targetStep);
       })
-      .catch((err) => {
-        console.error("Error loading template from URL parameter:", err);
-      });
+      .catch((err) => console.error("Error loading template from URL parameter:", err));
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [templateIdParam, stepParam]);
 
   // Cleanup blob URL on unmount
@@ -215,34 +133,29 @@ export default function CertificateWizard({ onExit }) {
     };
   }, [template?.previewUrl]);
 
-  // Step transitions
   const unlockStep = (step) => {
     setMaxUnlockedStep((prev) => Math.max(prev, step));
     setCurrentStep(step);
   };
 
-  // Step 1 handlers
+  // Step 1 handler
   const handleTemplateLoaded = (templateData) => {
-    // Revoke previous blob URL if exists
     if (template?.previewUrl && template.previewUrl.startsWith("blob:") && template.previewUrl !== templateData?.previewUrl) {
       revokeTemplatePreview(template.previewUrl);
     }
     setTemplate(templateData);
-    if (templateData.originalWidth) {
-      const origW = templateData.originalWidth;
-      setFields((prev) =>
-        prev.map((f) => ({
-          ...f,
-          x: Math.round((origW - f.width) / 2),
-        }))
-      );
-    }
+    // Reset elements when a new template is loaded
+    setElements([]);
   };
 
-  // Step 3: When spreadsheet data is parsed
+  // Step 3: When CSV/Excel data is parsed
   const handleDataParsed = (parsedData) => {
     setDataset(parsedData);
-    const initialMapping = autoMapFields(fields, parsedData.columns);
+    // Auto-map using elements (v2) or fall back to legacy fields
+    const legacyFields = elementsToLegacyFields(elements);
+    const initialMapping = legacyFields.length > 0
+      ? autoMapFields(legacyFields, parsedData.columns)
+      : autoMapElements(elements, parsedData.columns);
     setMapping(initialMapping);
   };
 
@@ -251,22 +164,29 @@ export default function CertificateWizard({ onExit }) {
     setMapping({});
   };
 
-  // Save template configuration to Cloud Firestore
+  // Save template to Firestore
   const handleSaveTemplate = async () => {
     if (!template) return;
     setSaveStatus("saving");
     try {
+      // Convert elements to legacy fields for backward compat with old consumers
+      const legacyFields = elementsToLegacyFields(elements);
+
       const savedId = await saveCertificateTemplate({
         id: metaInfo.templateId || undefined,
         title: metaInfo.title || "Certificate Template",
         eventName: metaInfo.eventName,
         eventDate: metaInfo.eventDate,
         certificateType: metaInfo.certificateType,
-        templateUrl: template.previewUrl || "",
+        templateUrl: template.storageUrl || template.previewUrl || "",
         storagePath: template.storagePath || "",
         originalWidth: template.originalWidth,
         originalHeight: template.originalHeight,
-        fields,
+        // v2: save elements array
+        elements,
+        version: SCHEMA_VERSION,
+        // Backward compat: also save legacy fields[]
+        fields: legacyFields,
         status: "active",
       });
 
@@ -279,6 +199,9 @@ export default function CertificateWizard({ onExit }) {
       setSaveStatus("error");
     }
   };
+
+  // Derive legacy fields for DataMapper, CertificatePreview, GenerationProgress
+  const legacyFields = elementsToLegacyFields(elements);
 
   return (
     <div className="cert-wizard-container">
@@ -297,16 +220,6 @@ export default function CertificateWizard({ onExit }) {
           <span className="cert-meta-tag">
             {metaInfo.eventName || "New Batch"}
           </span>
-          {saveStatus === "saving" && (
-            <span style={{ fontSize: "12px", color: "var(--color-primary-400, #818cf8)", marginLeft: "10px" }}>
-              ⏳ Saving template...
-            </span>
-          )}
-          {saveStatus === "saved" && (
-            <span style={{ fontSize: "12px", color: "#10b981", marginLeft: "10px" }}>
-              ✓ Template saved to Cloud
-            </span>
-          )}
         </div>
 
         <div className="cert-topbar-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -340,23 +253,21 @@ export default function CertificateWizard({ onExit }) {
             type="text"
             className="cert-meta-input"
             value={metaInfo.title}
-            onChange={(e) =>
-              setMetaInfo((prev) => ({ ...prev, title: e.target.value }))
-            }
+            onChange={(e) => setMetaInfo((prev) => ({ ...prev, title: e.target.value }))}
             placeholder="Batch title..."
             title="Certificate Batch Title"
           />
         </div>
       </div>
 
-      {/* Stepper Navigation */}
+      {/* Stepper */}
       <CertificateStepper
         currentStep={currentStep}
         onStepClick={(s) => setCurrentStep(s)}
         maxUnlockedStep={maxUnlockedStep}
       />
 
-      {/* Wizard Step Content */}
+      {/* Step Content */}
       <div className="cert-wizard-content">
         {/* Step 1: Upload Template */}
         {currentStep === 1 && (
@@ -367,28 +278,30 @@ export default function CertificateWizard({ onExit }) {
           />
         )}
 
-        {/* Step 2: Design Text Fields */}
+        {/* Step 2: Certificate Designer (NEW) */}
         {currentStep === 2 && template && (
-          <TemplateEditor
+          <CertificateDesigner
             template={template}
-            fields={fields}
-            onFieldsChange={setFields}
+            elements={elements}
+            onElementsChange={setElements}
             onBack={() => setCurrentStep(1)}
             onSaveTemplate={handleSaveTemplate}
+            saveStatus={saveStatus}
+            dataset={dataset}
+            previewDataset={dataset}
+            previewMapping={mapping}
             onContinue={() => {
-              // If dataset already exists, refresh auto-mapping for any newly added fields
+              // Refresh auto-mapping for any newly added elements
               if (dataset?.columns) {
-                setMapping((prev) => ({
-                  ...autoMapFields(fields, dataset.columns),
-                  ...prev,
-                }));
+                const freshMapping = autoMapElements(elements, dataset.columns);
+                setMapping((prev) => ({ ...freshMapping, ...prev }));
               }
               unlockStep(3);
             }}
           />
         )}
 
-        {/* Step 3: Upload Participant Data & Automatic Mapping */}
+        {/* Step 3: Upload Participant Data */}
         {currentStep === 3 && (
           <div className="cert-step-3-wrapper">
             <DataUploader
@@ -399,7 +312,7 @@ export default function CertificateWizard({ onExit }) {
 
             {dataset && (
               <DataMapper
-                fields={fields}
+                fields={legacyFields}
                 dataset={dataset}
                 mapping={mapping}
                 onMappingChange={setMapping}
@@ -412,11 +325,12 @@ export default function CertificateWizard({ onExit }) {
           </div>
         )}
 
-        {/* Step 4: Live Certificate Preview */}
+        {/* Step 4: Live Preview */}
         {currentStep === 4 && template && dataset && (
           <CertificatePreview
             template={template}
-            fields={fields}
+            fields={legacyFields}
+            elements={elements}
             dataset={dataset}
             mapping={mapping}
             onBack={() => setCurrentStep(3)}
@@ -426,11 +340,12 @@ export default function CertificateWizard({ onExit }) {
           />
         )}
 
-        {/* Step 5: Real Certificate Generation & Download */}
+        {/* Step 5: Generate & Download */}
         {currentStep === 5 && template && dataset && (
           <GenerationProgress
             template={template}
-            fields={fields}
+            fields={legacyFields}
+            elements={elements}
             dataset={dataset}
             mapping={mapping}
             metaInfo={metaInfo}
