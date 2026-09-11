@@ -23,7 +23,6 @@ import CanvasStage from "./designer/CanvasStage";
 import {
   generateElementId,
   extractVariablesFromElements,
-  ELEMENT_TYPES,
 } from "./designer/elementSchema";
 import "./CertificateDesigner.css";
 
@@ -49,6 +48,8 @@ export default function CertificateDesigner({
   const historyRef = useRef([elements]);
   const historyIndexRef = useRef(0);
   const skipHistoryRef = useRef(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   const originalWidth = Number(template?.originalWidth) || 1920;
   const originalHeight = Number(template?.originalHeight) || 1080;
@@ -75,24 +76,33 @@ export default function CertificateDesigner({
     next.push(elements);
     if (next.length > MAX_UNDO_HISTORY) next.shift();
     historyRef.current = next;
-    historyIndexRef.current = next.length - 1;
+    const newIdx = next.length - 1;
+    historyIndexRef.current = newIdx;
+    setCanUndo(newIdx > 0);
+    setCanRedo(false);
   }, [elements]);
 
   const undo = useCallback(() => {
     const idx = historyIndexRef.current;
     if (idx <= 0) return;
-    historyIndexRef.current = idx - 1;
+    const newIdx = idx - 1;
+    historyIndexRef.current = newIdx;
     skipHistoryRef.current = true;
-    onElementsChange(historyRef.current[idx - 1]);
+    onElementsChange(historyRef.current[newIdx]);
+    setCanUndo(newIdx > 0);
+    setCanRedo(true);
   }, [onElementsChange]);
 
   const redo = useCallback(() => {
     const idx = historyIndexRef.current;
     const history = historyRef.current;
     if (idx >= history.length - 1) return;
-    historyIndexRef.current = idx + 1;
+    const newIdx = idx + 1;
+    historyIndexRef.current = newIdx;
     skipHistoryRef.current = true;
-    onElementsChange(history[idx + 1]);
+    onElementsChange(history[newIdx]);
+    setCanUndo(true);
+    setCanRedo(newIdx < history.length - 1);
   }, [onElementsChange]);
 
   // ── Element CRUD ────────────────────────────────────────────────────────────
@@ -265,8 +275,7 @@ export default function CertificateDesigner({
     return nameKey ? row[nameKey] : `Participant ${idx + 1}`;
   });
 
-  const canUndo = historyIndexRef.current > 0;
-  const canRedo = historyIndexRef.current < historyRef.current.length - 1;
+
 
   return (
     <div className="cdes-root">

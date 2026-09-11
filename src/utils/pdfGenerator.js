@@ -15,7 +15,7 @@
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import JSZip from "jszip";
 import QRCode from "qrcode";
-import { resolveFieldValue, resolveParagraphContent, parseTemplateText } from "./fieldMappingHelper.js";
+import { resolveFieldValue, parseTemplateText } from "./fieldMappingHelper.js";
 
 const IS_DEV = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.DEV;
 
@@ -416,11 +416,25 @@ export async function generateCertificatePdf({
         let embeddedImage = null;
 
         if (isJpg) {
-          try { embeddedImage = await pdfDoc.embedJpg(arrayBuffer); }
-          catch { try { embeddedImage = await pdfDoc.embedPng(arrayBuffer); } catch {} }
+          try {
+            embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
+          } catch {
+            try {
+              embeddedImage = await pdfDoc.embedPng(arrayBuffer);
+            } catch (pngErr) {
+              if (IS_DEV) console.warn("[PDF] Fallback PNG embedding failed:", pngErr);
+            }
+          }
         } else {
-          try { embeddedImage = await pdfDoc.embedPng(arrayBuffer); }
-          catch { try { embeddedImage = await pdfDoc.embedJpg(arrayBuffer); } catch {} }
+          try {
+            embeddedImage = await pdfDoc.embedPng(arrayBuffer);
+          } catch {
+            try {
+              embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
+            } catch (jpgErr) {
+              if (IS_DEV) console.warn("[PDF] Fallback JPG embedding failed:", jpgErr);
+            }
+          }
         }
 
         // Final fallback: rasterize via canvas
