@@ -4,7 +4,12 @@ service firebase.storage {
     // Helper function checking admin role in Firestore
     function isAdmin(roles) {
       return request.auth != null
-        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in roles;
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && (
+          firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in roles
+          || (('super_admin' in roles || 'event_admin' in roles)
+              && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'])
+        );
     }
 
     // Certificate templates: Restricted to authorized Admins (super_admin, event_admin)
@@ -16,6 +21,18 @@ service firebase.storage {
     // Read is allowed for official student download and verification.
     // Write and delete are strictly restricted to authorized admins.
     match /generated_certificates/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // Certificate designer image assets (logos, signatures, badges):
+    match /certificate_assets/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // General certificates storage path:
+    match /certificates/{allPaths=**} {
       allow read: if true;
       allow write, delete: if isAdmin(['super_admin', 'event_admin']);
     }

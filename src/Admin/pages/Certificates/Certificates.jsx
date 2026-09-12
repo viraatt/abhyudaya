@@ -17,6 +17,7 @@ import {
 } from "../../../Firebase/certificateTemplateService";
 import { uploadPdfToCloudinary } from "../../../services/cloudinaryService";
 import { parseCSV } from "../../../utils/csvUtils";
+import { auth } from "../../../Firebase/firebase";
 import "../style/admin.css";
 import "./Certificates.css";
 
@@ -238,27 +239,43 @@ export default function Certificates() {
       return;
     }
 
+    // Verify current authenticated admin session
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert("Authentication error: You must be logged in as an authorized admin to upload certificates.");
+      return;
+    }
+
     setBulkProcessing(true);
     setBulkProgress(0);
     setBulkStatus("Reading CSV file...");
     setBulkResults(null);
 
+    // Multi-key PDF map for deterministic, case-insensitive, whitespace-trimmed matching
     const pdfMap = new Map();
     Array.from(pdfFiles).forEach((file) => {
-      pdfMap.set(file.name.toLowerCase(), file);
+      const rawName = file.name.trim();
+      const lowerName = rawName.toLowerCase();
+      const noExt = lowerName.replace(/\.pdf$/i, "").trim();
+
+      // Index by full name, lowercase name, and name without extension
+      pdfMap.set(lowerName, file);
+      if (!pdfMap.has(noExt)) {
+        pdfMap.set(noExt, file);
+      }
     });
 
     try {
       const csvText = await csvFile.text();
       const rows = parseCSV(csvText);
 
-      if (rows.length === 0) {
-        throw new Error("CSV file is empty or invalid format.");
+      if (!rows || rows.length === 0) {
+        throw new Error("CSV_INVALID: CSV file is empty or formatted incorrectly.");
       }
 
-      // Format expected: rollNo,name,eventName,eventDate,certificateType,certificateId,fileName
       const successes = [];
       const failures = [];
+      const seenCertIds = new Set();
 
       setBulkStatus(`Found ${rows.length} records. Processing...`);
 
@@ -275,36 +292,85 @@ export default function Certificates() {
         const certificateId = (row.certificateId || row.certificateid || row.id || "").trim();
         const fileName = (row.fileName || row.filename || row.file || "").trim();
 
-        if (!rollNo || !name || !eventName || !certificateId || !fileName) {
+        // 1. Validate required metadata
+        const missingFields = [];
+        if (!rollNo) missingFields.push("rollNo");
+        if (!name) missingFields.push("name");
+        if (!eventName) missingFields.push("eventName");
+        if (!certificateId) missingFields.push("certificateId");
+        if (!fileName) missingFields.push("fileName");
+
+        if (missingFields.length > 0) {
           failures.push({
             row: i + 1,
             certificateId: certificateId || "N/A",
             name: name || "N/A",
-            reason: "Missing required fields (rollNo, name, eventName, certificateId, fileName)",
+            reason: `CSV_INVALID: Missing required fields: ${missingFields.join(", ")}`,
           });
           continue;
         }
 
-        const pdfFile = pdfMap.get(fileName.toLowerCase());
-        if (!pdfFile) {
+        // 2. Prevent duplicate Certificate IDs in the batch
+        const certIdLower = certificateId.toLowerCase();
+        if (seenCertIds.has(certIdLower)) {
           failures.push({
             row: i + 1,
             certificateId,
             name,
-            reason: `Matching PDF file "${fileName}" not provided in selected files.`,
+            reason: `DUPLICATE_CERTIFICATE_ID: Duplicate certificate ID in this CSV upload.`,
+          });
+          continue;
+        }
+        seenCertIds.add(certIdLower);
+
+        // 3. Match PDF file deterministically
+        const cleanFileName = fileName.trim();
+        const lowerFileName = cleanFileName.toLowerCase();
+        const noExtFileName = lowerFileName.replace(/\.pdf$/i, "");
+        const matchedPdf =
+          pdfMap.get(lowerFileName) ||
+          pdfMap.get(noExtFileName) ||
+          pdfMap.get(`${lowerFileName}.pdf`) ||
+          pdfMap.get(certIdLower) ||
+          pdfMap.get(`${certIdLower}.pdf`) ||
+          pdfMap.get(rollNo.toLowerCase()) ||
+          pdfMap.get(`${rollNo.toLowerCase()}.pdf`);
+
+        if (!matchedPdf) {
+          failures.push({
+            row: i + 1,
+            certificateId,
+            name,
+            reason: `CERTIFICATE_FILE_NOT_FOUND: PDF file "${fileName}" not provided in selected files.`,
           });
           continue;
         }
 
         setBulkStatus(
-          `Uploading PDF [${i + 1}/${rows.length}]: ${fileName} (${certificateId})...`
+          `Uploading PDF [${i + 1}/${rows.length}]: ${matchedPdf.name} (${certificateId})...`
         );
 
+        // 4. Step A: Upload PDF to Storage / Cloudinary
+        let uploadedUrl = "";
         try {
-          // Step 1: Upload to Cloudinary
-          const uploadRes = await uploadPdfToCloudinary(pdfFile);
+          const uploadRes = await uploadPdfToCloudinary(matchedPdf);
+          uploadedUrl = uploadRes.secure_url;
+        } catch (uploadErr) {
+          console.error(`[BulkUpload] Upload failed for Row ${i + 1} (${certificateId} - ${name}):`, {
+            file: matchedPdf.name,
+            error: uploadErr,
+          });
+          failures.push({
+            row: i + 1,
+            certificateId,
+            name,
+            reason: `STORAGE_UPLOAD_FAILED: ${uploadErr.message || "Cloudinary upload error"}`,
+          });
+          continue;
+        }
 
-          // Step 2: Save metadata to Firestore
+        // 5. Step B: Save Certificate Metadata to Firestore
+        try {
           await createCertificate({
             certificateId,
             rollNo,
@@ -312,21 +378,34 @@ export default function Certificates() {
             eventName,
             eventDate,
             certificateType,
-            certificateUrl: uploadRes.secure_url,
+            certificateUrl: uploadedUrl,
           });
 
           successes.push({
             certificateId,
             name,
             eventName,
-            url: uploadRes.secure_url,
+            url: uploadedUrl,
           });
-        } catch (err) {
+        } catch (firestoreErr) {
+          const isPerm = firestoreErr.code === "permission-denied";
+          console.error(`[BulkUpload] Firestore save failed for Row ${i + 1} (${certificateId} - ${name}):`, {
+            path: `certificates/${certificateId}`,
+            code: firestoreErr.code,
+            message: firestoreErr.message,
+            currentUser: { uid: currentUser.uid, email: currentUser.email },
+            error: firestoreErr,
+          });
+
+          const reasonMsg = isPerm
+            ? "FIRESTORE_PERMISSION_DENIED: Admin permissions missing or Firestore security rule violation."
+            : (firestoreErr.message || "FIRESTORE_ERROR: Failed to save certificate metadata.");
+
           failures.push({
             row: i + 1,
             certificateId,
             name,
-            reason: err.message || "Failed to process certificate.",
+            reason: reasonMsg,
           });
         }
       }
@@ -335,7 +414,7 @@ export default function Certificates() {
       setBulkStatus("Bulk upload complete!");
       await loadCertificates();
     } catch (err) {
-      console.error("Bulk upload error:", err);
+      console.error("[BulkUpload] Critical batch error:", err);
       alert(`Bulk upload error: ${err.message}`);
     } finally {
       setBulkProcessing(false);

@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import { createCertificate } from "../../../Firebase/certificateService";
 import { uploadPdfToCloudinary } from "../../../services/cloudinaryService";
+import { auth } from "../../../Firebase/firebase";
 import "../style/admin.css";
 import "./Certificates.css";
 
@@ -115,28 +116,56 @@ export default function AddCertificate() {
       return;
     }
 
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setErrorMessage("AUTH_REQUIRED: You must be logged in as an authorized admin to create certificates.");
+      return;
+    }
+
     setSubmitting(true);
     setUploadProgress(0);
     setStatusMessage("Uploading PDF to Cloudinary...");
 
     try {
-      // Step 1: Upload PDF file to Cloudinary
-      const uploadResult = await uploadPdfToCloudinary(pdfFile, (percent) => {
-        setUploadProgress(percent);
-      });
+      // Step 1: Upload PDF file to Cloudinary / Storage
+      let uploadResult;
+      try {
+        uploadResult = await uploadPdfToCloudinary(pdfFile, (percent) => {
+          setUploadProgress(percent);
+        });
+      } catch (uploadErr) {
+        console.error("[AddCertificate] PDF upload failed:", uploadErr);
+        throw new Error(`STORAGE_UPLOAD_FAILED: ${uploadErr.message || "Failed to upload PDF file"}`);
+      }
 
       setStatusMessage("Saving certificate metadata to Firestore...");
 
       // Step 2: Save metadata in Firestore
-      await createCertificate({
-        certificateId: certificateId.trim(),
-        rollNo: rollNo.trim(),
-        name: name.trim(),
-        eventName: eventName.trim(),
-        eventDate: eventDate ? eventDate.trim() : "",
-        certificateType,
-        certificateUrl: uploadResult.secure_url,
-      });
+      try {
+        await createCertificate({
+          certificateId: certificateId.trim(),
+          rollNo: rollNo.trim(),
+          name: name.trim(),
+          eventName: eventName.trim(),
+          eventDate: eventDate ? eventDate.trim() : "",
+          certificateType,
+          certificateUrl: uploadResult.secure_url,
+        });
+      } catch (firestoreErr) {
+        const isPerm = firestoreErr.code === "permission-denied";
+        console.error("[AddCertificate] Firestore createCertificate failed:", {
+          path: `certificates/${certificateId.trim()}`,
+          code: firestoreErr.code,
+          message: firestoreErr.message,
+          currentUser: { uid: currentUser.uid, email: currentUser.email },
+          error: firestoreErr,
+        });
+
+        if (isPerm) {
+          throw new Error("FIRESTORE_PERMISSION_DENIED: Admin permissions missing or Firestore security rules violation.");
+        }
+        throw firestoreErr;
+      }
 
       setSuccessMessage("✓ Certificate added successfully! Redirecting...");
       setStatusMessage("Certificate added successfully! Redirecting...");
