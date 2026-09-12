@@ -11,7 +11,7 @@ import {
   serverTimestamp,
   orderBy,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 
 const CERTIFICATES_COLLECTION = "certificates";
 const certificatesRef = collection(db, CERTIFICATES_COLLECTION);
@@ -205,8 +205,19 @@ export async function createCertificate(certData) {
     updatedAt: serverTimestamp(),
   };
 
-  await setDoc(docRef, payload);
-  return certId;
+  try {
+    await setDoc(docRef, payload);
+    return certId;
+  } catch (err) {
+    const currentUser = auth.currentUser;
+    console.error(`[certificateService] Failed to write certificate '${certId}' to Firestore path 'certificates/${certId}':`, {
+      code: err.code,
+      message: err.message,
+      currentUser: currentUser ? { uid: currentUser.uid, email: currentUser.email } : null,
+      error: err,
+    });
+    throw err;
+  }
 }
 
 /**

@@ -6,7 +6,12 @@ service cloud.firestore {
     // Helper: checks if the authenticated user has an admin role.
     function isAdmin(roles) {
       return request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles
+          || (('super_admin' in roles || 'event_admin' in roles)
+              && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'])
+        );
     }
 
     // ============================================================
@@ -208,6 +213,10 @@ service cloud.firestore {
     // create, update, or delete records directly.
     // Admins (super_admin, event_admin): read, update, delete.
     // ============================================================
+    match /time_capsules/{capsuleId} {
+      allow create: if false;
+      allow read, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
     // ============================================================
     // CERTIFICATES
     // Public: read (for student verification and viewing).
