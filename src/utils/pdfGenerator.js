@@ -344,6 +344,10 @@ export async function generateCertificatePdf({
     throw new Error("No template provided for certificate rendering.");
   }
 
+  // ── DEV PERFORMANCE TIMING ────────────────────────────────────────────────
+  const _perfStart = IS_DEV ? performance.now() : 0;
+  const _certLabel = IS_DEV ? `cert[${(options.rowIndex ?? 0) + 1}]` : "";
+
   const originalWidth = Number(templateAsset?.width || template.originalWidth) || 1920;
   const originalHeight = Number(templateAsset?.height || template.originalHeight) || 1080;
 
@@ -356,6 +360,7 @@ export async function generateCertificatePdf({
   // 3. Embed background template image
   // PERFORMANCE: If templateAsset is preloaded (batch mode), use the cached ArrayBuffer directly.
   // This prevents 53 repeated fetch() calls to Firebase Storage during bulk generation.
+  const _tEmbed = IS_DEV ? performance.now() : 0;
   if (templateAsset && templateAsset.arrayBuffer && templateAsset.arrayBuffer.byteLength > 0) {
     // ── Fast path: use preloaded asset ──────────────────────────────────────
     try {
@@ -463,6 +468,8 @@ export async function generateCertificatePdf({
     }
   }
 
+  if (IS_DEV) console.log(`[PERF] ${_certLabel} templateEmbed: ${(performance.now() - _tEmbed).toFixed(1)}ms`);
+
   // 4. Determine certificate ID
   const certId =
     options.certificateId ||
@@ -470,6 +477,7 @@ export async function generateCertificatePdf({
     generateUniqueCertId("ABH-CERT", (options.rowIndex || 0) + 1);
 
   // 5. Preload cached standard fonts to avoid redundant font creation
+  const _tFont = IS_DEV ? performance.now() : 0;
   const fontCache = new Map();
   const getFont = async (fontFamily, fontWeight) => {
     const fontKey = selectStandardFont(fontFamily, fontWeight);
@@ -481,6 +489,9 @@ export async function generateCertificatePdf({
   };
 
   // 6. Draw each element onto the PDF page
+  // Track first-font timing (only matters for first element that uses a font)
+  let _fontTimingLogged = false;
+
   for (const field of fields) {
     // Skip hidden elements
     if (field.visible === false) continue;
@@ -499,6 +510,7 @@ export async function generateCertificatePdf({
         options.baseUrl ||
         (typeof window !== "undefined" ? window.location.origin : "https://www.abhyudayaclub.in");
       const verifyUrl = `${baseUrl}/verify/${certId}`;
+      const _tQr = IS_DEV ? performance.now() : 0;
       try {
         const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
           margin: 1,
@@ -517,6 +529,7 @@ export async function generateCertificatePdf({
           opacity: fieldOpacity,
           rotate: fieldRotation ? degrees(fieldRotation) : undefined,
         });
+        if (IS_DEV) console.log(`[PERF] ${_certLabel} qrGenerate: ${(performance.now() - _tQr).toFixed(1)}ms`);
       } catch (err) {
         console.warn("Failed to generate and embed QR code:", err);
       }
@@ -733,10 +746,17 @@ export async function generateCertificatePdf({
         fieldRotation,
       });
     }
+    // Log font embedding time after first text element is processed
+    if (IS_DEV && !_fontTimingLogged && fontCache.size > 0) {
+      console.log(`[PERF] ${_certLabel} fontEmbed(${fontCache.size} fonts): ${(performance.now() - _tFont).toFixed(1)}ms`);
+      _fontTimingLogged = true;
+    }
   } // end for (const field of fields)
 
   // 7. Save PDF bytes
+  const _tSave = IS_DEV ? performance.now() : 0;
   const pdfBytes = await pdfDoc.save();
+  if (IS_DEV) console.log(`[PERF] ${_certLabel} pdfSave: ${(performance.now() - _tSave).toFixed(1)}ms | size: ${(pdfBytes.byteLength / 1024).toFixed(0)}KB | TOTAL: ${(performance.now() - _perfStart).toFixed(1)}ms`);
 
   // 8. Determine safe filename
   const participantName =
