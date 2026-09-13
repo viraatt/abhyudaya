@@ -1,247 +1,311 @@
-import { useEffect, useMemo } from "react";
-import DataUploader from "./DataUploader";
+import { useMemo } from "react";
+import PropTypes from "prop-types";
+import { validateMapping, resolveFieldValue, autoMapFields } from "../../../utils/fieldMappingHelper";
 
 export default function DataMapper({
-  templateConfig,
+  fields = [],
   dataset,
-  dataMapping,
-  onDatasetParsed,
-  onUpdateMapping,
-  onNext,
+  mapping = {},
+  onMappingChange,
   onBack,
+  onContinue,
+  eventName = "",
+  eventDate = "",
 }) {
-  const fields = useMemo(() => templateConfig.fields || [], [templateConfig.fields]);
-  const columns = useMemo(() => dataset?.columns || [], [dataset?.columns]);
+  const columns = dataset?.columns || [];
+  const previewRows = dataset?.previewRows || [];
+  const totalRows = dataset?.totalRows || 0;
+  const duplicates = dataset?.duplicates || [];
+  const emptyRowsSkipped = dataset?.emptyRowsSkipped || 0;
 
-  // Heuristic auto-matching when dataset is first uploaded
-  useEffect(() => {
-    if (!dataset?.columns || dataset.columns.length === 0) return;
+  // Real-time validation
+  const validation = useMemo(() => {
+    return validateMapping(fields, mapping);
+  }, [fields, mapping]);
 
-    const colsLower = dataset.columns.map((c) => ({
-      raw: c,
-      lower: c.toLowerCase().replace(/[^a-z0-9]/g, ""),
-    }));
-
-    onUpdateMapping((prevMapping) => {
-      const newMapping = { ...prevMapping };
-
-      fields.forEach((field) => {
-        // If already mapped and valid, keep it
-        if (newMapping[field.id] && dataset.columns.includes(newMapping[field.id])) {
-          return;
-        }
-
-        // Check heuristics
-        const fKey = (field.key || field.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-        const match = colsLower.find((c) => {
-          if (c.lower === fKey) return true;
-          if (fKey.includes("name") && (c.lower.includes("name") || c.lower === "student")) return true;
-          if (fKey.includes("roll") && (c.lower.includes("roll") || c.lower.includes("regno"))) return true;
-          if (fKey.includes("event") && c.lower.includes("event")) return true;
-          if (fKey.includes("date") && c.lower.includes("date")) return true;
-          if (fKey.includes("cert") && c.lower.includes("cert")) return true;
-          return false;
-        });
-
-        if (match) {
-          newMapping[field.id] = match.raw;
-        } else {
-          // Fallback for special auto fields
-          if (field.id === "field_id" || field.key === "certificateId") {
-            newMapping[field.id] = "__auto_id__";
-          } else if (field.id === "field_event" || field.key === "eventName") {
-            newMapping[field.id] = "__fixed_event__";
-          } else if (field.id === "field_date" || field.key === "eventDate") {
-            newMapping[field.id] = "__fixed_date__";
-          }
-        }
-      });
-
-      return newMapping;
-    });
-  }, [dataset, fields, onUpdateMapping]);
-
-  const handleSelectMapping = (fieldId, column) => {
-    onUpdateMapping({
-      ...dataMapping,
-      [fieldId]: column,
+  const handleFieldChange = (variable, columnKey) => {
+    const rawVar = String(variable).replace(/^\{\{|\}\}$/g, "").trim();
+    onMappingChange({
+      ...mapping,
+      [rawVar]: columnKey,
     });
   };
 
-  // Check validation
-  const nameField = fields.find((f) => f.id === "field_name" || f.key === "name");
-  const isNameMapped =
-    nameField &&
-    dataMapping[nameField.id] &&
-    dataMapping[nameField.id] !== "" &&
-    dataMapping[nameField.id] !== "__none__";
-
-  const hasData = dataset?.rows && dataset.rows.length > 0;
-  const canProceed = hasData && isNameMapped;
-
-  // Sample row 1
-  const firstRow = dataset?.rows?.[0] || {};
+  const handleResetAutoMap = () => {
+    if (columns.length > 0) {
+      const fresh = autoMapFields(fields, columns);
+      onMappingChange(fresh);
+    }
+  };
 
   return (
-    <div className="data-mapper-step">
-      <div className="wizard-step-header">
-        <h3>Step 3: Upload Participant Data & Map Fields</h3>
-        <p>
-          Upload a participant CSV/Excel list, then map each certificate text field
-          to the corresponding spreadsheet column.
-        </p>
+    <div className="data-mapper-wrapper">
+      <div className="dm-header">
+        <div>
+          <h3>Step 3: Map Certificate Variables to Columns</h3>
+          <p>
+            Verify that each certificate variable points to the corresponding column
+            in your spreadsheet. Fields are auto-mapped based on column names.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn--outline"
+          onClick={handleResetAutoMap}
+          title="Reset mappings and re-run automatic header detection"
+        >
+          🔄 Re-run Auto-Map
+        </button>
       </div>
 
-      <div className="data-step-layout">
-        {/* Data Uploader */}
-        <DataUploader dataset={dataset} onDatasetParsed={onDatasetParsed} />
+      {/* Ingestion & Validation Metrics Banner */}
+      <div className="dm-metrics-container">
+        <div className="dm-metric-pill dm-metric-pill--participants">
+          <span className="dm-pill-icon">✓</span>
+          <span>{totalRows} participants found</span>
+        </div>
 
-        {/* Column Mapping Table */}
-        {hasData && (
-          <div>
-            <h4
-              style={{
-                fontSize: "1.05rem",
-                fontWeight: 700,
-                color: "#0f172a",
-                marginBottom: "0.85rem",
-              }}
-            >
-              Field Mapping Configuration
-            </h4>
+        <div className="dm-metric-pill dm-metric-pill--columns">
+          <span className="dm-pill-icon">✓</span>
+          <span>{columns.length} columns detected</span>
+        </div>
 
-            <div className="mapping-table-wrap">
-              <table className="mapping-table">
-                <thead>
-                  <tr>
-                    <th>Certificate Field</th>
-                    <th>Type / Key</th>
-                    <th>Mapped Spreadsheet Column</th>
-                    <th>Sample Value (Row 1)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fields.map((field) => {
-                    const currentMapping = dataMapping[field.id] || "";
-                    let sampleVal = "-";
-
-                    if (currentMapping === "__auto_id__") {
-                      sampleVal = `Auto-ID (e.g. ABH-${templateConfig.eventName?.slice(0, 4) || "EVNT"}-0001)`;
-                    } else if (currentMapping === "__fixed_event__") {
-                      sampleVal = templateConfig.eventName || "(Fixed Template Event)";
-                    } else if (currentMapping === "__fixed_date__") {
-                      sampleVal = templateConfig.eventDate || "(Fixed Template Date)";
-                    } else if (currentMapping && firstRow[currentMapping] !== undefined) {
-                      sampleVal = firstRow[currentMapping] || "(empty cell)";
-                    }
-
-                    return (
-                      <tr key={field.id}>
-                        <td>
-                          <strong>{field.name}</strong>
-                          {field.isRequired && (
-                            <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className="field-badge-tag">{field.key || field.id}</span>
-                        </td>
-                        <td>
-                          <select
-                            className="mapping-select"
-                            value={currentMapping}
-                            onChange={(e) =>
-                              handleSelectMapping(field.id, e.target.value)
-                            }
-                          >
-                            <option value="">-- Choose Column --</option>
-                            {columns.map((col) => (
-                              <option key={col} value={col}>
-                                Column: {col}
-                              </option>
-                            ))}
-                            <optgroup label="Special Values">
-                              {(field.id === "field_id" ||
-                                field.key === "certificateId") && (
-                                <option value="__auto_id__">
-                                  ⚡ Auto-generate Certificate ID
-                                </option>
-                              )}
-                              <option value="__fixed_event__">
-                                📌 Fixed Event Name ({templateConfig.eventName})
-                              </option>
-                              <option value="__fixed_date__">
-                                📅 Fixed Event Date ({templateConfig.eventDate})
-                              </option>
-                              <option value="__none__">🚫 Leave Blank</option>
-                            </optgroup>
-                          </select>
-                        </td>
-                        <td>
-                          <span className="sample-val-text">{sampleVal}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Preview of first 3 rows in data */}
-            <div style={{ marginTop: "1.5rem" }}>
-              <h5 style={{ fontSize: "0.9rem", color: "#475569", marginBottom: "0.5rem" }}>
-                Data Preview (First {Math.min(3, dataset.rows.length)} of {dataset.totalRows} records):
-              </h5>
-              <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                <table className="mapping-table" style={{ fontSize: "0.82rem" }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: "0.5rem 0.75rem" }}>#</th>
-                      {columns.map((col) => (
-                        <th key={col} style={{ padding: "0.5rem 0.75rem" }}>
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dataset.rows.slice(0, 3).map((r, i) => (
-                      <tr key={i}>
-                        <td style={{ padding: "0.5rem 0.75rem" }}>{i + 1}</td>
-                        {columns.map((col) => (
-                          <td key={col} style={{ padding: "0.5rem 0.75rem" }}>
-                            {r[col] || "-"}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        {validation.isValid ? (
+          <div className="dm-metric-pill dm-metric-pill--success">
+            <span className="dm-pill-icon">✓</span>
+            <span>All required fields mapped</span>
+          </div>
+        ) : (
+          <div className="dm-metric-pill dm-metric-pill--warning">
+            <span className="dm-pill-icon">⚠️</span>
+            <span>{validation.unmappedFields.length} unmapped field(s)</span>
           </div>
         )}
       </div>
 
-      <div className="wizard-footer">
+      {/* Duplicate / Empty Row Intelligence Warnings */}
+      {duplicates.length > 0 && (
+        <div className="cert-alert cert-alert--warning" role="alert">
+          <span className="cert-alert-icon">⚠️</span>
+          <div>
+            <strong>Notice: {duplicates.length} duplicate record(s) detected.</strong>
+            <p>
+              e.g. {duplicates[0].reason}
+              {duplicates.length > 1 && ` and ${duplicates.length - 1} more.`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {emptyRowsSkipped > 0 && (
+        <div className="cert-alert cert-alert--info">
+          <span>ℹ️ Automatically skipped {emptyRowsSkipped} completely empty row(s).</span>
+        </div>
+      )}
+
+      {/* Validation Gate Errors Banner */}
+      {!validation.isValid && (
+        <div className="cert-alert cert-alert--error dm-validation-alert" role="alert">
+          <span className="cert-alert-icon">🚫</span>
+          <div className="dm-validation-content">
+            <strong>Required fields are missing column mappings:</strong>
+            <ul className="dm-errors-list">
+              {validation.errors.map((errMsg, idx) => (
+                <li key={idx} className="dm-error-item">
+                  <strong>{errMsg}</strong>
+                </li>
+              ))}
+            </ul>
+            <p className="dm-error-hint">
+              Select the matching spreadsheet column below before proceeding to preview.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Variable Mapping Table */}
+      <div className="dm-mapping-card">
+        <div className="dm-card-header">
+          <h4>Field Mapping Matrix</h4>
+          <span className="dm-subtext">
+            {fields.length} dynamic field(s) in certificate template
+          </span>
+        </div>
+
+        <div className="dm-table-wrap">
+          <table className="dm-mapping-table">
+            <thead>
+              <tr>
+                <th>Certificate Variable</th>
+                <th style={{ width: "40px", textAlign: "center" }}></th>
+                <th>Spreadsheet Column</th>
+                <th>Sample Value (Row 1)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fields.map((field) => {
+                const rawVar = String(field.variable || "").replace(/^\{\{|\}\}$/g, "").trim();
+                const currentMapped = mapping[rawVar] || "";
+                const isMapped = currentMapped && currentMapped !== "__none__";
+                const isRequired = field.required !== false;
+                const sampleRow = previewRows[0] || {};
+                const resolvedSample = isMapped
+                  ? resolveFieldValue(field, mapping, sampleRow, {
+                      eventName,
+                      eventDate,
+                      rowIndex: 0,
+                    })
+                  : "";
+
+                return (
+                  <tr key={field.id} className={!isMapped && isRequired ? "row-unmapped" : ""}>
+                    {/* Certificate Variable */}
+                    <td className="dm-cell-var">
+                      <div className="dm-var-badge">
+                        <code>{field.variable}</code>
+                      </div>
+                      <span className="dm-var-label">{field.label}</span>
+                      {isRequired && <span className="dm-required-tag">*Required</span>}
+                    </td>
+
+                    {/* Arrow */}
+                    <td className="dm-cell-arrow">
+                      <span>→</span>
+                    </td>
+
+                    {/* Spreadsheet Column Dropdown */}
+                    <td className="dm-cell-select">
+                      <select
+                        className={`dm-select ${!isMapped && isRequired ? "dm-select--error" : ""}`}
+                        value={currentMapped}
+                        onChange={(e) => handleFieldChange(field.variable, e.target.value)}
+                        aria-label={`Map column for ${field.variable}`}
+                      >
+                        <option value="">-- Select Spreadsheet Column --</option>
+                        <optgroup label="Spreadsheet Columns">
+                          {columns.map((col) => (
+                            <option key={col} value={col}>
+                              {col}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Special Values">
+                          {rawVar.toLowerCase().includes("id") && (
+                            <option value="__auto_id__">
+                              ⚡ Auto-generate Certificate IDs (ABH-0001)
+                            </option>
+                          )}
+                          <option value="__fixed_event__">📌 Use Event Name</option>
+                          <option value="__fixed_date__">📅 Use Event Date</option>
+                          <option value="__none__">🚫 Leave Blank / None</option>
+                        </optgroup>
+                      </select>
+                    </td>
+
+                    {/* Sample Value from Row 1 */}
+                    <td className="dm-cell-sample">
+                      {isMapped ? (
+                        <span className="dm-sample-val" title={resolvedSample}>
+                          {resolvedSample || <em className="dm-empty-val">(empty in row 1)</em>}
+                        </span>
+                      ) : (
+                        <span className="dm-sample-unmapped">Unmapped</span>
+                      )}
+                    </td>
+
+                    {/* Status indicator */}
+                    <td className="dm-cell-status">
+                      {isMapped ? (
+                        <span className="dm-status-tag dm-status-tag--mapped">
+                          ✓ Mapped
+                        </span>
+                      ) : isRequired ? (
+                        <span className="dm-status-tag dm-status-tag--missing">
+                          ⚠️ Required
+                        </span>
+                      ) : (
+                        <span className="dm-status-tag dm-status-tag--optional">
+                          Optional
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Preview First Several Rows Table */}
+      <div className="dm-preview-card">
+        <div className="dm-card-header">
+          <h4>Spreadsheet Data Preview (First {previewRows.length} Rows)</h4>
+          <span className="dm-subtext">Total {totalRows} participant rows parsed</span>
+        </div>
+
+        <div className="dm-preview-table-wrap">
+          <table className="dm-preview-table">
+            <thead>
+              <tr>
+                <th style={{ width: "50px" }}>#</th>
+                {columns.map((col) => (
+                  <th key={col}>{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {previewRows.map((row, rIdx) => (
+                <tr key={rIdx}>
+                  <td className="dm-row-index">{rIdx + 1}</td>
+                  {columns.map((col) => (
+                    <td key={col} className="dm-preview-cell">
+                      {row[col] || <span className="dm-empty-dash">—</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Step Footer Navigation */}
+      <div className="cert-step-footer">
         <button
           type="button"
           className="admin-btn admin-btn--outline"
           onClick={onBack}
         >
-          ← Back to Fields
+          [ Back ]
         </button>
 
         <button
           type="button"
           className="admin-btn admin-btn--primary"
-          disabled={!canProceed}
-          onClick={onNext}
+          disabled={!validation.isValid}
+          onClick={onContinue}
+          title={
+            validation.isValid
+              ? "Continue to Certificate Live Preview"
+              : `Cannot continue: ${validation.errors.join("; ")}`
+          }
         >
-          Next: Live Preview ({dataset?.totalRows || 0} Certificates) →
+          [ Continue to Preview ]
         </button>
       </div>
     </div>
   );
 }
+
+DataMapper.propTypes = {
+  fields: PropTypes.array.isRequired,
+  dataset: PropTypes.object.isRequired,
+  mapping: PropTypes.object.isRequired,
+  onMappingChange: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
+  onContinue: PropTypes.func.isRequired,
+  eventName: PropTypes.string,
+  eventDate: PropTypes.string,
+};

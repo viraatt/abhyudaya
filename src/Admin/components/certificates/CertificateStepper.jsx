@@ -1,51 +1,71 @@
+import PropTypes from "prop-types";
+
 const STEPS = [
-  { id: 1, name: "Template", desc: "Upload Background" },
-  { id: 2, name: "Fields", desc: "Set Text Elements" },
-  { id: 3, name: "Data", desc: "Upload & Map Data" },
-  { id: 4, name: "Preview", desc: "Review Samples" },
-  { id: 5, name: "Generate", desc: "Create & Download" },
+  { step: 1, label: "Template", icon: "1", subtitle: "Background Design" },
+  { step: 2, label: "Design Fields", icon: "2", subtitle: "Text & QR Placement" },
+  { step: 3, label: "Participant Data", icon: "3", subtitle: "Upload & Map" },
+  { step: 4, label: "Live Preview", icon: "4", subtitle: "Inspect Output" },
+  { step: 5, label: "Generate", icon: "5", subtitle: "Bulk PDFs & ZIP" },
 ];
 
-export default function CertificateStepper({ currentStep, onSelectStep, maxStepReached }) {
+export default function CertificateStepper({
+  currentStep,
+  onStepClick,
+  maxUnlockedStep = 1,
+}) {
   return (
-    <div className="cert-stepper-card">
-      <ol className="cert-stepper-list">
-        {STEPS.map((step, idx) => {
-          const isActive = currentStep === step.id;
-          const isCompleted = currentStep > step.id;
-          const canClick = step.id <= (maxStepReached || 1);
+    <nav className="cert-stepper-container" aria-label="Certificate Generation Progress">
+      <div className="cert-stepper">
+        {STEPS.map((s, idx) => {
+          const isCompleted = currentStep > s.step;
+          const isActive = currentStep === s.step;
+          const isClickable = s.step <= maxUnlockedStep && s.step !== currentStep;
 
           return (
-            <li key={step.id} style={{ display: "contents" }}>
+            <div key={s.step} className="cert-stepper-item-wrap">
               <button
                 type="button"
-                className={`cert-stepper-item ${isActive ? "active" : ""} ${
+                className={`cert-step-item ${isActive ? "active" : ""} ${
                   isCompleted ? "completed" : ""
-                }`}
-                disabled={!canClick}
-                onClick={() => canClick && onSelectStep(step.id)}
-                title={`Step ${step.id}: ${step.name}`}
+                } ${isClickable ? "clickable" : ""}`}
+                onClick={() => isClickable && onStepClick?.(s.step)}
+                disabled={!isClickable}
+                aria-current={isActive ? "step" : undefined}
+                title={
+                  isClickable
+                    ? `Jump to Step ${s.step}: ${s.label}`
+                    : isActive
+                    ? `Current Step: ${s.label}`
+                    : `Complete prior steps to unlock ${s.label}`
+                }
               >
-                <div className="cert-step-circle">
-                  {isCompleted ? "✓" : step.id}
-                </div>
-                <div className="cert-step-info">
-                  <span className="cert-step-num">Step {step.id}</span>
-                  <span className="cert-step-title">{step.name}</span>
+                <span className="cert-step-circle">
+                  {isCompleted ? "✓" : s.icon}
+                </span>
+                <div className="cert-step-text">
+                  <span className="cert-step-label">{s.label}</span>
+                  <span className="cert-step-subtitle">{s.subtitle}</span>
                 </div>
               </button>
 
               {idx < STEPS.length - 1 && (
                 <div
-                  className={`cert-step-divider ${
-                    currentStep > step.id ? "completed" : ""
+                  className={`cert-step-line ${
+                    currentStep > s.step ? "filled" : ""
                   }`}
                 />
               )}
-            </li>
+            </div>
           );
         })}
-      </ol>
-    </div>
+      </div>
+    </nav>
   );
 }
+
+CertificateStepper.propTypes = {
+  currentStep: PropTypes.number.isRequired,
+  onStepClick: PropTypes.func,
+  maxUnlockedStep: PropTypes.number,
+};
+

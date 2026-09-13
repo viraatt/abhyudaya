@@ -102,6 +102,10 @@ const EditCertificate = lazy(() =>
   import("./Admin/pages/Certificates/EditCertificate.jsx")
 );
 
+const CreateCertificates = lazy(() =>
+  import("./Admin/pages/Certificates/CreateCertificates.jsx")
+);
+
 const AdminTimeCapsules = lazy(() =>
   import("./Admin/pages/TimeCapsules.jsx")
 );

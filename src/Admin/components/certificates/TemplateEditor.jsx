@@ -1,411 +1,283 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import PropTypes from "prop-types";
 import FieldEditor from "./FieldEditor";
-import { saveCertificateTemplate } from "../../../Firebase/certificateTemplateService";
-import { uploadCertificateTemplate } from "../../../Firebase/certificateStorageService";
 
 export default function TemplateEditor({
-  templateConfig,
-  onUpdateConfig,
-  onNext,
+  template,
+  fields,
+  onFieldsChange,
   onBack,
+  onContinue,
+  onSaveTemplate,
 }) {
-  const containerRef = useRef(null);
-  const [viewportSize, setViewportSize] = useState({ width: 800, height: 450 });
   const [selectedFieldId, setSelectedFieldId] = useState(
-    templateConfig.fields?.[0]?.id || null
+    fields[0]?.id || null
   );
-  const [savingTemplate, setSavingTemplate] = useState(false);
-  const [saveStatus, setSaveStatus] = useState({ msg: "", type: "" });
+  const canvasContainerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(800);
 
-  // Drag & Resize tracking state
-  // mode: null | 'move' | 'resize'
-  // handle: null | 'se' | 'e' | 's' | 'sw' | 'nw' | 'ne' | 'n' | 'w'
-  const [interaction, setInteraction] = useState({
-    mode: null,
-    fieldId: null,
-    handle: null,
-    startX: 0,
-    startY: 0,
-    origField: null,
-  });
+  // Active interaction state
+  const dragRef = useRef(null);
 
-  const fields = useMemo(
-    () => templateConfig.fields || [],
-    [templateConfig.fields]
-  );
-
-  const origWidth = templateConfig.dimensions?.width || templateConfig.width || 1920;
-  const origHeight = templateConfig.dimensions?.height || templateConfig.height || 1080;
-
-  // Responsive scale factor (display screen pixels per original template pixel)
-  const scale = viewportSize.width > 0 && origWidth > 0 ? viewportSize.width / origWidth : 1;
-
-  // Track container dimensions on resize
-  useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        if (rect.width > 0) {
-          const computedHeight = (origHeight / origWidth) * rect.width;
-          setViewportSize({ width: rect.width, height: computedHeight });
-        }
+  // Measure container width dynamically using ResizeObserver for precision
+  const updateScale = useCallback(() => {
+    if (canvasContainerRef.current) {
+      const rect = canvasContainerRef.current.getBoundingClientRect();
+      if (rect.width > 0) {
+        setContainerWidth(rect.width);
       }
+    }
+  }, []);
+
+  useEffect(() => {
+    updateScale();
+    if (!canvasContainerRef.current) return;
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect && entry.contentRect.width > 0) {
+            setContainerWidth(entry.contentRect.width);
+          }
+        }
+      });
+      resizeObserver.observe(canvasContainerRef.current);
+    }
+
+    window.addEventListener("resize", updateScale);
+    return () => {
+      window.removeEventListener("resize", updateScale);
+      if (resizeObserver) resizeObserver.disconnect();
     };
+  }, [updateScale]);
 
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, [origWidth, origHeight]);
+  const originalWidth = Number(template?.originalWidth) || 1920;
+  const originalHeight = Number(template?.originalHeight) || 1080;
 
-  // Currently selected field
+  // Scale: 1 original pixel = scale screen pixels
+  const scale = containerWidth > 0 ? containerWidth / originalWidth : 1;
+  const displayHeight = Math.round(originalHeight * scale);
+
   const activeFieldId = selectedFieldId || fields[0]?.id || null;
 
-  // Field manipulation helpers
-  const handleUpdateField = (fieldId, updates) => {
-    const updated = fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f));
-    onUpdateConfig({ fields: updated });
-  };
-
+  // Field manipulation handlers
   const handleAddField = (newField) => {
-    const updated = [...fields, newField];
-    onUpdateConfig({ fields: updated });
+    onFieldsChange([...fields, newField]);
     setSelectedFieldId(newField.id);
   };
 
-  const handleDuplicateField = (fieldId) => {
-    const target = fields.find((f) => f.id === fieldId);
-    if (!target) return;
+  const handleUpdateField = useCallback((fieldId, updates) => {
+    onFieldsChange(
+      fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f))
+    );
+  }, [fields, onFieldsChange]);
 
-    const newField = {
-      ...target,
-      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-      label: `${target.label || target.name} (Copy)`,
-      name: `${target.label || target.name} (Copy)`,
-      x: Math.min(origWidth - target.width, target.x + 40),
-      y: Math.min(origHeight - target.height, target.y + 40),
-    };
-
-    onUpdateConfig({ fields: [...fields, newField] });
-    setSelectedFieldId(newField.id);
-  };
-
-  const handleRemoveField = (fieldId) => {
+  const handleDeleteField = (fieldId) => {
     const remaining = fields.filter((f) => f.id !== fieldId);
-    onUpdateConfig({ fields: remaining });
+    onFieldsChange(remaining);
     if (selectedFieldId === fieldId) {
       setSelectedFieldId(remaining[0]?.id || null);
     }
   };
 
-  // Mouse interaction handlers (drag move and resize)
-  const handleMouseDown = (e, field, handle = null) => {
+  // Keyboard navigation / nudging for active field
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!activeFieldId) return;
+      // Don't intercept if user is typing in an input/textarea/select
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+
+      const curField = fields.find((f) => f.id === activeFieldId);
+      if (!curField) return;
+
+      const step = e.shiftKey ? 10 : 1;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, { x: Math.max(0, Math.round(curField.x - step)) });
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, {
+          x: Math.min(originalWidth - curField.width, Math.round(curField.x + step)),
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, { y: Math.max(0, Math.round(curField.y - step)) });
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        handleUpdateField(activeFieldId, {
+          y: Math.min(originalHeight - curField.height, Math.round(curField.y + step)),
+        });
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (!e.target.closest(".field-editor-sidebar")) {
+          e.preventDefault();
+          handleDeleteField(activeFieldId);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeFieldId, fields, handleUpdateField, originalWidth, originalHeight]);
+
+  // Pointer drag / resize handlers (handles Mouse, Pen, and Touch)
+  const handlePointerDown = (e, field, mode = "drag") => {
     e.stopPropagation();
     e.preventDefault();
     setSelectedFieldId(field.id);
 
-    setInteraction({
-      mode: handle ? "resize" : "move",
+    dragRef.current = {
       fieldId: field.id,
-      handle,
+      mode, // 'drag' | 'resize'
       startX: e.clientX,
       startY: e.clientY,
-      origField: { ...field },
-    });
-  };
+      initialX: field.x,
+      initialY: field.y,
+      initialWidth: field.width,
+      initialHeight: field.height,
+    };
 
-  const handleMouseMove = (e) => {
-    if (!interaction.mode || !interaction.origField) return;
+    const handlePointerMove = (moveEvent) => {
+      if (!dragRef.current) return;
+      const {
+        fieldId,
+        mode: curMode,
+        startX,
+        startY,
+        initialX,
+        initialY,
+        initialWidth,
+        initialHeight,
+      } = dragRef.current;
 
-    const deltaScreenX = e.clientX - interaction.startX;
-    const deltaScreenY = e.clientY - interaction.startY;
+      const deltaScreenX = moveEvent.clientX - startX;
+      const deltaScreenY = moveEvent.clientY - startY;
 
-    // Convert screen deltas to original template pixels
-    const deltaOrigX = Math.round(deltaScreenX / scale);
-    const deltaOrigY = Math.round(deltaScreenY / scale);
+      // Convert screen deltas back to original template coordinates
+      const currentScale = scale || 1;
+      const deltaOrigX = deltaScreenX / currentScale;
+      const deltaOrigY = deltaScreenY / currentScale;
 
-    const { origField, handle } = interaction;
-
-    if (interaction.mode === "move") {
-      const newX = Math.max(0, Math.min(origWidth - origField.width, origField.x + deltaOrigX));
-      const newY = Math.max(0, Math.min(origHeight - origField.height, origField.y + deltaOrigY));
-
-      handleUpdateField(origField.id, { x: newX, y: newY });
-    } else if (interaction.mode === "resize") {
-      let newX = origField.x;
-      let newY = origField.y;
-      let newWidth = origField.width;
-      let newHeight = origField.height;
-
-      if (handle.includes("e")) {
-        newWidth = Math.max(40, origField.width + deltaOrigX);
-      }
-      if (handle.includes("s")) {
-        newHeight = Math.max(20, origField.height + deltaOrigY);
-      }
-      if (handle.includes("w")) {
-        const potentialWidth = origField.width - deltaOrigX;
-        if (potentialWidth >= 40) {
-          newWidth = potentialWidth;
-          newX = origField.x + deltaOrigX;
-        }
-      }
-      if (handle.includes("n")) {
-        const potentialHeight = origField.height - deltaOrigY;
-        if (potentialHeight >= 20) {
-          newHeight = potentialHeight;
-          newY = origField.y + deltaOrigY;
-        }
-      }
-
-      handleUpdateField(origField.id, {
-        x: Math.round(newX),
-        y: Math.round(newY),
-        width: Math.round(newWidth),
-        height: Math.round(newHeight),
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (interaction.mode) {
-      setInteraction({ mode: null, fieldId: null, handle: null, startX: 0, startY: 0, origField: null });
-    }
-  };
-
-  // Save operation to Firebase (published or draft)
-  const handleSave = async (status = "published") => {
-    setSavingTemplate(true);
-    setSaveStatus({ msg: "", type: "" });
-
-    try {
-      let finalUrl = templateConfig.fileUrl || templateConfig.templateUrl;
-      let storagePath = templateConfig.storagePath || "";
-
-      // Upload template file to Firebase Storage if not already uploaded
-      if (templateConfig.templateFile) {
-        const uploadRes = await uploadCertificateTemplate(
-          templateConfig.templateFile,
-          templateConfig.templateId || templateConfig.savedTemplateId || `tpl_${Date.now()}`
+      if (curMode === "drag") {
+        const newX = Math.max(
+          0,
+          Math.min(originalWidth - initialWidth, Math.round(initialX + deltaOrigX))
         );
-        finalUrl = uploadRes.downloadUrl;
-        storagePath = uploadRes.storagePath;
+        const newY = Math.max(
+          0,
+          Math.min(originalHeight - initialHeight, Math.round(initialY + deltaOrigY))
+        );
+        handleUpdateField(fieldId, { x: newX, y: newY });
+      } else if (curMode === "resize") {
+        const newWidth = Math.max(60, Math.round(initialWidth + deltaOrigX));
+        const newHeight = Math.max(25, Math.round(initialHeight + deltaOrigY));
+        handleUpdateField(fieldId, { width: newWidth, height: newHeight });
       }
+    };
 
-      const savedId = await saveCertificateTemplate({
-        id: templateConfig.templateId || templateConfig.savedTemplateId || undefined,
-        templateId: templateConfig.templateId || templateConfig.savedTemplateId || undefined,
-        name: templateConfig.name || templateConfig.templateName,
-        eventName: templateConfig.eventName,
-        eventDate: templateConfig.eventDate,
-        certificateType: templateConfig.certificateType,
-        fileUrl: finalUrl,
-        templateUrl: finalUrl,
-        storagePath,
-        width: origWidth,
-        height: origHeight,
-        dimensions: { width: origWidth, height: origHeight },
-        fields,
-        status, // 'published' | 'draft'
-      });
+    const handlePointerUp = () => {
+      dragRef.current = null;
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
 
-      onUpdateConfig({
-        templateId: savedId,
-        savedTemplateId: savedId,
-        fileUrl: finalUrl,
-        templateUrl: finalUrl,
-        storagePath,
-        status,
-      });
-
-      const label = status === "draft" ? "Draft saved successfully!" : "Template saved & published!";
-      setSaveStatus({ msg: `✅ ${label}`, type: "success" });
-      setTimeout(() => setSaveStatus({ msg: "", type: "" }), 4000);
-      return savedId;
-    } catch (err) {
-      console.error("Save template error:", err);
-      setSaveStatus({ msg: `Failed to save template: ${err.message}`, type: "error" });
-      return null;
-    } finally {
-      setSavingTemplate(false);
-    }
-  };
-
-  // Save and continue to Step 3 Data Mapping
-  const handleContinue = async () => {
-    const saved = await handleSave("published");
-    if (saved) {
-      onNext();
-    }
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
   };
 
   return (
-    <div
-      className="template-editor-step"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      <div className="wizard-step-header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-          <div>
-            <h3>Step 2: Certificate Template Editor</h3>
-            <p>
-              Drag to move text boxes, drag resize handles to set boundaries. Coordinates are
-              saved relative to original template dimensions (<strong>{origWidth} × {origHeight} px</strong>).
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-            <span className="editor-scale-pill">
-              Display Scale: {Math.round(scale * 100)}%
-            </span>
-
-            <button
-              type="button"
-              className="admin-btn admin-btn--outline"
-              style={{ fontSize: "0.82rem" }}
-              onClick={() => handleSave("draft")}
-              disabled={savingTemplate}
-            >
-              💾 Save as Draft
-            </button>
-
-            <button
-              type="button"
-              className="admin-btn admin-btn--secondary"
-              style={{ fontSize: "0.82rem" }}
-              onClick={() => handleSave("published")}
-              disabled={savingTemplate}
-            >
-              {savingTemplate ? "Saving..." : "✓ Save Template"}
-            </button>
-          </div>
+    <div className="template-editor-wrapper">
+      <div className="te-header">
+        <div>
+          <h3>Step 2: Position Certificate Text Fields</h3>
+          <p>
+            Drag and resize text boxes directly on the certificate. Use the sidebar
+            to adjust fonts, weights, colors, and variables like <code>{"{{name}}"}</code> or <code>{"{{position}}"}</code>.
+          </p>
+        </div>
+        <div className="te-header-actions">
+          <span className="te-scale-badge">
+            Zoom: {Math.round(scale * 100)}% | Native: {originalWidth} × {originalHeight}px
+          </span>
         </div>
       </div>
 
-      {saveStatus.msg && (
-        <div
-          className={`cert-alert cert-alert--${saveStatus.type === "success" ? "success" : "error"}`}
-          style={{ marginBottom: "1.25rem" }}
-        >
-          <p>{saveStatus.msg}</p>
-        </div>
-      )}
-
-      <div className="field-editor-layout">
-        {/* Left Column: Visual Canvas with Draggable/Resizable Text Boxes */}
-        <div className="canvas-wrapper">
-          <div className="canvas-toolbar">
-            <span>🖱️ Click a box to select. Drag to move, grab corner handles to resize.</span>
-            <span>Target: {origWidth} × {origHeight} px</span>
-          </div>
-
+      <div className="te-body-grid">
+        {/* Visual Template Canvas */}
+        <div className="te-canvas-col">
           <div
-            ref={containerRef}
-            className="canvas-inner-viewport"
+            ref={canvasContainerRef}
+            className="te-canvas-stage"
             style={{
-              height: viewportSize.height > 0 ? viewportSize.height : "auto",
-              cursor: interaction.mode === "move" ? "grabbing" : "default",
+              height: `${displayHeight}px`,
+              aspectRatio: `${originalWidth} / ${originalHeight}`,
             }}
             onClick={() => setSelectedFieldId(null)}
           >
             {/* Background Template Image */}
             <img
-              src={templateConfig.fileUrl || templateConfig.templateUrl}
+              src={template?.previewUrl}
               alt="Certificate Background"
-              className="editor-canvas-element"
-              style={{ width: "100%", height: "100%", display: "block" }}
+              className="te-canvas-bg"
+              onLoad={updateScale}
+              draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
             />
 
-            {/* Draggable & Resizable Field Boxes Overlay */}
+            {/* Draggable Dynamic Fields */}
             {fields.map((field) => {
               const isSelected = field.id === activeFieldId;
-
-              // Scale original template coordinates to current viewport size
-              const boxLeft = Math.round(field.x * scale);
-              const boxTop = Math.round(field.y * scale);
-              const boxWidth = Math.round(field.width * scale);
-              const boxHeight = Math.round(field.height * scale);
-              const boxFontSize = Math.round((field.fontSize || 32) * scale);
+              const left = field.x * scale;
+              const top = field.y * scale;
+              const width = field.width * scale;
+              const height = field.height * scale;
+              const fontSize = Math.max(9, (field.fontSize || 32) * scale);
 
               return (
                 <div
                   key={field.id}
-                  className={`cert-field-box ${isSelected ? "active" : ""}`}
+                  className={`te-field-box ${isSelected ? "selected" : ""}`}
                   style={{
-                    left: `${boxLeft}px`,
-                    top: `${boxTop}px`,
-                    width: `${boxWidth}px`,
-                    height: `${boxHeight}px`,
+                    left: `${left}px`,
+                    top: `${top}px`,
+                    width: `${width}px`,
+                    height: `${height}px`,
+                    fontFamily: field.fontFamily || "'Cinzel', serif",
+                    fontSize: `${fontSize}px`,
+                    fontWeight: field.fontWeight || "600",
+                    color: field.color || "#1e293b",
+                    textAlign: field.align || "center",
+                    touchAction: "none",
                   }}
-                  onMouseDown={(e) => handleMouseDown(e, field, null)}
-                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => handlePointerDown(e, field, "drag")}
+                  title={`Click and drag to position ${field.variable} (Use arrow keys to nudge)`}
                 >
-                  {/* Field Variable Tag Badge */}
-                  {isSelected && (
-                    <div className="cert-field-tag">
-                      {field.variable || `{{${field.key || field.name}}}`}
+                  <span className="te-field-tag">{field.variable}</span>
+                  {field.isQr || field.variable === "{{qrCode}}" ? (
+                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.85)", border: "1px dashed #6366f1", borderRadius: "4px" }}>
+                      <span style={{ fontSize: `${Math.max(12, height * 0.35)}px` }}>📱</span>
+                      <span style={{ fontSize: `${Math.max(8, height * 0.16)}px`, fontWeight: "600", color: "#4338ca", textAlign: "center" }}>QR CODE</span>
+                    </div>
+                  ) : (
+                    <div className="te-field-text-content">
+                      {field.defaultValue || field.variable}
                     </div>
                   )}
 
-                  {/* Rendered Text Content */}
-                  <div
-                    className="cert-field-content"
-                    style={{
-                      fontFamily: field.fontFamily || "Inter, sans-serif",
-                      fontSize: `${Math.max(10, boxFontSize)}px`,
-                      fontWeight: field.fontWeight || "normal",
-                      color: field.color || "#0f172a",
-                      justifyContent:
-                        field.alignment === "left"
-                          ? "flex-start"
-                          : field.alignment === "right"
-                          ? "flex-end"
-                          : "center",
-                      textAlign: field.alignment || "center",
-                      letterSpacing: `${(field.letterSpacing || 0) * scale}px`,
-                      lineHeight: field.lineHeight || 1.2,
-                    }}
-                  >
-                    {field.variable || `{{${field.key || field.label || "field"}}}`}
-                  </div>
-
-                  {/* 8-Point Resize Handles (only shown when selected) */}
+                  {/* Resize Handle */}
                   {isSelected && (
-                    <>
-                      <div
-                        className="resize-handle nw"
-                        onMouseDown={(e) => handleMouseDown(e, field, "nw")}
-                      />
-                      <div
-                        className="resize-handle n"
-                        onMouseDown={(e) => handleMouseDown(e, field, "n")}
-                      />
-                      <div
-                        className="resize-handle ne"
-                        onMouseDown={(e) => handleMouseDown(e, field, "ne")}
-                      />
-                      <div
-                        className="resize-handle e"
-                        onMouseDown={(e) => handleMouseDown(e, field, "e")}
-                      />
-                      <div
-                        className="resize-handle se"
-                        onMouseDown={(e) => handleMouseDown(e, field, "se")}
-                      />
-                      <div
-                        className="resize-handle s"
-                        onMouseDown={(e) => handleMouseDown(e, field, "s")}
-                      />
-                      <div
-                        className="resize-handle sw"
-                        onMouseDown={(e) => handleMouseDown(e, field, "sw")}
-                      />
-                      <div
-                        className="resize-handle w"
-                        onMouseDown={(e) => handleMouseDown(e, field, "w")}
-                      />
-                    </>
+                    <div
+                      className="te-resize-handle"
+                      onPointerDown={(e) => handlePointerDown(e, field, "resize")}
+                      title="Drag to resize box"
+                    />
                   )}
                 </div>
               );
@@ -413,38 +285,60 @@ export default function TemplateEditor({
           </div>
         </div>
 
-        {/* Right Column: Field Controls & Inspector */}
-        <FieldEditor
-          fields={fields}
-          selectedFieldId={selectedFieldId}
-          onSelectField={setSelectedFieldId}
-          onUpdateField={handleUpdateField}
-          onAddField={handleAddField}
-          onDuplicateField={handleDuplicateField}
-          onRemoveField={handleRemoveField}
-          templateWidth={origWidth}
-          templateHeight={origHeight}
-        />
+        {/* Right Configuration Sidebar */}
+        <div className="te-sidebar-col">
+          <FieldEditor
+            fields={fields}
+            selectedFieldId={activeFieldId}
+            onSelectField={setSelectedFieldId}
+            onAddField={handleAddField}
+            onUpdateField={handleUpdateField}
+            onDeleteField={handleDeleteField}
+            templateWidth={originalWidth}
+            templateHeight={originalHeight}
+          />
+        </div>
       </div>
 
-      <div className="wizard-footer">
+      {/* Step Actions */}
+      <div className="cert-step-footer">
         <button
           type="button"
           className="admin-btn admin-btn--outline"
           onClick={onBack}
         >
-          ← Back to Upload
+          ← Back to Template
         </button>
+
+        {onSaveTemplate && (
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary"
+            onClick={onSaveTemplate}
+            title="Save template layout to Cloud Firestore"
+          >
+            💾 Save Template
+          </button>
+        )}
 
         <button
           type="button"
           className="admin-btn admin-btn--primary"
-          onClick={handleContinue}
-          disabled={savingTemplate}
+          disabled={fields.length === 0}
+          onClick={onContinue}
         >
-          {savingTemplate ? "Saving..." : "Continue to Data Upload →"}
+          Next: Upload Participant Data ({fields.length} fields) →
         </button>
       </div>
     </div>
   );
 }
+
+TemplateEditor.propTypes = {
+  template: PropTypes.object.isRequired,
+  fields: PropTypes.array.isRequired,
+  onFieldsChange: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
+  onContinue: PropTypes.func.isRequired,
+  onSaveTemplate: PropTypes.func,
+};

@@ -1,393 +1,254 @@
-import { useEffect, useRef, useState } from "react";
-import { getEvents } from "../../../Firebase/eventService";
-import { getCertificateTemplates } from "../../../Firebase/certificateTemplateService";
-import { processTemplateFile } from "../../../utils/pdfTemplateHelper";
+import { useState, useRef } from "react";
+import PropTypes from "prop-types";
+import { processTemplateFile, revokeTemplatePreview } from "../../../utils/pdfTemplateHelper";
+import { uploadCertificateTemplate } from "../../../Firebase/certificateStorageService";
 
-const CERTIFICATE_TYPES = [
-  "Participation",
-  "Winner",
-  "Runner-Up",
-  "Organizer",
-  "Appreciation",
-  "Special Mention",
-];
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getAspectRatioLabel(w, h) {
+  if (!w || !h) return "";
+  const ratio = (w / h).toFixed(2);
+  if (Math.abs(ratio - 1.78) < 0.05) return "16:9 Landscape";
+  if (Math.abs(ratio - 1.41) < 0.05) return "A4 Landscape (1.41:1)";
+  if (Math.abs(ratio - 1.33) < 0.05) return "4:3 Standard";
+  return `${ratio}:1 Ratio`;
+}
 
 export default function TemplateUploader({
-  templateConfig,
-  onUpdateConfig,
-  onNext,
+  template,
+  onTemplateLoaded,
+  onContinue,
 }) {
-  const [events, setEvents] = useState([]);
-  const [savedTemplates, setSavedTemplates] = useState([]);
-  const [loadingResources, setLoadingResources] = useState(true);
-  const [processingFile, setProcessingFile] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Load events and saved templates on mount
-  useEffect(() => {
-    let isMounted = true;
+  const handleFileSelect = async (file) => {
+    if (!file) return;
+    setLoading(true);
+    setError("");
 
-    Promise.all([
-      getEvents({ onlyPublished: false, pageSize: 50 }).catch(() => []),
-      getCertificateTemplates().catch(() => []),
-    ]).then(([eventsList, templatesList]) => {
-      if (!isMounted) return;
-      setEvents(eventsList || []);
-      setSavedTemplates(templatesList || []);
-      setLoadingResources(false);
-    });
+    try {
+      // 1. Process template to determine dimensions and generate preview URL
+      const processed = await processTemplateFile(file);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      // 2. Upload template asset to Firebase Storage in background
+      let storageResult = { downloadURL: processed.previewUrl, storagePath: "" };
+      try {
+        storageResult = await uploadCertificateTemplate(processed.blob || file, file.name);
+      } catch (uploadErr) {
+        console.warn("Storage upload failed, continuing with local blob preview:", uploadErr);
+      }
 
-  // Handle Event selection
-  const handleSelectEvent = (e) => {
-    const selectedTitle = e.target.value;
-    if (!selectedTitle) {
-      onUpdateConfig({
-        eventId: "",
-        eventName: "",
-        eventDate: "",
+      onTemplateLoaded({
+        name: file.name,
+        fileType: processed.isPdf ? "pdf" : "image",
+        format: processed.format,
+        mimeType: processed.mimeType,
+        fileSize: processed.fileSize || file.size,
+        originalWidth: processed.originalWidth,
+        originalHeight: processed.originalHeight,
+        previewUrl: processed.previewUrl,
+        storageUrl: storageResult.downloadURL,
+        storagePath: storageResult.storagePath,
+        blob: processed.blob || file,
       });
-      return;
-    }
-
-    const ev = events.find((item) => item.title === selectedTitle);
-    if (ev) {
-      onUpdateConfig({
-        eventId: ev.id || "",
-        eventName: ev.title || "",
-        eventDate: ev.date || "",
-        templateName: templateConfig.templateName || `${ev.title} Certificate`,
-      });
+    } catch (err) {
+      console.error("Template load error:", err);
+      setError(err.message || "Failed to process template file.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle Saved Template selection
-  const handleSelectSavedTemplate = (e) => {
-    const tplId = e.target.value;
-    if (!tplId) return;
-
-    const tpl = savedTemplates.find((t) => t.id === tplId);
-    if (tpl) {
-      onUpdateConfig({
-        templateId: tpl.id,
-        savedTemplateId: tpl.id,
-        templateName: tpl.name,
-        name: tpl.name,
-        eventName: tpl.eventName || templateConfig.eventName,
-        eventDate: tpl.eventDate || templateConfig.eventDate,
-        certificateType: tpl.certificateType || templateConfig.certificateType,
-        templateUrl: tpl.fileUrl || tpl.templateUrl,
-        fileUrl: tpl.fileUrl || tpl.templateUrl,
-        storagePath: tpl.storagePath || "",
-        templateFile: null,
-        width: tpl.width || tpl.dimensions?.width || 1920,
-        height: tpl.height || tpl.dimensions?.height || 1080,
-        dimensions: tpl.dimensions || {
-          width: tpl.width || 1920,
-          height: tpl.height || 1080,
-        },
-        fields: tpl.fields && tpl.fields.length > 0 ? tpl.fields : templateConfig.fields,
-      });
-    }
-  };
-
-  // Drag & drop handlers
-  const handleDrag = (e) => {
-    e.preventDefault();
+  const handleRemoveTemplate = (e) => {
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
+    if (template?.previewUrl) {
+      revokeTemplatePreview(template.previewUrl);
     }
+    onTemplateLoaded(null);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileSelect(file);
   };
 
-  // Process uploaded image or PDF
-  const handleFile = async (file) => {
-    if (!file) return;
-    setErrorMsg("");
-
-    const isPdf =
-      file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    const validImg = [
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/webp",
-    ].includes(file.type);
-
-    if (!isPdf && !validImg) {
-      setErrorMsg("Please upload a valid template file (PNG, JPG, JPEG, or PDF).");
-      return;
-    }
-
-    if (file.size > 25 * 1024 * 1024) {
-      setErrorMsg("Template file size should not exceed 25MB.");
-      return;
-    }
-
-    setProcessingFile(true);
-
-    try {
-      const res = await processTemplateFile(file);
-      onUpdateConfig({
-        templateFile: res.isPdf ? res.imageBlob : file,
-        originalFile: file,
-        templateUrl: res.previewUrl,
-        fileUrl: res.previewUrl,
-        savedTemplateId: "",
-        templateId: "",
-        width: res.originalWidth,
-        height: res.originalHeight,
-        dimensions: {
-          width: res.originalWidth,
-          height: res.originalHeight,
-        },
-      });
-    } catch (err) {
-      console.error("Template processing error:", err);
-      setErrorMsg(err.message || "Failed to process template file.");
-    } finally {
-      setProcessingFile(false);
-    }
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
   };
 
-  // Validation before proceed
-  const canProceed =
-    (templateConfig.templateUrl || templateConfig.fileUrl || templateConfig.templateFile) &&
-    (templateConfig.templateName || templateConfig.name) &&
-    templateConfig.eventName;
+  const handleDragLeave = () => {
+    setDragOver(false);
+  };
 
   return (
-    <div className="template-uploader-step">
-      <div className="wizard-step-header">
-        <h3>Step 1: Upload Certificate Template</h3>
+    <div className="template-uploader-card">
+      <div className="template-uploader-header">
+        <h3>Step 1: Upload Certificate Background Template</h3>
         <p>
-          Upload a high-resolution certificate background image (e.g. 1920x1080
-          or A4) and link it to an Abhyudaya event.
+          Upload a high-resolution certificate design template (PNG, JPG, JPEG, or single-page PDF).
+          Dynamic text fields and verification QR codes will be positioned directly on top of this background.
         </p>
       </div>
 
-      {savedTemplates.length > 0 && (
-        <div className="saved-templates-row">
-          <span>💡 Or load from a saved template:</span>
-          <select
-            className="admin-input"
-            style={{ maxWidth: 300 }}
-            onChange={handleSelectSavedTemplate}
-            value={templateConfig.savedTemplateId || ""}
+      {error && (
+        <div className="cert-alert cert-alert--error" role="alert">
+          <span>⚠️ {error}</span>
+          <button
+            type="button"
+            className="cert-alert-close"
+            onClick={() => setError("")}
+            title="Dismiss error"
           >
-            <option value="">-- Choose Existing Template --</option>
-            {savedTemplates.map((tpl) => (
-              <option key={tpl.id} value={tpl.id}>
-                {tpl.name} ({tpl.certificateType || "Participation"})
-              </option>
-            ))}
-          </select>
+            ×
+          </button>
         </div>
       )}
 
-      {errorMsg && (
-        <div className="cert-alert cert-alert--error" style={{ marginBottom: "1.5rem" }}>
-          <span className="cert-alert-icon">⚠️</span>
-          <p>{errorMsg}</p>
-        </div>
-      )}
+      {/* Dropzone */}
+      <div
+        className={`cert-dropzone ${dragOver ? "drag-over" : ""} ${
+          template?.previewUrl ? "has-file" : ""
+        }`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={() => !loading && fileInputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+        aria-label="Upload certificate template"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            fileInputRef.current?.click();
+          }
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".png,.jpg,.jpeg,.webp,.pdf,application/pdf,image/png,image/jpeg,image/webp"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileSelect(file);
+          }}
+          disabled={loading}
+        />
 
-      <div className="uploader-grid">
-        {/* Left Column: Form Controls */}
-        <div className="uploader-form-col">
-          <div className="form-group">
-            <label className="form-label" htmlFor="templateNameInput">
-              Template Title <span className="req">*</span>
-            </label>
-            <input
-              id="templateNameInput"
-              type="text"
-              className="admin-input"
-              placeholder="e.g. Techbloom 2026 Participation Certificate"
-              value={templateConfig.templateName || ""}
-              onChange={(e) => onUpdateConfig({ templateName: e.target.value })}
-              required
-            />
+        {loading ? (
+          <div className="cert-dropzone-loading">
+            <div className="cert-spinner" />
+            <p>Processing & rendering template (extracting high-DPI canvas)...</p>
           </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="eventSelect">
-              Select Event (From Database)
-            </label>
-            <select
-              id="eventSelect"
-              className="admin-input"
-              value={templateConfig.eventName || ""}
-              onChange={handleSelectEvent}
-              disabled={loadingResources}
-            >
-              <option value="">-- Custom / Other Event --</option>
-              {events.map((ev) => (
-                <option key={ev.id} value={ev.title}>
-                  {ev.title} {ev.date ? `(${ev.date})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="eventNameInput">
-              Event Name <span className="req">*</span>
-            </label>
-            <input
-              id="eventNameInput"
-              type="text"
-              className="admin-input"
-              placeholder="e.g. Techbloom 2026"
-              value={templateConfig.eventName || ""}
-              onChange={(e) => onUpdateConfig({ eventName: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="eventDateInput">
-              Event Date
-            </label>
-            <input
-              id="eventDateInput"
-              type="text"
-              className="admin-input"
-              placeholder="e.g. September 15, 2026"
-              value={templateConfig.eventDate || ""}
-              onChange={(e) => onUpdateConfig({ eventDate: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="certTypeSelect">
-              Certificate Category / Type <span className="req">*</span>
-            </label>
-            <select
-              id="certTypeSelect"
-              className="admin-input"
-              value={templateConfig.certificateType || "Participation"}
-              onChange={(e) =>
-                onUpdateConfig({ certificateType: e.target.value })
-              }
-            >
-              {CERTIFICATE_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Right Column: Upload Box & Preview */}
-        <div className="uploader-upload-col">
-          {!templateConfig.templateUrl ? (
-            <div
-              className={`template-dropzone ${dragActive ? "active" : ""}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
-                style={{ display: "none" }}
-                onChange={(e) => handleFile(e.target.files?.[0])}
+        ) : template?.previewUrl ? (
+          <div className="template-preview-box">
+            <div className="template-preview-img-container">
+              <img
+                src={template.previewUrl}
+                alt="Uploaded Certificate Template"
+                className="template-preview-img"
               />
-              <span className="template-dropzone-icon">
-                {processingFile ? "⏳" : "🖼️"}
-              </span>
-              <div className="template-dropzone-title">
-                {processingFile
-                  ? "Processing & rendering template..."
-                  : "Click to upload certificate template"}
-              </div>
-              <div className="template-dropzone-desc">
-                or drag and drop your PNG, JPG, or PDF file here
-              </div>
-              <span className="template-dropzone-hint">
-                Supported: PNG, JPG, JPEG, and PDF (Single page)
-              </span>
             </div>
-          ) : (
-            <div className="template-preview-box">
-              <div className="template-preview-img-wrap">
-                <img
-                  src={templateConfig.templateUrl}
-                  alt="Template Preview"
-                  className="template-preview-img"
-                />
-              </div>
-
-              <div className="template-meta-pills">
-                <span className="meta-pill">
-                  📐 {templateConfig.dimensions?.width} ×{" "}
-                  {templateConfig.dimensions?.height} px
+            <div className="template-preview-meta">
+              <span className="template-badge">
+                {template.fileType === "pdf" ? "📄 PDF Template" : "🖼️ Image Template"}
+              </span>
+              <span className="template-dims">
+                {template.originalWidth} × {template.originalHeight} px
+              </span>
+              {template.originalWidth && template.originalHeight && (
+                <span className="template-ratio-tag">
+                  {getAspectRatioLabel(template.originalWidth, template.originalHeight)}
                 </span>
-                <span className="meta-pill">
-                  🏷️ {templateConfig.certificateType || "Participation"}
+              )}
+              {template.fileSize > 0 && (
+                <span className="template-size-tag">
+                  {formatBytes(template.fileSize)}
                 </span>
-                {templateConfig.templateFile && (
-                  <span className="meta-pill">
-                    📦 {(templateConfig.templateFile.size / (1024 * 1024)).toFixed(2)} MB
-                  </span>
-                )}
-              </div>
+              )}
+              <span className="template-filename">{template.name}</span>
 
-              <button
-                type="button"
-                className="admin-btn admin-btn--outline"
-                style={{ alignSelf: "flex-end" }}
-                onClick={() => {
-                  onUpdateConfig({
-                    templateFile: null,
-                    templateUrl: "",
-                    savedTemplateId: "",
-                  });
-                }}
-              >
-                🔄 Replace Template Image
-              </button>
+              <div className="template-preview-actions">
+                <button
+                  type="button"
+                  className="cert-btn-text"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  title="Choose a different image file"
+                >
+                  🔄 Replace Template
+                </button>
+                <button
+                  type="button"
+                  className="cert-btn-text cert-btn-text--danger"
+                  onClick={handleRemoveTemplate}
+                  title="Remove uploaded template"
+                >
+                  🗑️ Remove
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="cert-dropzone-empty">
+            <div className="cert-dropzone-icon">📜</div>
+            <h4>Drag & drop certificate template here</h4>
+            <p>or click to browse files</p>
+            <div className="cert-dropzone-formats">
+              <span className="file-badge">PNG</span>
+              <span className="file-badge">JPG / JPEG</span>
+              <span className="file-badge">WEBP</span>
+              <span className="file-badge">PDF (1 Page)</span>
+            </div>
+            <div className="cert-dropzone-specs">
+              <div className="spec-item">
+                <strong>Standard HD:</strong> 1920 × 1080 px (16:9)
+              </div>
+              <div className="spec-item">
+                <strong>Print A4 Landscape:</strong> 3508 × 2480 px (300 DPI)
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="wizard-footer">
-        <span style={{ fontSize: "0.86rem", color: "#64748b" }}>
-          Step 1 of 5: Template & Event Setup
-        </span>
-
+      {/* Action Footer */}
+      <div className="cert-step-footer">
+        <div className="cert-footer-info">
+          {template?.originalWidth && (
+            <span>
+              ✓ Master template ready: {template.originalWidth} × {template.originalHeight} px
+              {template.fileSize > 0 && ` (${formatBytes(template.fileSize)})`}
+            </span>
+          )}
+        </div>
         <button
           type="button"
           className="admin-btn admin-btn--primary"
-          disabled={!canProceed}
-          onClick={onNext}
+          disabled={!template?.previewUrl || loading}
+          onClick={onContinue}
         >
-          Next: Set Text Fields →
+          Next: Position Text Fields →
         </button>
       </div>
     </div>
   );
 }
+
+TemplateUploader.propTypes = {
+  template: PropTypes.object,
+  onTemplateLoaded: PropTypes.func.isRequired,
+  onContinue: PropTypes.func.isRequired,
+};

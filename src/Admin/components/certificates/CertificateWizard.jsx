@@ -1,223 +1,362 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import PropTypes from "prop-types";
 import CertificateStepper from "./CertificateStepper";
 import TemplateUploader from "./TemplateUploader";
-import TemplateEditor from "./TemplateEditor";
+import CertificateDesigner from "./CertificateDesigner";
+import DataUploader from "./DataUploader";
 import DataMapper from "./DataMapper";
 import CertificatePreview from "./CertificatePreview";
 import GenerationProgress from "./GenerationProgress";
-import { getCertificateTemplateById } from "../../../Firebase/certificateTemplateService";
-import { DEFAULT_TEMPLATE_FIELDS } from "../../../utils/certificateRenderer";
+import {
+  normalizeTemplateElements,
+  elementsToLegacyFields,
+  SCHEMA_VERSION,
+} from "./designer/elementSchema";
+import { autoMapFields, autoMapElements } from "../../../utils/fieldMappingHelper";
+import { loadRemoteTemplate, revokeTemplatePreview } from "../../../utils/pdfTemplateHelper";
+import {
+  saveCertificateTemplate,
+  getCertificateTemplateById,
+} from "../../../Firebase/certificateTemplateService";
+import { getEventsPage } from "../../../Firebase/eventService";
 import "./CertificateGenerator.css";
 
-export default function CertificateWizard() {
+export default function CertificateWizard({ onExit }) {
   const [searchParams] = useSearchParams();
+  const templateIdParam = searchParams.get("templateId");
+  const stepParam = searchParams.get("step");
+
   const [currentStep, setCurrentStep] = useState(1);
-  const [maxStepReached, setMaxStepReached] = useState(1);
-  const [loadingTemplate, setLoadingTemplate] = useState(() =>
-    Boolean(new URLSearchParams(window.location.search).get("templateId"))
-  );
+  const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
 
-  // Template & Event Configuration
-  const [templateConfig, setTemplateConfig] = useState({
-    templateFile: null,
-    templateUrl: "",
-    fileUrl: "",
-    storagePath: "",
-    savedTemplateId: "",
+  // Step 1: Template background
+  const [template, setTemplate] = useState(null);
+
+  // Step 2: Elements (new v2 schema)
+  const [elements, setElements] = useState([]);
+
+  // Step 3: Participant data & mapping
+  const [dataset, setDataset] = useState(null);
+  const [mapping, setMapping] = useState({});
+
+  // Meta information
+  const [metaInfo, setMetaInfo] = useState({
     templateId: "",
-    templateName: "",
-    name: "",
-    eventId: "",
-    eventName: "",
-    eventDate: "",
+    title: "Abhyudaya Certificate Batch",
+    eventName: "Abhyudaya 2026",
+    eventDate: "09-09-2026",
     certificateType: "Participation",
-    width: 1920,
-    height: 1080,
-    dimensions: { width: 1920, height: 1080 },
-    fields: DEFAULT_TEMPLATE_FIELDS,
-    status: "draft",
   });
 
-  // Uploaded Participant Dataset
-  const [dataset, setDataset] = useState({
-    fileName: "",
-    totalRows: 0,
-    columns: [],
-    rows: [],
-  });
+  const [eventsList, setEventsList] = useState([]);
+  const [saveStatus, setSaveStatus] = useState("");
 
-  // Field Mapping (fieldId -> columnName / special action)
-  const [dataMapping, setDataMapping] = useState({
-    field_name: "name",
-    field_roll: "rollNo",
-    field_event: "__fixed_event__",
-    field_date: "__fixed_date__",
-    field_id: "__auto_id__",
-  });
-
-  // Reopen existing template if templateId is in URL query parameters
+  // Load available events
   useEffect(() => {
-    const templateIdParam = searchParams.get("templateId");
-    if (!templateIdParam) return;
-
     let isMounted = true;
+    getEventsPage({ pageSize: 50, onlyPublished: false })
+      .then((res) => { if (isMounted) setEventsList(res.events || []); })
+      .catch((err) => console.warn("Could not load events list:", err));
+    return () => { isMounted = false; };
+  }, []);
 
+  // Preload template if templateId in URL
+  useEffect(() => {
+    if (!templateIdParam) return;
+    let isMounted = true;
     getCertificateTemplateById(templateIdParam)
-      .then((tpl) => {
+      .then(async (tpl) => {
         if (!isMounted || !tpl) return;
-        setTemplateConfig({
-          templateId: tpl.id,
-          savedTemplateId: tpl.id,
-          templateName: tpl.name,
-          name: tpl.name,
-          eventId: tpl.eventId || "",
-          eventName: tpl.eventName || "",
-          eventDate: tpl.eventDate || "",
-          certificateType: tpl.certificateType || "Participation",
-          fileUrl: tpl.fileUrl || tpl.templateUrl,
-          templateUrl: tpl.fileUrl || tpl.templateUrl,
+
+        let previewUrl = tpl.templateUrl;
+        let blob = null;
+
+        if (tpl.templateUrl) {
+          try {
+            const loaded = await loadRemoteTemplate(tpl.templateUrl, {
+              originalWidth: tpl.originalWidth,
+              originalHeight: tpl.originalHeight,
+              fileName: tpl.title || "template",
+            });
+            previewUrl = loaded.previewUrl;
+            blob = loaded.blob;
+          } catch (loadErr) {
+            console.warn("Failed to convert remote template to blob URL:", loadErr);
+          }
+        }
+
+        const tplObj = {
+          id: tpl.id,
+          previewUrl,
+          blob,
+          storageUrl: tpl.templateUrl,
           storagePath: tpl.storagePath || "",
-          templateFile: null,
-          width: tpl.width || 1920,
-          height: tpl.height || 1080,
-          dimensions: { width: tpl.width || 1920, height: tpl.height || 1080 },
-          fields: tpl.fields || DEFAULT_TEMPLATE_FIELDS,
-          status: tpl.status || "published",
-        });
-        setCurrentStep(2);
-        setMaxStepReached(2);
+          originalWidth: Number(tpl.originalWidth) || 1920,
+          originalHeight: Number(tpl.originalHeight) || 1080,
+        };
+
+        setTemplate(tplObj);
+
+        // Normalize elements — handles both v2 (elements[]) and old (fields[])
+        const normalizedElements = normalizeTemplateElements(
+          tpl,
+          Number(tpl.originalWidth) || 1920,
+          Number(tpl.originalHeight) || 1080
+        );
+        setElements(normalizedElements);
+
+        setMetaInfo((prev) => ({
+          ...prev,
+          templateId: tpl.id,
+          title: tpl.title || prev.title,
+          eventName: tpl.eventName || prev.eventName,
+          eventDate: tpl.eventDate || prev.eventDate,
+          certificateType: tpl.certificateType || prev.certificateType,
+        }));
+
+        const targetStep = stepParam ? Math.min(5, Math.max(1, Number(stepParam))) : 2;
+        setMaxUnlockedStep((prev) => Math.max(prev, targetStep));
+        setCurrentStep(targetStep);
       })
-      .catch((err) => {
-        console.error("Failed to restore template by ID:", err);
-      })
-      .finally(() => {
-        if (isMounted) setLoadingTemplate(false);
+      .catch((err) => console.error("Error loading template from URL parameter:", err));
+
+    return () => { isMounted = false; };
+  }, [templateIdParam, stepParam]);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (template?.previewUrl && template.previewUrl.startsWith("blob:")) {
+        revokeTemplatePreview(template.previewUrl);
+      }
+    };
+  }, [template?.previewUrl]);
+
+  const unlockStep = (step) => {
+    setMaxUnlockedStep((prev) => Math.max(prev, step));
+    setCurrentStep(step);
+  };
+
+  // Step 1 handler
+  const handleTemplateLoaded = (templateData) => {
+    if (template?.previewUrl && template.previewUrl.startsWith("blob:") && template.previewUrl !== templateData?.previewUrl) {
+      revokeTemplatePreview(template.previewUrl);
+    }
+    setTemplate(templateData);
+    // Reset elements when a new template is loaded
+    setElements([]);
+  };
+
+  // Step 3: When CSV/Excel data is parsed
+  const handleDataParsed = (parsedData) => {
+    setDataset(parsedData);
+    // Auto-map using elements (v2) or fall back to legacy fields
+    const legacyFields = elementsToLegacyFields(elements);
+    const initialMapping = legacyFields.length > 0
+      ? autoMapFields(legacyFields, parsedData.columns)
+      : autoMapElements(elements, parsedData.columns);
+    setMapping(initialMapping);
+  };
+
+  const handleClearData = () => {
+    setDataset(null);
+    setMapping({});
+  };
+
+  // Save template to Firestore
+  const handleSaveTemplate = async () => {
+    if (!template) return;
+    setSaveStatus("saving");
+    try {
+      // Convert elements to legacy fields for backward compat with old consumers
+      const legacyFields = elementsToLegacyFields(elements);
+
+      const savedId = await saveCertificateTemplate({
+        id: metaInfo.templateId || undefined,
+        title: metaInfo.title || "Certificate Template",
+        eventName: metaInfo.eventName,
+        eventDate: metaInfo.eventDate,
+        certificateType: metaInfo.certificateType,
+        templateUrl: template.storageUrl || template.previewUrl || "",
+        storagePath: template.storagePath || "",
+        originalWidth: template.originalWidth,
+        originalHeight: template.originalHeight,
+        // v2: save elements array
+        elements,
+        version: SCHEMA_VERSION,
+        // Backward compat: also save legacy fields[]
+        fields: legacyFields,
+        status: "active",
       });
 
-    return () => {
-      isMounted = false;
-    };
-  }, [searchParams]);
-
-  const goToStep = (step) => {
-    setCurrentStep(step);
-    if (step > maxStepReached) {
-      setMaxStepReached(step);
+      setMetaInfo((prev) => ({ ...prev, templateId: savedId }));
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus(""), 3500);
+    } catch (err) {
+      console.error("Failed to save template:", err);
+      alert("Failed to save template: " + (err.message || "Unknown error"));
+      setSaveStatus("error");
     }
   };
 
-  const handleUpdateConfig = (updates) => {
-    setTemplateConfig((prev) => ({ ...prev, ...updates }));
-  };
-
-  const handleReset = () => {
-    setCurrentStep(1);
-    setMaxStepReached(1);
-    setTemplateConfig({
-      templateFile: null,
-      templateUrl: "",
-      fileUrl: "",
-      storagePath: "",
-      savedTemplateId: "",
-      templateId: "",
-      templateName: "",
-      name: "",
-      eventId: "",
-      eventName: "",
-      eventDate: "",
-      certificateType: "Participation",
-      width: 1920,
-      height: 1080,
-      dimensions: { width: 1920, height: 1080 },
-      fields: DEFAULT_TEMPLATE_FIELDS,
-      status: "draft",
-    });
-    setDataset({
-      fileName: "",
-      totalRows: 0,
-      columns: [],
-      rows: [],
-    });
-    setDataMapping({
-      field_name: "name",
-      field_roll: "rollNo",
-      field_event: "__fixed_event__",
-      field_date: "__fixed_date__",
-      field_id: "__auto_id__",
-    });
-  };
-
-  if (loadingTemplate) {
-    return (
-      <div className="cert-generator-container">
-        <div className="cert-wizard-body" style={{ alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>⏳</div>
-          <h4>Loading Saved Template from Firestore...</h4>
-        </div>
-      </div>
-    );
-  }
+  // Derive legacy fields for DataMapper, CertificatePreview, GenerationProgress
+  const legacyFields = elementsToLegacyFields(elements);
 
   return (
-    <div className="cert-generator-container">
-      {/* 5-Step Stepper */}
+    <div className="cert-wizard-container">
+      {/* Wizard Header */}
+      <div className="cert-wizard-topbar">
+        <div className="cert-wizard-meta">
+          <button
+            type="button"
+            className="cert-btn-back-link"
+            onClick={onExit}
+            title="Return to Certificates"
+          >
+            ← Back to Certificates
+          </button>
+          <h2>Bulk Certificate Generator</h2>
+          <span className="cert-meta-tag">
+            {metaInfo.eventName || "New Batch"}
+          </span>
+        </div>
+
+        <div className="cert-topbar-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          {eventsList.length > 0 && (
+            <select
+              className="cert-meta-input"
+              value={metaInfo.eventName}
+              onChange={(e) => {
+                const selectedTitle = e.target.value;
+                const foundEvent = eventsList.find((ev) => ev.title === selectedTitle);
+                setMetaInfo((prev) => ({
+                  ...prev,
+                  eventName: selectedTitle,
+                  eventDate: foundEvent?.eventStartDate || prev.eventDate,
+                }));
+              }}
+              title="Associated Event"
+              style={{ maxWidth: "220px" }}
+            >
+              <option value="">Select Event...</option>
+              {eventsList.map((ev) => (
+                <option key={ev.id} value={ev.title}>
+                  {ev.title} {ev.eventStartDate ? `(${ev.eventStartDate})` : ""}
+                </option>
+              ))}
+              <option value={metaInfo.eventName}>{metaInfo.eventName || "Custom Event"}</option>
+            </select>
+          )}
+
+          <input
+            type="text"
+            className="cert-meta-input"
+            value={metaInfo.title}
+            onChange={(e) => setMetaInfo((prev) => ({ ...prev, title: e.target.value }))}
+            placeholder="Batch title..."
+            title="Certificate Batch Title"
+          />
+        </div>
+      </div>
+
+      {/* Stepper */}
       <CertificateStepper
         currentStep={currentStep}
-        onSelectStep={goToStep}
-        maxStepReached={maxStepReached}
+        onStepClick={(s) => setCurrentStep(s)}
+        maxUnlockedStep={maxUnlockedStep}
       />
 
-      {/* Dynamic Step View */}
-      <div className="cert-wizard-body">
+      {/* Step Content */}
+      <div className="cert-wizard-content">
+        {/* Step 1: Upload Template */}
         {currentStep === 1 && (
           <TemplateUploader
-            templateConfig={templateConfig}
-            onUpdateConfig={handleUpdateConfig}
-            onNext={() => goToStep(2)}
+            template={template}
+            onTemplateLoaded={handleTemplateLoaded}
+            onContinue={() => unlockStep(2)}
           />
         )}
 
-        {currentStep === 2 && (
-          <TemplateEditor
-            templateConfig={templateConfig}
-            onUpdateConfig={handleUpdateConfig}
-            onNext={() => goToStep(3)}
-            onBack={() => goToStep(1)}
+        {/* Step 2: Certificate Designer (NEW) */}
+        {currentStep === 2 && template && (
+          <CertificateDesigner
+            template={template}
+            elements={elements}
+            onElementsChange={setElements}
+            onBack={() => setCurrentStep(1)}
+            onSaveTemplate={handleSaveTemplate}
+            saveStatus={saveStatus}
+            dataset={dataset}
+            previewDataset={dataset}
+            previewMapping={mapping}
+            onContinue={() => {
+              // Refresh auto-mapping for any newly added elements
+              if (dataset?.columns) {
+                const freshMapping = autoMapElements(elements, dataset.columns);
+                setMapping((prev) => ({ ...freshMapping, ...prev }));
+              }
+              unlockStep(3);
+            }}
           />
         )}
 
+        {/* Step 3: Upload Participant Data */}
         {currentStep === 3 && (
-          <DataMapper
-            templateConfig={templateConfig}
-            dataset={dataset}
-            dataMapping={dataMapping}
-            onDatasetParsed={setDataset}
-            onUpdateMapping={setDataMapping}
-            onNext={() => goToStep(4)}
-            onBack={() => goToStep(2)}
-          />
+          <div className="cert-step-3-wrapper">
+            <DataUploader
+              dataset={dataset}
+              onDataParsed={handleDataParsed}
+              onClearData={handleClearData}
+            />
+
+            {dataset && (
+              <DataMapper
+                fields={legacyFields}
+                dataset={dataset}
+                mapping={mapping}
+                onMappingChange={setMapping}
+                onBack={() => setCurrentStep(2)}
+                onContinue={() => unlockStep(4)}
+                eventName={metaInfo.eventName}
+                eventDate={metaInfo.eventDate}
+              />
+            )}
+          </div>
         )}
 
-        {currentStep === 4 && (
+        {/* Step 4: Live Preview */}
+        {currentStep === 4 && template && dataset && (
           <CertificatePreview
-            templateConfig={templateConfig}
+            template={template}
+            fields={legacyFields}
+            elements={elements}
             dataset={dataset}
-            dataMapping={dataMapping}
-            onNext={() => goToStep(5)}
-            onBack={() => goToStep(3)}
+            mapping={mapping}
+            onBack={() => setCurrentStep(3)}
+            onContinue={() => unlockStep(5)}
+            eventName={metaInfo.eventName}
+            eventDate={metaInfo.eventDate}
           />
         )}
 
-        {currentStep === 5 && (
+        {/* Step 5: Generate & Download */}
+        {currentStep === 5 && template && dataset && (
           <GenerationProgress
-            templateConfig={templateConfig}
+            template={template}
+            fields={legacyFields}
+            elements={elements}
             dataset={dataset}
-            dataMapping={dataMapping}
-            onReset={handleReset}
+            mapping={mapping}
+            metaInfo={metaInfo}
+            onBack={() => setCurrentStep(4)}
           />
         )}
       </div>
     </div>
   );
 }
+
+CertificateWizard.propTypes = {
+  onExit: PropTypes.func,
+};

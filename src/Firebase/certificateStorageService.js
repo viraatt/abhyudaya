@@ -1,100 +1,156 @@
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
+/**
+ * Firebase Storage Service for Certificate Templates and Assets.
+ */
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "./firebase";
 
 /**
- * Upload a certificate template image or file to Firebase Storage.
+ * Upload a certificate template image/PDF to Firebase Storage.
  *
- * @param {File|Blob} file
- * @param {string} templateId
- * @returns {Promise<{ downloadUrl: string, storagePath: string }>}
+ * @param {Blob|File} file
+ * @param {string} fileName
+ * @returns {Promise<{ downloadURL: string, storagePath: string }>}
  */
-export async function uploadCertificateTemplate(file, templateId) {
-  if (!file) throw new Error("No template file provided.");
+export async function uploadCertificateTemplate(file, fileName = "template.png") {
+  try {
+    const timestamp = Date.now();
+    const cleanName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `certificate_templates/${timestamp}_${cleanName}`;
+    const storageRef = ref(storage, storagePath);
 
-  const ext = file.name ? file.name.split(".").pop() : "png";
-  const cleanId = (templateId || `tpl_${Date.now()}`).trim();
-  const storagePath = `certificate_templates/${cleanId}_${Date.now()}.${ext}`;
-  const storageRef = ref(storage, storagePath);
+    const snapshot = await uploadBytes(storageRef, file, {
+      contentType: file.type || "image/png",
+    });
 
-  const metadata = {
-    contentType: file.type || "image/png",
-    customMetadata: {
-      templateId: cleanId,
-      uploadedAt: new Date().toISOString(),
-    },
-  };
+    const downloadURL = await getDownloadURL(snapshot.ref);
 
-  const uploadResult = await uploadBytes(storageRef, file, metadata);
-  const downloadUrl = await getDownloadURL(uploadResult.ref);
-
-  return {
-    downloadUrl,
-    storagePath,
-  };
+    return { downloadURL, storagePath };
+  } catch (err) {
+    console.warn("Storage upload failed or in offline mode, using local blob URL:", err);
+    // Graceful fallback for local development or permission hiccups
+    const localUrl = URL.createObjectURL(file);
+    return {
+      downloadURL: localUrl,
+      storagePath: `local_fallback/${Date.now()}_${fileName}`,
+      isLocalFallback: true,
+    };
+  }
 }
 
 /**
- * Upload a generated certificate PDF to Firebase Storage.
+ * Delete a template asset from Firebase Storage.
  *
- * @param {Blob} pdfBlob
- * @param {string} certificateId
- * @returns {Promise<{ downloadUrl: string, storagePath: string }>}
+ * @param {string} storagePath
  */
-export async function uploadGeneratedCertificatePdf(pdfBlob, certificateId) {
-  if (!pdfBlob) throw new Error("No PDF blob provided.");
-
-  const cleanId = (certificateId || `cert_${Date.now()}`).trim();
-  const storagePath = `certificates_generated/${cleanId}.pdf`;
-  const storageRef = ref(storage, storagePath);
-
-  const metadata = {
-    contentType: "application/pdf",
-    customMetadata: {
-      certificateId: cleanId,
-      generatedAt: new Date().toISOString(),
-    },
-  };
-
-  const uploadResult = await uploadBytes(storageRef, pdfBlob, metadata);
-  const downloadUrl = await getDownloadURL(uploadResult.ref);
-
-  return {
-    downloadUrl,
-    storagePath,
-  };
+export async function deleteTemplateAsset(storagePath) {
+  if (!storagePath || storagePath.startsWith("local_fallback")) return;
+  try {
+    const storageRef = ref(storage, storagePath);
+    await deleteObject(storageRef);
+  } catch (err) {
+    console.warn("Failed to delete storage asset:", err);
+  }
 }
 
 /**
- * Upload a generated certificate ZIP archive to Firebase Storage.
+ * Upload a single generated certificate PDF to Firebase Storage.
  *
- * @param {Blob} zipBlob
+ * @param {Uint8Array|Blob} pdfData
  * @param {string} jobId
- * @returns {Promise<{ downloadUrl: string, storagePath: string }>}
+ * @param {string} fileName
+ * @returns {Promise<{ downloadURL: string, storagePath: string }>}
  */
-export async function uploadCertificateZip(zipBlob, jobId) {
-  if (!zipBlob) throw new Error("No ZIP blob provided.");
+export async function uploadGeneratedCertificatePdf(pdfData, jobId = "batch", fileName = "cert.pdf") {
+  try {
+    const cleanJobId = (jobId || "batch").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `generated_certificates/${cleanJobId}/${cleanFileName}`;
+    const storageRef = ref(storage, storagePath);
 
-  const cleanId = (jobId || `job_${Date.now()}`).trim();
-  const storagePath = `certificate_batches/${cleanId}.zip`;
-  const storageRef = ref(storage, storagePath);
+    const blob = pdfData instanceof Blob ? pdfData : new Blob([pdfData], { type: "application/pdf" });
+    const snapshot = await uploadBytes(storageRef, blob, {
+      contentType: "application/pdf",
+    });
 
-  const metadata = {
-    contentType: "application/zip",
-    customMetadata: {
-      jobId: cleanId,
-      archivedAt: new Date().toISOString(),
-    },
-  };
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { downloadURL, storagePath };
+  } catch (err) {
+    console.warn(`Storage upload failed for ${fileName}, falling back to local Blob URL:`, err);
+    const blob = pdfData instanceof Blob ? pdfData : new Blob([pdfData], { type: "application/pdf" });
+    const localUrl = URL.createObjectURL(blob);
+    return {
+      downloadURL: localUrl,
+      storagePath: `local_fallback/${jobId}/${fileName}`,
+      isLocalFallback: true,
+    };
+  }
+}
 
-  const uploadResult = await uploadBytes(storageRef, zipBlob, metadata);
-  const downloadUrl = await getDownloadURL(uploadResult.ref);
+/**
+ * Upload a bulk certificates ZIP archive to Firebase Storage.
+ *
+ * @param {Blob|Uint8Array} zipData
+ * @param {string} jobId
+ * @param {string} zipFileName
+ * @returns {Promise<{ downloadURL: string, storagePath: string }>}
+ */
+export async function uploadCertificateZip(zipData, jobId = "batch", zipFileName = "certificates.zip") {
+  try {
+    const cleanJobId = (jobId || "batch").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const cleanName = zipFileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `generated_certificates/${cleanJobId}/${cleanName}`;
+    const storageRef = ref(storage, storagePath);
 
-  return {
-    downloadUrl,
-    storagePath,
-  };
+    const blob = zipData instanceof Blob ? zipData : new Blob([zipData], { type: "application/zip" });
+    const snapshot = await uploadBytes(storageRef, blob, {
+      contentType: "application/zip",
+    });
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { downloadURL, storagePath };
+  } catch (err) {
+    console.warn("Storage upload failed for ZIP archive, falling back to local Blob URL:", err);
+    const blob = zipData instanceof Blob ? zipData : new Blob([zipData], { type: "application/zip" });
+    const localUrl = URL.createObjectURL(blob);
+    return {
+      downloadURL: localUrl,
+      storagePath: `local_fallback/${jobId}/${zipFileName}`,
+      isLocalFallback: true,
+    };
+  }
+}
+
+/**
+ * Upload a designer image asset (logo, signature) to Firebase Storage.
+ * Stored under certificate_assets/{templateId}/
+ *
+ * @param {File|Blob} file - The image file
+ * @param {string} templateId - Template ID for path scoping
+ * @param {string} [fileName] - Optional filename override
+ * @returns {Promise<{ downloadURL: string, storagePath: string }>}
+ */
+export async function uploadDesignerImageAsset(file, templateId = "shared", fileName = null) {
+  try {
+    const cleanTemplateId = (templateId || "shared").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const timestamp = Date.now();
+    const rawName = fileName || (file instanceof File ? file.name : "asset.png");
+    const cleanName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `certificate_assets/${cleanTemplateId}/${timestamp}_${cleanName}`;
+    const storageRef = ref(storage, storagePath);
+
+    const snapshot = await uploadBytes(storageRef, file, {
+      contentType: file.type || "image/png",
+    });
+
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { downloadURL, storagePath };
+  } catch (err) {
+    console.warn("Designer image asset upload failed, using local blob URL:", err);
+    const localUrl = file instanceof Blob ? URL.createObjectURL(file) : "";
+    return {
+      downloadURL: localUrl,
+      storagePath: `local_fallback/assets/${fileName || "asset.png"}`,
+      isLocalFallback: true,
+    };
+  }
 }
