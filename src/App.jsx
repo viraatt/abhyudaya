@@ -90,6 +90,10 @@ const Certificates = lazy(() =>
   import("./Admin/pages/Certificates/Certificates.jsx")
 );
 
+const CreateCertificates = lazy(() =>
+  import("./Admin/pages/Certificates/CreateCertificates.jsx")
+);
+
 const AddCertificate = lazy(() =>
   import("./Admin/pages/Certificates/AddCertificate.jsx")
 );

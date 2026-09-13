@@ -233,6 +233,24 @@ service cloud.firestore {
     match /certificateJobs/{jobId} {
       allow read, create, update, delete: if isAdmin(['super_admin', 'event_admin']);
     }
+
+    // ============================================================
+    // CERTIFICATES & GENERATOR
+    // Public: read certificates for verification / search.
+    // Admins (super_admin, event_admin): full CRUD.
+    // ============================================================
+    match /certificates/{certId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    match /certificateTemplates/{templateId} {
+      allow read, write: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    match /certificateJobs/{jobId} {
+      allow read, write: if isAdmin(['super_admin', 'event_admin']);
+    }
   }
 }
 
