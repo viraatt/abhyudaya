@@ -23,7 +23,7 @@ const organizationSchema = {
     width: 512,
     height: 512,
   },
-  image: `${SITE_URL}/og-image.png`,
+  image: `${SITE_URL}/og-image.jpg`,
   email: "abhyudayaclubmpec@gmail.com",
   foundingLocation: {
     "@type": "Place",

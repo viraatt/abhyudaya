@@ -140,7 +140,7 @@ export default function Gallery() {
           content="Explore the digital annual album of Abhyudaya Club memories, events, and workshops at MPEC Kanpur."
         />
         <meta property="og:url" content={`${SITE_URL}/gallery`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
 
         <script type="application/ld+json">
           {JSON.stringify(gallerySchema)}

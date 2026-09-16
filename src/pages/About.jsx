@@ -54,13 +54,13 @@ export default function About() {
         <meta property="og:title" content="About Abhyudaya Club | MPEC Kanpur" />
         <meta property="og:description" content="Empowering innovation, creativity and leadership at MPEC Kanpur since our founding." />
         <meta property="og:url" content={`${SITE_URL}/about`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
         <meta property="og:locale" content="en_IN" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="About Abhyudaya Club | MPEC Kanpur" />
         <meta name="twitter:description" content="Empowering innovation, creativity and leadership at MPEC Kanpur." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
 
         <script type="application/ld+json">
           {JSON.stringify(aboutSchema)}

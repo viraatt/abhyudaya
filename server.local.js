@@ -2,10 +2,11 @@
 /**
  * Local Development API Server for Abhyudaya Club
  * ─────────────────────────────────────────────────────────────────
- * Purpose: Runs the existing Vercel serverless handlers locally so that
- *          `npm run dev` can serve both the Vite frontend and the /api/ routes.
+ * Purpose: Runs the SAME routing as production (server/router.js) locally
+ *          so that `npm run dev` can serve both the Vite frontend and /api/.
  *
- * In production: Vercel routes /api/* automatically — this file is NOT deployed.
+ * In production: api/index.js is the single Vercel Serverless Function and
+ *                uses the same shared router — local behaviour == prod.
  * Locally:       Vite proxy (see vite.config.js) forwards /api/* to this server.
  *
  * Usage:
@@ -16,25 +17,10 @@
 
 import "dotenv/config";
 import http from "http";
-import { URL, pathToFileURL } from "url";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { URL } from "url";
+import { dispatch, getRouteTable } from "./server/router.js";
 
 const PORT = process.env.LOCAL_API_PORT || 3001;
-
-// ── Route table: maps URL path patterns to handler modules ────────
-// Add new routes here as new serverless functions are created.
-const ROUTES = [
-  { pattern: /^\/api\/time-capsule\/notify-cron$/,   module: "./api/time-capsule/notify-cron.js" },
-  { pattern: /^\/api\/time-capsule\/create$/,         module: "./api/time-capsule/create.js" },
-  { pattern: /^\/api\/time-capsule\/verify$/,         module: "./api/time-capsule/verify.js" },
-  { pattern: /^\/api\/admin\/time-capsules$/,         module: "./api/admin/time-capsules.js" },
-  { pattern: /^\/api\/admin\/generate-certificates$/, module: "./api/admin/generate-certificates.js" },
-  { pattern: /^\/api\/admin\/proxy-asset$/,           module: "./api/admin/proxy-asset.js" },
-  { pattern: /^\/api\/gallery$/,                      module: "./api/gallery.js" },
-];
 
 /**
  * Converts a Node IncomingMessage into the minimal req object
@@ -71,6 +57,7 @@ function parseRequest(req, rawBody) {
     headers: req.headers,
     query,
     body,
+    socket: { remoteAddress: req.socket?.remoteAddress || "127.0.0.1" },
   };
 }
 
@@ -82,6 +69,10 @@ function buildResponse(raw) {
   const resObj = {
     _statusCode: 200,
     _headers: { "access-control-allow-origin": "*" },
+
+    get headersSent() {
+      return headersSent;
+    },
 
     status(code) {
       this._statusCode = code;
@@ -126,31 +117,10 @@ function buildResponse(raw) {
 }
 
 // ── HTTP server ───────────────────────────────────────────────────
-const server = http.createServer(async (req, rawRes) => {
+// All routing logic lives in server/router.js (identical to Vercel).
+const server = http.createServer((req, rawRes) => {
   const parsed = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = parsed.pathname;
-
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    rawRes.writeHead(204, {
-      "access-control-allow-origin": "*",
-      "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
-      "access-control-allow-headers": "content-type,authorization",
-    });
-    rawRes.end();
-    return;
-  }
-
-  // Match route
-  const route = ROUTES.find((r) => r.pattern.test(pathname));
-
-  if (!route) {
-    rawRes.writeHead(404, { "content-type": "application/json" });
-    rawRes.end(
-      JSON.stringify({ error: `No local API handler for ${pathname}` })
-    );
-    return;
-  }
 
   // Collect request body
   const chunks = [];
@@ -161,29 +131,16 @@ const server = http.createServer(async (req, rawRes) => {
     const resObj = buildResponse(rawRes);
 
     try {
-      const handlerModule = await import(
-        pathToFileURL(path.resolve(__dirname, route.module)).href
-      );
-      const handler =
-        handlerModule.default || handlerModule.handler || Object.values(handlerModule)[0];
-
-      if (typeof handler !== "function") {
-        throw new Error(`No default export found in ${route.module}`);
-      }
-
       console.log(`[local-api] ${req.method} ${pathname}`);
-      await handler(reqObj, resObj);
+      await dispatch(reqObj, resObj, pathname);
     } catch (err) {
-      console.error(`[local-api] Error in ${pathname}:`, err.message);
-      if (!rawRes.headersSent) {
-        rawRes.writeHead(500, { "content-type": "application/json" });
-        rawRes.end(
-          JSON.stringify({
-            success: false,
-            error: "Local API handler threw an error.",
-            details: err.message,
-          })
-        );
+      console.error(`[local-api] Unhandled error in ${pathname}:`, err);
+      if (!resObj.headersSent) {
+        resObj.status(500).json({
+          success: false,
+          error: "Local API handler threw an error.",
+          details: err.message,
+        });
       }
     }
   });
@@ -191,8 +148,8 @@ const server = http.createServer(async (req, rawRes) => {
 
 server.listen(PORT, () => {
   console.log(`\n[local-api] Abhyudaya local API server running on http://localhost:${PORT}`);
-  console.log("[local-api] Routes served:");
-  ROUTES.forEach((r) => console.log(`  ${r.pattern.source}  →  ${r.module}`));
+  console.log("[local-api] Routes served (shared router — same as Vercel):");
+  getRouteTable().forEach((r) => console.log(`  ${r.path}`));
   console.log("\n[local-api] Make sure Vite proxy is enabled in vite.config.js");
   console.log("[local-api] Waiting for requests...\n");
 });

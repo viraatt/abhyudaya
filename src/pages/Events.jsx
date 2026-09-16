@@ -98,13 +98,13 @@ export default function Events() {
         <meta property="og:title" content="Events | Abhyudaya Club — MPEC Kanpur" />
         <meta property="og:description" content="Discover all Abhyudaya Club events: TechBloom, CommuniCraft, Antariksh Spardha, Industrial Visits, Workshops, and student competitions." />
         <meta property="og:url" content={`${SITE_URL}/events`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
         <meta property="og:locale" content="en_IN" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Events | Abhyudaya Club — MPEC Kanpur" />
         <meta name="twitter:description" content="TechBloom, CommuniCraft, Antariksh Spardha, Industrial Visits, Workshops, and more at MPEC Kanpur." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
       </Helmet>
 
       <PageHero

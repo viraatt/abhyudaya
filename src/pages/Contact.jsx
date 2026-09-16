@@ -192,7 +192,7 @@ export default function Contact() {
           content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries."
         />
         <meta property="og:url" content={`${SITE_URL}/contact`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
         <meta property="og:locale" content="en_IN" />
 
         <meta name="twitter:card" content="summary_large_image" />
@@ -201,7 +201,7 @@ export default function Contact() {
           name="twitter:description"
           content="Get in touch with Abhyudaya Club for collaborations, sponsorships, or queries."
         />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
 
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
       </Helmet>

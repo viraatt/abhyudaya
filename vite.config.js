@@ -65,9 +65,13 @@ export default defineConfig({
           if (id.includes("node_modules/framer-motion/")) {
             return "vendor-motion";
           }
-          // Icons
-          if (id.includes("node_modules/react-icons/")) {
-            return "vendor-icons";
+          // PDF / ZIP / QR certificate stack — admin-only, isolated chunk
+          if (
+            id.includes("node_modules/pdf-lib/") ||
+            id.includes("node_modules/jszip/") ||
+            id.includes("node_modules/qrcode/")
+          ) {
+            return "vendor-certificates";
           }
         },
       },

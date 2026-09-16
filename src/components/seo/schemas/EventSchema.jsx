@@ -19,7 +19,7 @@ export default function EventSchema({ event, canonicalUrl }) {
     name: event.title,
     description: event.description || event.tagline || event.subtitle || "",
     url: canonicalUrl,
-    image: event.image || event.banner || `${SITE_URL}/og-image.png`,
+    image: event.image || event.banner || `${SITE_URL}/og-image.jpg`,
     organizer: {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,

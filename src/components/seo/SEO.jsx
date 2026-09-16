@@ -16,7 +16,7 @@ import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 const SITE_NAME = "Abhyudaya Club";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 const DEFAULT_DESCRIPTION =
   "Abhyudaya Club — the official Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur. Explore events, workshops, blogs and student initiatives.";
 

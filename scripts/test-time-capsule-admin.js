@@ -7,9 +7,9 @@
  */
 
 import assert from "node:assert";
-import { getFirebaseAdmin, generateSecureToken, hashToken } from "../api/time-capsule/utils.js";
-import adminHandler from "../api/admin/time-capsules.js";
-import { authenticateAdminRequest, logAdminAction } from "../api/time-capsule/admin-auth.js";
+import { getFirebaseAdmin, generateSecureToken, hashToken } from "../server/time-capsule/utils.js";
+import adminHandler from "../server/admin/time-capsules.js";
+import { authenticateAdminRequest, logAdminAction } from "../server/time-capsule/admin-auth.js";
 
 const { db } = getFirebaseAdmin();
 

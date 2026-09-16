@@ -53,13 +53,13 @@ export default function JoinClub() {
         <meta property="og:title" content="Join Abhyudaya Club | MPEC Kanpur" />
         <meta property="og:description" content="Become part of MPEC Kanpur's official Science & Literary Club. Develop skills, build portfolio, and lead events." />
         <meta property="og:url" content={`${SITE_URL}/join`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
         <meta property="og:locale" content="en_IN" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Join Abhyudaya Club | MPEC Kanpur" />
         <meta name="twitter:description" content="Become part of MPEC Kanpur's official Science & Literary Club." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
 
         <script type="application/ld+json">
           {JSON.stringify(faqSchema)}

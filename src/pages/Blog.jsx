@@ -102,14 +102,14 @@ const Blog = () => {
         <meta property="og:title" content="Blog | Abhyudaya Club — Stories, Insights & Event Reports" />
         <meta property="og:description" content="Ideas, stories, events, and insights from the Abhyudaya Club community." />
         <meta property="og:url" content={`${SITE_URL}/blog`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
         <meta property="og:locale" content="en_IN" />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Blog | Abhyudaya Club — Stories, Insights & Event Reports" />
         <meta name="twitter:description" content="Ideas, stories, events, and insights from the Abhyudaya Club community." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
       </Helmet>
 
       {/* CollectionPage JSON-LD */}

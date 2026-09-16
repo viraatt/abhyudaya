@@ -13,9 +13,9 @@ import {
   hashToken,
   encryptToken,
   decryptToken,
-} from "../api/time-capsule/utils.js";
-import { sendTimeCapsuleEmail } from "../api/time-capsule/email-service.js";
-import notifyCronHandler from "../api/time-capsule/notify-cron.js";
+} from "../server/time-capsule/utils.js";
+import { sendTimeCapsuleEmail } from "../server/time-capsule/email-service.js";
+import notifyCronHandler from "../server/time-capsule/notify-cron.js";
 
 const { db, Timestamp } = getFirebaseAdmin();
 

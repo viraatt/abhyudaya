@@ -76,7 +76,7 @@ export default function BlogPostingSchema({ blog, canonicalUrl }) {
     url: canonicalUrl,
     image: {
       "@type": "ImageObject",
-      url: blog.featuredImage || `${SITE_URL}/og-image.png`,
+      url: blog.featuredImage || `${SITE_URL}/og-image.jpg`,
       width: 1200,
       height: 630,
     },

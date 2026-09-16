@@ -422,7 +422,7 @@ export default function BlogDetails() {
     blog.excerpt ||
     (blog.content || "").replace(/<[^>]+>/g, "").slice(0, 160);
 
-  const ogImage = blog.featuredImage || `${SITE_URL}/og-image.png`;
+  const ogImage = blog.featuredImage || `${SITE_URL}/og-image.jpg`;
 
   const tags = Array.isArray(blog.tags) ? blog.tags : [];
   const keywords = [

@@ -13,8 +13,8 @@
 import assert from "assert";
 import fs from "fs";
 import path from "path";
-import createHandler from "../api/time-capsule/create.js";
-import verifyHandler from "../api/time-capsule/verify.js";
+import createHandler from "../server/time-capsule/create.js";
+import verifyHandler from "../server/time-capsule/verify.js";
 import {
   getDefaultUnlockDate,
   generateSecureToken,
@@ -25,7 +25,7 @@ import {
   EMAIL_REGEX,
   INDIAN_PHONE_REGEX,
   getFirebaseAdmin,
-} from "../api/time-capsule/utils.js";
+} from "../server/time-capsule/utils.js";
 
 // Mock helper to create HTTP req/res objects for serverless functions
 function createMockReqRes({

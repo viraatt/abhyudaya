@@ -1,5 +1,12 @@
 {
+  "env": {
+    "PUPPETEER_SKIP_DOWNLOAD": "true"
+  },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
     {
       "source": "/((?!.*\\.(?:png|jpg|jpeg|gif|svg|webp|avif|ico|css|js|mjs|json|woff|woff2|ttf|eot|mp4|webm|txt|xml|pdf)$).*)",
       "destination": "/index.html"

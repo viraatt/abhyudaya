@@ -120,13 +120,13 @@ export default function Team() {
         <meta property="og:title" content="Our Team 2026 | Abhyudaya Club — MPEC Kanpur" />
         <meta property="og:description" content="Meet the faculty advisor, student leaders, executives, and web development team of Abhyudaya Club at MPEC Kanpur." />
         <meta property="og:url" content={`${SITE_URL}/team`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.png`} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
         <meta property="og:locale" content="en_IN" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Our Team 2026 | Abhyudaya Club" />
         <meta name="twitter:description" content="Meet the faculty advisor, student leaders, and web development team of Abhyudaya Club at MPEC Kanpur." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.png`} />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
       </Helmet>
 
       <BreadcrumbSchema items={breadcrumbItems} />

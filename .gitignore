@@ -12,3 +12,4 @@ firebase-service-account.json.json
 .env
 .env.local
 .env.*.local
+.vercel

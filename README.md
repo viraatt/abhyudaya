@@ -72,13 +72,20 @@ npm run lint     # ESLint (zero warnings allowed)
 
 ```
 .
-├── api/gallery.js               # serverless API: Cloudinary gallery listing
-├── public/                      # served as-is at the site root
-│   ├── videos/hero-bg.mp4       #   hero background video
-│   ├── feed.xml                 #   RSS feed (generated at build)
-│   ├── sitemap*.xml             #   sitemaps (generated at build)
-│   ├── robots.txt, humans.txt, site.webmanifest, og-image.png
-│   ├── _redirects               #   SPA fallback (Netlify)
+├── api/index.js                # ONLY serverless function — catch-all /api router (Vercel)
+├── server/                     # server-side handlers (NOT deployed as functions)
+│   ├── router.js               #   shared catch-all router (same in Vercel & local dev)
+│   ├── gallery.js              #   serverless API: Cloudinary gallery listing
+│   ├── admin/                  #   admin endpoints (time-capsules, certificates, proxy-asset)
+│   ├── razorpay/               #   payment endpoints (create-order, verify-payment)
+│   ├── registrations/          #   event registration endpoint
+│   └── time-capsule/           #   time-capsule endpoints + helpers (utils, admin-auth, email-service)
+├── public/                     # served as-is at the site root
+│   ├── videos/hero-bg.mp4      #   hero background video
+│   ├── feed.xml                #   RSS feed (generated at build)
+│   ├── sitemap*.xml            #   sitemaps (generated at build)
+│   ├── robots.txt, humans.txt, site.webmanifest, og-image.jpg
+│   ├── _redirects              #   SPA fallback (Netlify)
 │   └── .well-known/security.txt
 ├── scripts/
 │   ├── generate-sitemap.js      # builds sitemap/news/image/rss from Firestore
