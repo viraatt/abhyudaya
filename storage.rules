@@ -7,9 +7,18 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in roles;
     }
 
-    // Certificate templates: Restricted to authorized Admins (super_admin, event_admin)
+    // Certificate templates: Read allowed for client rendering & preview.
+    // Write and delete restricted to authorized Admins (super_admin, event_admin)
     match /certificate_templates/{allPaths=**} {
-      allow read, write, delete: if isAdmin(['super_admin', 'event_admin']);
+      allow read: if true;
+      allow write, delete: if isAdmin(['super_admin', 'event_admin']);
+    }
+
+    // Certificate designer image assets (logos, signatures):
+    // Read allowed for client rendering & PDF export.
+    match /certificate_assets/{allPaths=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin(['super_admin', 'event_admin']);
     }
 
     // Generated certificates and bulk ZIP files:

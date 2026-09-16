@@ -1,16 +1,27 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import PropTypes from "prop-types";
 import QRCode from "qrcode";
 import { resolveFieldValue, resolveParagraphContent, parseTemplateText } from "../../../utils/fieldMappingHelper";
 import { ELEMENT_TYPES } from "./designer/elementSchema";
 
+// ── In-Memory Cache for QR Previews ───────────────────────────────────────────
+const qrPreviewCache = new Map();
+
 function QrPreviewImage({ certId }) {
-  const [dataUrl, setDataUrl] = useState("");
+  const [dataUrl, setDataUrl] = useState(() => qrPreviewCache.get(certId) || "");
+
   useEffect(() => {
+    if (qrPreviewCache.has(certId)) {
+      setDataUrl(qrPreviewCache.get(certId));
+      return;
+    }
     const origin = typeof window !== "undefined" ? window.location.origin : "https://www.abhyudayaclub.in";
     const url = `${origin}/verify/${certId}`;
     QRCode.toDataURL(url, { margin: 1, width: 256 })
-      .then(setDataUrl)
+      .then((generatedUrl) => {
+        qrPreviewCache.set(certId, generatedUrl);
+        setDataUrl(generatedUrl);
+      })
       .catch((err) => console.warn("QR preview error:", err));
   }, [certId]);
 
@@ -23,10 +34,10 @@ function QrPreviewImage({ certId }) {
 QrPreviewImage.propTypes = { certId: PropTypes.string.isRequired };
 
 /**
- * Renders a single element for the preview canvas.
+ * Renders a single element for the preview canvas (memoized).
  * Supports all v2 element types + backward-compat field objects.
  */
-function PreviewElement({ field, scale, mapping, currentRow, options }) {
+const PreviewElement = memo(function PreviewElement({ field, scale, mapping, currentRow, options }) {
   const left = field.x * scale;
   const top = field.y * scale;
   const width = field.width * scale;
@@ -249,7 +260,8 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
       </span>
     </div>
   );
-}
+  return null;
+});
 
 PreviewElement.propTypes = {
   field: PropTypes.object.isRequired,

@@ -35,18 +35,11 @@ export default function TemplateUploader({
     setError("");
 
     try {
-      // 1. Process template to determine dimensions and generate preview URL
+      // 1. Process template locally to determine dimensions and generate preview URL
       const processed = await processTemplateFile(file);
 
-      // 2. Upload template asset to Firebase Storage in background
-      let storageResult = { downloadURL: processed.previewUrl, storagePath: "" };
-      try {
-        storageResult = await uploadCertificateTemplate(processed.blob || file, file.name);
-      } catch (uploadErr) {
-        console.warn("Storage upload failed, continuing with local blob preview:", uploadErr);
-      }
-
-      onTemplateLoaded({
+      // 2. Immediately notify parent component so designer/preview is instant
+      const initialTemplateData = {
         name: file.name,
         fileType: processed.isPdf ? "pdf" : "image",
         format: processed.format,
@@ -55,10 +48,27 @@ export default function TemplateUploader({
         originalWidth: processed.originalWidth,
         originalHeight: processed.originalHeight,
         previewUrl: processed.previewUrl,
-        storageUrl: storageResult.downloadURL,
-        storagePath: storageResult.storagePath,
+        storageUrl: processed.previewUrl,
+        storagePath: "",
         blob: processed.blob || file,
-      });
+        arrayBuffer: processed.arrayBuffer || null,
+      };
+      onTemplateLoaded(initialTemplateData);
+
+      // 3. Upload template asset to Firebase Storage asynchronously in background
+      uploadCertificateTemplate(processed.blob || file, file.name)
+        .then((storageResult) => {
+          if (storageResult?.downloadURL) {
+            onTemplateLoaded({
+              ...initialTemplateData,
+              storageUrl: storageResult.downloadURL,
+              storagePath: storageResult.storagePath,
+            });
+          }
+        })
+        .catch((uploadErr) => {
+          console.warn("Storage upload failed, continuing with local blob preview:", uploadErr);
+        });
     } catch (err) {
       console.error("Template load error:", err);
       setError(err.message || "Failed to process template file.");
@@ -148,7 +158,7 @@ export default function TemplateUploader({
         {loading ? (
           <div className="cert-dropzone-loading">
             <div className="cert-spinner" />
-            <p>Processing & rendering template (extracting high-DPI canvas)...</p>
+            <p>Loading template...</p>
           </div>
         ) : template?.previewUrl ? (
           <div className="template-preview-box">

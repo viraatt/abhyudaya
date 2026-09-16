@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import CertificateStepper from "./CertificateStepper";
@@ -15,6 +15,7 @@ import {
 } from "./designer/elementSchema";
 import { autoMapFields, autoMapElements } from "../../../utils/fieldMappingHelper";
 import { loadRemoteTemplate, revokeTemplatePreview } from "../../../utils/pdfTemplateHelper";
+import { getCachedTemplate, setCachedTemplate } from "../../../utils/templateCache";
 import {
   saveCertificateTemplate,
   getCertificateTemplateById,
@@ -52,6 +53,9 @@ export default function CertificateWizard({ onExit }) {
   const [eventsList, setEventsList] = useState([]);
   const [saveStatus, setSaveStatus] = useState("");
 
+  const activeRequestIdRef = useRef(0);
+  const abortControllerRef = useRef(null);
+
   // Load available events
   useEffect(() => {
     let isMounted = true;
@@ -64,38 +68,67 @@ export default function CertificateWizard({ onExit }) {
   // Preload template if templateId in URL
   useEffect(() => {
     if (!templateIdParam) return;
-    let isMounted = true;
+
+    const currentReqId = ++activeRequestIdRef.current;
+    if (abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort();
+      } catch {}
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Check if template is already fully cached in memory (instant 0ms load)
+    const cachedTpl = getCachedTemplate(templateIdParam);
+
     getCertificateTemplateById(templateIdParam)
       .then(async (tpl) => {
-        if (!isMounted || !tpl) return;
+        if (currentReqId !== activeRequestIdRef.current || !tpl) return;
 
         let previewUrl = tpl.templateUrl;
-        let blob = null;
+        let blob = cachedTpl?.blob || null;
+        let arrayBuffer = cachedTpl?.arrayBuffer || null;
 
-        if (tpl.templateUrl) {
+        if (cachedTpl?.previewUrl) {
+          previewUrl = cachedTpl.previewUrl;
+        } else if (tpl.templateUrl) {
           try {
-            const loaded = await loadRemoteTemplate(tpl.templateUrl, {
-              originalWidth: tpl.originalWidth,
-              originalHeight: tpl.originalHeight,
-              fileName: tpl.title || "template",
-            });
+            const loaded = await loadRemoteTemplate(
+              tpl.templateUrl,
+              {
+                id: tpl.id,
+                originalWidth: tpl.originalWidth,
+                originalHeight: tpl.originalHeight,
+                fileName: tpl.title || "template",
+              },
+              { signal: controller.signal }
+            );
+            if (currentReqId !== activeRequestIdRef.current) return;
             previewUrl = loaded.previewUrl;
             blob = loaded.blob;
+            arrayBuffer = loaded.arrayBuffer;
           } catch (loadErr) {
+            if (loadErr?.name === "AbortError" || controller.signal.aborted) {
+              return; // Request intentionally superseded by another selection
+            }
             console.warn("Failed to convert remote template to blob URL:", loadErr);
           }
         }
+
+        if (currentReqId !== activeRequestIdRef.current) return;
 
         const tplObj = {
           id: tpl.id,
           previewUrl,
           blob,
+          arrayBuffer,
           storageUrl: tpl.templateUrl,
           storagePath: tpl.storagePath || "",
           originalWidth: Number(tpl.originalWidth) || 1920,
           originalHeight: Number(tpl.originalHeight) || 1080,
         };
 
+        setCachedTemplate(tpl.id, tplObj, [tpl.templateUrl]);
         setTemplate(tplObj);
 
         // Normalize elements — handles both v2 (elements[]) and old (fields[])
@@ -119,9 +152,16 @@ export default function CertificateWizard({ onExit }) {
         setMaxUnlockedStep((prev) => Math.max(prev, targetStep));
         setCurrentStep(targetStep);
       })
-      .catch((err) => console.error("Error loading template from URL parameter:", err));
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        console.error("Error loading template from URL parameter:", err);
+      });
 
-    return () => { isMounted = false; };
+    return () => {
+      try {
+        controller.abort();
+      } catch {}
+    };
   }, [templateIdParam, stepParam]);
 
   // Cleanup blob URL on unmount

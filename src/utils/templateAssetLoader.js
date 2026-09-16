@@ -17,6 +17,8 @@
  *   BATCH GENERATION (embedded via pdfDoc.embedJpg / pdfDoc.embedPng)
  */
 
+import { getCachedTemplate, setCachedTemplate } from "./templateCache";
+
 const IS_DEV = import.meta.env.DEV;
 
 /**
@@ -161,13 +163,29 @@ export async function loadTemplateAsset(template) {
   devLog("Loading template asset...");
   devLog(`Dimensions: ${originalWidth}×${originalHeight}`);
 
+  // ── Case 0: In-Memory templateCache hit ──────────────────────────────────
+  const cachedFromStore = getCachedTemplate(template);
+  if (cachedFromStore && cachedFromStore.arrayBuffer instanceof ArrayBuffer && cachedFromStore.arrayBuffer.byteLength > 0) {
+    devLog("Template loaded from global templateCache. MIME:", cachedFromStore.mimeType);
+    const fmt = detectFormat(cachedFromStore.mimeType || template.mimeType || "", template.name || "");
+    return {
+      arrayBuffer: cachedFromStore.arrayBuffer,
+      isJpg: fmt.isJpg,
+      isPng: fmt.isPng || fmt.isPdf,
+      isPdf: fmt.isPdf,
+      mimeType: fmt.mimeType,
+      width: cachedFromStore.originalWidth || originalWidth,
+      height: cachedFromStore.originalHeight || originalHeight,
+    };
+  }
+
   // ── Case 1: ArrayBuffer already cached from a previous call ──────────────
   if (template._cachedArrayBuffer instanceof ArrayBuffer && template._cachedArrayBuffer.byteLength > 0) {
     const fmt = detectFormat(template.mimeType || template.format || "", template.name || "");
     devLog("Template loaded from memory cache (ArrayBuffer). MIME:", fmt.mimeType);
     devLog(`Size: ${(template._cachedArrayBuffer.byteLength / 1024).toFixed(1)} KB`);
     devLog("Template loaded from memory: true");
-    return {
+    const result = {
       arrayBuffer: template._cachedArrayBuffer,
       isJpg: fmt.isJpg,
       isPng: fmt.isPng || fmt.isPdf, // PDF pages are rendered to PNG
@@ -176,6 +194,8 @@ export async function loadTemplateAsset(template) {
       width: originalWidth,
       height: originalHeight,
     };
+    setCachedTemplate(template, result);
+    return result;
   }
 
   let blob = null;
@@ -239,7 +259,7 @@ export async function loadTemplateAsset(template) {
 
   devLog(`Loaded successfully — format: ${finalFmt.mimeType}, bytes: ${arrayBuffer.byteLength}`);
 
-  return {
+  const loadedAsset = {
     arrayBuffer,
     isJpg: finalFmt.isJpg,
     isPng: finalFmt.isPng,
@@ -248,4 +268,10 @@ export async function loadTemplateAsset(template) {
     width: originalWidth,
     height: originalHeight,
   };
+
+  // Cache in template object and global cache
+  template._cachedArrayBuffer = arrayBuffer;
+  setCachedTemplate(template, loadedAsset);
+
+  return loadedAsset;
 }

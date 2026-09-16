@@ -1,19 +1,32 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, memo } from "react";
 import PropTypes from "prop-types";
 import QRCode from "qrcode";
 import { ELEMENT_TYPES } from "./elementSchema";
 import { resolveParagraphContent, resolveFieldValue, parseTemplateText } from "../../../../utils/fieldMappingHelper";
 
+// ── QR Code Preview In-Memory Cache ───────────────────────────────────────────
+const qrPreviewCache = new Map();
+
 // ── QR Code Preview Image ─────────────────────────────────────────────────────
 function QrPreview({ certId, width, height }) {
-  const [dataUrl, setDataUrl] = useState("");
+  const roundedWidth = Math.max(64, Math.round(width || 128));
+  const cacheKey = `${certId || "PREVIEW"}_${roundedWidth}`;
+  const [dataUrl, setDataUrl] = useState(() => qrPreviewCache.get(cacheKey) || "");
+
   useEffect(() => {
+    if (qrPreviewCache.has(cacheKey)) {
+      setDataUrl(qrPreviewCache.get(cacheKey));
+      return;
+    }
     const origin = typeof window !== "undefined" ? window.location.origin : "https://www.abhyudayaclub.in";
     const url = `${origin}/verify/${certId || "PREVIEW"}`;
-    QRCode.toDataURL(url, { margin: 1, width: Math.max(64, Math.round(width)), errorCorrectionLevel: "M" })
-      .then(setDataUrl)
+    QRCode.toDataURL(url, { margin: 1, width: roundedWidth, errorCorrectionLevel: "M" })
+      .then((generatedUrl) => {
+        qrPreviewCache.set(cacheKey, generatedUrl);
+        setDataUrl(generatedUrl);
+      })
       .catch(() => {});
-  }, [certId, width]);
+  }, [cacheKey, certId, roundedWidth]);
 
   if (!dataUrl) {
     return (
@@ -48,8 +61,8 @@ function wrapText(text, containerPxWidth, fontSize, lineHeight) {
   return lines;
 }
 
-// ── Single Element Renderer ───────────────────────────────────────────────────
-function RenderElement({
+// ── Single Element Renderer (Memoized to prevent stage-wide re-renders) ─────
+const RenderElement = memo(function RenderElement({
   el,
   scale,
   isSelected,
@@ -319,7 +332,7 @@ function RenderElement({
   }
 
   return null;
-}
+});
 
 RenderElement.propTypes = {
   el: PropTypes.object.isRequired,
