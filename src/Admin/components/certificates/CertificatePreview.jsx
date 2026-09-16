@@ -69,6 +69,8 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
       row: currentRow,
       options,
       autoBoldVariables: field.autoBoldVariables !== false,
+      boldVariables: field.boldVariables || null,
+      variableStyles: field.variableStyles || {},
       isPreview: true,
       baseFontWeight: field.fontWeight || "400",
     });
@@ -99,7 +101,7 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
             <span
               key={rIdx}
               style={{
-                fontWeight: run.bold ? "700" : (field.fontWeight || "400"),
+                fontWeight: run.bold ? "700" : (run.fontWeight || field.fontWeight || "400"),
               }}
             >
               {run.value}
@@ -163,9 +165,13 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
       row: currentRow,
       options,
       autoBoldVariables: field.autoBoldVariables !== false,
+      boldVariables: field.boldVariables || null,
+      variableStyles: field.variableStyles || {},
       isPreview: true,
       baseFontWeight: field.fontWeight || "400",
     });
+    const vertAlign = field.verticalAlign || "middle";
+    const alignItems = vertAlign === "top" ? "flex-start" : vertAlign === "bottom" ? "flex-end" : "center";
     return (
       <div
         key={field.id}
@@ -179,7 +185,7 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
           color: field.color || "#1e293b",
           textAlign: field.align || "center",
           display: "flex",
-          alignItems: "center",
+          alignItems,
           justifyContent: field.align === "left" ? "flex-start" : field.align === "right" ? "flex-end" : "center",
         }}
       >
@@ -188,7 +194,7 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
             <span
               key={rIdx}
               style={{
-                fontWeight: run.bold ? "700" : (field.fontWeight || "400"),
+                fontWeight: run.bold ? "700" : (run.fontWeight || field.fontWeight || "400"),
               }}
             >
               {run.value}
@@ -207,6 +213,8 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
     row: currentRow,
     options,
     autoBoldVariables: field.autoBoldVariables !== false,
+    boldVariables: field.boldVariables || null,
+    variableStyles: field.variableStyles || {},
     isPreview: true,
     baseFontWeight: field.fontWeight || "700",
   });
@@ -232,7 +240,7 @@ function PreviewElement({ field, scale, mapping, currentRow, options }) {
           <span
             key={rIdx}
             style={{
-              fontWeight: run.bold ? "700" : (field.fontWeight || "600"),
+              fontWeight: run.bold ? "700" : (run.fontWeight || field.fontWeight || "600"),
             }}
           >
             {run.value}

@@ -46,11 +46,14 @@ const defaultTextStyle = {
   fontWeight: "400",
   fontStyle: "normal",
   textDecoration: "none",
-  color: "#1e293b",
+  color: "#ffffff",
   align: "center",
+  verticalAlign: "middle",
   lineHeight: 1.4,
   letterSpacing: 0,
   autoBoldVariables: true,
+  boldVariables: ["name", "event", "date", "college", "organizer"],
+  variableStyles: {},
 };
 
 // ─── Element Factory Functions ────────────────────────────────────────────────
@@ -68,10 +71,10 @@ export function createTextElement(
   existingCount = 0,
   initialContent = "Certificate of Participation"
 ) {
-  const w = Math.round(canvasWidth * 0.5);
+  const w = Math.round(canvasWidth * 0.6);
   const h = Math.round(canvasHeight * 0.08);
   const x = Math.round((canvasWidth - w) / 2);
-  const y = Math.round(canvasHeight * 0.2 + existingCount * Math.round(canvasHeight * 0.1));
+  const y = Math.round(canvasHeight * 0.25 + existingCount * Math.round(canvasHeight * 0.08));
   return {
     ...defaultBase,
     ...defaultTextStyle,
@@ -79,11 +82,12 @@ export function createTextElement(
     type: ELEMENT_TYPES.TEXT,
     x, y, width: w, height: h,
     content: initialContent || "Certificate of Participation",
-    fontSize: 42,
+    fontSize: 44,
     fontWeight: "700",
     fontFamily: "'Cinzel', serif",
     color: "#ffffff",
-    autoBoldVariables: true,
+    align: "center",
+    verticalAlign: "middle",
   };
 }
 
@@ -98,7 +102,7 @@ export function createDynamicTextElement(variable = "{{name}}", canvasWidth = 19
   const w = Math.round(canvasWidth * 0.6);
   const h = Math.round(canvasHeight * 0.09);
   const x = Math.round((canvasWidth - w) / 2);
-  const y = Math.round(canvasHeight * 0.3 + existingCount * Math.round(canvasHeight * 0.1));
+  const y = Math.round(canvasHeight * 0.35 + existingCount * Math.round(canvasHeight * 0.09));
   return {
     ...defaultBase,
     ...defaultTextStyle,
@@ -109,8 +113,9 @@ export function createDynamicTextElement(variable = "{{name}}", canvasWidth = 19
     fontSize: 46,
     fontWeight: "700",
     fontFamily: "'Cinzel', serif",
-    color: "#1e293b",
-    autoBoldVariables: true,
+    color: "#ffffff",
+    align: "center",
+    verticalAlign: "middle",
   };
 }
 
@@ -120,24 +125,32 @@ export function createDynamicTextElement(variable = "{{name}}", canvasWidth = 19
  * @param {number} canvasHeight
  */
 export function createParagraphElement(canvasWidth = 1920, canvasHeight = 1080) {
-  const w = Math.round(canvasWidth * 0.6);
+  const w = Math.round(canvasWidth * 0.85);
   const h = Math.round(canvasHeight * 0.22);
   const x = Math.round((canvasWidth - w) / 2);
-  const y = Math.round(canvasHeight * 0.5);
+  const y = Math.round(canvasHeight * 0.46);
   return {
     ...defaultBase,
     ...defaultTextStyle,
     id: generateElementId("para"),
     type: ELEMENT_TYPES.PARAGRAPH,
     x, y, width: w, height: h,
-    content: "This is to certify that {{name}} has actively participated in {{event}} held on {{date}}.",
+    content: "This is to certify that {{name}} has actively participated in Web Dev Workshop Event in \"{{event}}\" held on {{date}} at {{college}} & organized by the {{organizer}}.",
     fontSize: 26,
     fontWeight: "400",
     fontFamily: "'Inter', sans-serif",
-    color: "#334155",
+    color: "#e2e8f0",
     lineHeight: 1.6,
     verticalAlign: "middle",
     autoBoldVariables: true,
+    boldVariables: ["name", "event", "date", "college", "organizer"],
+    variableStyles: {
+      name: { bold: true },
+      event: { bold: true },
+      date: { bold: true },
+      college: { bold: true },
+      organizer: { bold: true },
+    },
   };
 }
 
@@ -496,20 +509,32 @@ export function normalizeTemplateElements(templateData, canvasWidth = 1920, canv
 export const STANDARD_VARIABLES = [
   { variable: "{{name}}", label: "Participant Name", group: "Standard" },
   { variable: "{{event}}", label: "Event Name", group: "Standard" },
-  { variable: "{{position}}", label: "Position / Award", group: "Standard" },
   { variable: "{{date}}", label: "Event Date", group: "Standard" },
-  { variable: "{{rollNo}}", label: "Roll Number", group: "Standard" },
+  { variable: "{{college}}", label: "College / Institution", group: "Standard" },
+  { variable: "{{organizer}}", label: "Organizer Name", group: "Standard" },
+  { variable: "{{certificateType}}", label: "Certificate Type", group: "Standard" },
   { variable: "{{certificateId}}", label: "Certificate ID", group: "Standard" },
+  { variable: "{{rollNo}}", label: "Roll Number", group: "Standard" },
+  { variable: "{{qrCode}}", label: "Verification QR Code", group: "Standard" },
+  // Common extended variables:
+  { variable: "{{department}}", label: "Department", group: "Custom" },
+  { variable: "{{position}}", label: "Position / Award", group: "Custom" },
+  { variable: "{{team}}", label: "Team Name", group: "Custom" },
+  { variable: "{{course}}", label: "Course / Degree", group: "Custom" },
+  { variable: "{{session}}", label: "Session / Academic Year", group: "Custom" },
 ];
 
 export const GOOGLE_FONTS = [
-  { name: "Cinzel (Classic Serif)", value: "'Cinzel', serif" },
+  { name: "Inter (Modern Sans)", value: "'Inter', sans-serif" },
+  { name: "Roboto (Universal Sans)", value: "'Roboto', sans-serif" },
+  { name: "Poppins (Geometric Sans)", value: "'Poppins', sans-serif" },
+  { name: "Arial (Standard Sans)", value: "Arial, sans-serif" },
+  { name: "Cinzel (Classic Royal Serif)", value: "'Cinzel', serif" },
+  { name: "Times New Roman (Formal Serif)", value: "'Times New Roman', serif" },
+  { name: "Georgia (Editorial Serif)", value: "Georgia, serif" },
   { name: "Playfair Display (Elegant Serif)", value: "'Playfair Display', serif" },
   { name: "Montserrat (Clean Sans)", value: "'Montserrat', sans-serif" },
-  { name: "Inter (Modern Sans)", value: "'Inter', sans-serif" },
-  { name: "Poppins (Geometric Sans)", value: "'Poppins', sans-serif" },
   { name: "Lato (Friendly Sans)", value: "'Lato', sans-serif" },
-  { name: "Roboto (Universal)", value: "'Roboto', sans-serif" },
   { name: "Alex Brush (Script)", value: "'Alex Brush', cursive" },
   { name: "Great Vibes (Flourished Script)", value: "'Great Vibes', cursive" },
   { name: "Cinzel Decorative (Ornate)", value: "'Cinzel Decorative', cursive" },

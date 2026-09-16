@@ -300,19 +300,85 @@ export default function PropertiesPanel({
             </label>
           </div>
 
-          {type === ELEMENT_TYPES.PARAGRAPH && (
-            <FieldGroup label="Vertical Align">
-              <select
-                className="cprop-select"
-                value={element.verticalAlign || "middle"}
-                onChange={(e) => upd({ verticalAlign: e.target.value })}
-              >
-                <option value="top">Top</option>
-                <option value="middle">Middle</option>
-                <option value="bottom">Bottom</option>
-              </select>
-            </FieldGroup>
-          )}
+          <FieldGroup label="Vertical Align">
+            <select
+              className="cprop-select"
+              value={element.verticalAlign || "middle"}
+              onChange={(e) => upd({ verticalAlign: e.target.value })}
+            >
+              <option value="top">Top</option>
+              <option value="middle">Middle</option>
+              <option value="bottom">Bottom</option>
+            </select>
+          </FieldGroup>
+
+          {/* Individual variable bold selector for paragraph elements */}
+          {type === ELEMENT_TYPES.PARAGRAPH && (() => {
+            const matches = (element.content || "").match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || [];
+            const uniqueVars = [...new Set(matches)];
+            if (uniqueVars.length === 0) return null;
+
+            const boldSet = new Set(
+              (element.boldVariables || ["name", "event", "date", "college", "organizer"]).map((v) =>
+                String(v).replace(/^\{\{|\}\}$/g, "").toLowerCase()
+              )
+            );
+
+            return (
+              <div style={{ marginTop: "12px", padding: "10px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>
+                  Dynamic Variables Bold Toggle
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px" }}>
+                  {uniqueVars.map((v) => {
+                    const rawKey = v.replace(/^\{\{|\}\}$/g, "");
+                    const isBold = boldSet.has(rawKey.toLowerCase());
+                    return (
+                      <label
+                        key={v}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          fontSize: "12px",
+                          color: isBold ? "#ffffff" : "#94a3b8",
+                          background: isBold ? "rgba(99, 102, 241, 0.15)" : "transparent",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                      >
+                        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <input
+                            type="checkbox"
+                            checked={isBold}
+                            onChange={(e) => {
+                              const updated = new Set(boldSet);
+                              if (e.target.checked) {
+                                updated.add(rawKey.toLowerCase());
+                              } else {
+                                updated.delete(rawKey.toLowerCase());
+                              }
+                              upd({
+                                boldVariables: Array.from(updated),
+                                autoBoldVariables: false,
+                              });
+                            }}
+                            style={{ accentColor: "#6366f1", cursor: "pointer" }}
+                          />
+                          <code>{v}</code>
+                        </span>
+                        <span style={{ fontSize: "10px", fontWeight: isBold ? 700 : 400, color: isBold ? "#a5b4fc" : "#64748b" }}>
+                          {isBold ? "BOLD" : "Normal"}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

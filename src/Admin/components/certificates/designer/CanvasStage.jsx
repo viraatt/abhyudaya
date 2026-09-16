@@ -97,9 +97,14 @@ function RenderElement({
       row: isPreview ? previewRow : null,
       options: previewOptions,
       autoBoldVariables: el.autoBoldVariables !== false,
+      boldVariables: el.boldVariables || null,
+      variableStyles: el.variableStyles || {},
       isPreview,
       baseFontWeight: el.fontWeight || (el.type === ELEMENT_TYPES.DYNAMIC_TEXT ? "700" : "400"),
     });
+
+    const vertAlign = el.verticalAlign || "middle";
+    const alignItems = vertAlign === "top" ? "flex-start" : vertAlign === "bottom" ? "flex-end" : "center";
 
     return (
       <div
@@ -112,11 +117,11 @@ function RenderElement({
           fontWeight: el.fontWeight || "400",
           fontStyle: el.fontStyle || "normal",
           textDecoration: el.textDecoration || "none",
-          color: el.color || "#1e293b",
+          color: el.color || "#ffffff",
           textAlign: el.align || "center",
           letterSpacing: `${(el.letterSpacing || 0) * scale}px`,
           display: "flex",
-          alignItems: "center",
+          alignItems,
           justifyContent: el.align === "left" ? "flex-start" : el.align === "right" ? "flex-end" : "center",
           overflow: "hidden",
           whiteSpace: "nowrap",
@@ -131,7 +136,7 @@ function RenderElement({
             <span
               key={rIdx}
               style={{
-                fontWeight: run.bold ? "700" : (el.fontWeight || "400"),
+                fontWeight: run.bold ? "700" : (run.fontWeight || el.fontWeight || "400"),
               }}
             >
               {run.value}
@@ -154,6 +159,8 @@ function RenderElement({
       row: isPreview ? previewRow : null,
       options: previewOptions,
       autoBoldVariables: el.autoBoldVariables !== false,
+      boldVariables: el.boldVariables || null,
+      variableStyles: el.variableStyles || {},
       isPreview,
       baseFontWeight: el.fontWeight || "400",
     });
@@ -340,6 +347,8 @@ export default function CanvasStage({
 }) {
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(800);
+  const [showSafeMargins, setShowSafeMargins] = useState(true);
+  const [activeGuides, setActiveGuides] = useState({ vCenter: false, hCenter: false });
   const dragRef = useRef(null);
 
   const originalWidth = Number(template?.originalWidth) || 1920;
@@ -384,7 +393,6 @@ export default function CanvasStage({
 
     // Selection logic
     if (e.ctrlKey || e.metaKey) {
-      // Multi-select toggle
       onSelectIds(
         selectedIds.includes(elId)
           ? selectedIds.filter((id) => id !== elId)
@@ -412,9 +420,33 @@ export default function CanvasStage({
       const dy = (moveEvt.clientY - startY) / scale;
 
       if (dMode === "drag") {
+        let rawX = initialX + dx;
+        let rawY = initialY + dy;
+
+        // Smart snap to horizontal and vertical canvas centers
+        const SNAP_THRESHOLD = 18;
+        let vSnapped = false;
+        let hSnapped = false;
+
+        const centerX = rawX + initialWidth / 2;
+        const canvasCenterX = originalWidth / 2;
+        if (Math.abs(centerX - canvasCenterX) < SNAP_THRESHOLD) {
+          rawX = Math.round(canvasCenterX - initialWidth / 2);
+          vSnapped = true;
+        }
+
+        const centerY = rawY + initialHeight / 2;
+        const canvasCenterY = originalHeight / 2;
+        if (Math.abs(centerY - canvasCenterY) < SNAP_THRESHOLD) {
+          rawY = Math.round(canvasCenterY - initialHeight / 2);
+          hSnapped = true;
+        }
+
+        setActiveGuides({ vCenter: vSnapped, hCenter: hSnapped });
+
         onUpdateElement(dId, {
-          x: Math.round(initialX + dx),
-          y: Math.round(initialY + dy),
+          x: Math.round(rawX),
+          y: Math.round(rawY),
         });
       } else if (dMode === "resize") {
         onUpdateElement(dId, {
@@ -426,6 +458,7 @@ export default function CanvasStage({
 
     const onUp = () => {
       dragRef.current = null;
+      setActiveGuides({ vCenter: false, hCenter: false });
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
@@ -434,7 +467,7 @@ export default function CanvasStage({
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
-  }, [elements, selectedIds, onSelectIds, onUpdateElement, scale]);
+  }, [elements, selectedIds, onSelectIds, onUpdateElement, scale, originalWidth, originalHeight]);
 
   const handleResizePointerDown = useCallback((e, elId) => {
     e.stopPropagation();
@@ -465,6 +498,70 @@ export default function CanvasStage({
           style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none" }}
         />
 
+        {/* Alignment Snap Guides */}
+        {activeGuides.vCenter && (
+          <div
+            style={{
+              position: "absolute",
+              left: `${(originalWidth / 2) * scale}px`,
+              top: 0,
+              bottom: 0,
+              width: "1.5px",
+              background: "#38bdf8",
+              boxShadow: "0 0 8px #38bdf8",
+              pointerEvents: "none",
+              zIndex: 999,
+            }}
+          />
+        )}
+        {activeGuides.hCenter && (
+          <div
+            style={{
+              position: "absolute",
+              top: `${(originalHeight / 2) * scale}px`,
+              left: 0,
+              right: 0,
+              height: "1.5px",
+              background: "#38bdf8",
+              boxShadow: "0 0 8px #38bdf8",
+              pointerEvents: "none",
+              zIndex: 999,
+            }}
+          />
+        )}
+
+        {/* Safe Margins Overlay (5% margin) */}
+        {showSafeMargins && !isPreview && (
+          <div
+            style={{
+              position: "absolute",
+              top: "5%",
+              left: "5%",
+              width: "90%",
+              height: "90%",
+              border: "1px dashed rgba(99, 102, 241, 0.35)",
+              pointerEvents: "none",
+              boxSizing: "border-box",
+              zIndex: 10,
+            }}
+          >
+            <span
+              style={{
+                position: "absolute",
+                top: "4px",
+                left: "8px",
+                fontSize: "10px",
+                color: "rgba(165, 180, 252, 0.7)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                userSelect: "none",
+              }}
+            >
+              Safe Margin (5%)
+            </span>
+          </div>
+        )}
+
         {/* Elements rendered strictly by array order (layer order) */}
         {elements
           .filter((el) => el.visible !== false)
@@ -484,8 +581,24 @@ export default function CanvasStage({
           ))}
       </div>
 
-      <div className="cdes-canvas-footer">
+      <div className="cdes-canvas-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>Zoom: {Math.round(scale * 100)}% · Canvas: {originalWidth} × {originalHeight}px</span>
+        <button
+          type="button"
+          className="cdes-margin-toggle-btn"
+          onClick={() => setShowSafeMargins((prev) => !prev)}
+          style={{
+            background: showSafeMargins ? "rgba(99, 102, 241, 0.15)" : "transparent",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            color: showSafeMargins ? "#a5b4fc" : "#94a3b8",
+            fontSize: "11px",
+            padding: "2px 8px",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          {showSafeMargins ? "✓ Safe Margins On" : "Safe Margins Off"}
+        </button>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@
  *  - Batch Certificate Generator (GenerationProgress)
  */
 
-import { resolveFieldValue } from "./fieldMappingHelper";
+import { resolveFieldValue } from "./fieldMappingHelper.js";
 
 /**
  * Parses template text containing {{variable}} placeholders into an array of styled text runs.
@@ -26,15 +26,19 @@ import { resolveFieldValue } from "./fieldMappingHelper";
  * @param {Record<string, string>} [options.mapping={}] - Variable to column map
  * @param {Record<string, string>} [options.row={}] - Participant row data
  * @param {object} [options.options={}] - Context ({ eventName, eventDate, certificateId, rowIndex })
- * @param {boolean} [options.autoBoldVariables=true] - Whether substituted variables should be bold
+ * @param {boolean} [options.autoBoldVariables=true] - Default bold behavior if boldVariables is unset
+ * @param {Array<string>} [options.boldVariables=null] - Explicit list of variable keys to bold e.g. ['name', 'event', 'date']
+ * @param {Record<string, { bold?: boolean, fontWeight?: string }>} [options.variableStyles={}] - Granular per-variable styles
  * @param {boolean} [options.isPreview=false] - Whether in preview mode (resolves values vs shows {{var}})
  * @param {string|number} [options.baseFontWeight="400"] - Element's base font weight
  * @returns {Array<{
  *   type: "text" | "variable",
- *   value: string,
+ *   key?: string,
  *   rawVar?: string,
+ *   value: string,
  *   bold: boolean,
- *   fontWeight: string
+ *   fontWeight: string,
+ *   style: { fontWeight: string }
  * }>}
  */
 export function parseTemplateText(content = "", options = {}) {
@@ -47,12 +51,19 @@ export function parseTemplateText(content = "", options = {}) {
     row = null,
     options: contextOptions = {},
     autoBoldVariables = true,
+    boldVariables = null,
+    variableStyles = {},
     isPreview = false,
     baseFontWeight = "400",
   } = options;
 
   const isBaseBold =
     Number(baseFontWeight) >= 600 || String(baseFontWeight).toLowerCase().includes("bold");
+
+  // Normalize list of bold variables to lowercase alphanumeric keys
+  const boldKeysSet = Array.isArray(boldVariables)
+    ? new Set(boldVariables.map((v) => String(v).replace(/^\{\{|\}\}$/g, "").trim().toLowerCase()))
+    : null;
 
   // Regex to match {{variable_name}}
   const varRegex = /\{\{([a-zA-Z0-9_]+)\}\}/g;
@@ -64,6 +75,7 @@ export function parseTemplateText(content = "", options = {}) {
     const matchIndex = match.index;
     const fullMatch = match[0]; // e.g. "{{name}}"
     const varName = match[1];   // e.g. "name"
+    const normKey = varName.toLowerCase();
 
     // 1. Preceding static text run
     if (matchIndex > lastIndex) {
@@ -73,12 +85,12 @@ export function parseTemplateText(content = "", options = {}) {
         value: staticChunk,
         bold: isBaseBold,
         fontWeight: isBaseBold ? "700" : String(baseFontWeight || "400"),
+        style: { fontWeight: isBaseBold ? "700" : String(baseFontWeight || "400") },
       });
     }
 
     // 2. Dynamic variable run
     let resolvedValue = fullMatch;
-    // Resolve if row is provided or in preview/PDF mode
     if (row || isPreview) {
       const syntheticField = {
         variable: fullMatch,
@@ -88,14 +100,26 @@ export function parseTemplateText(content = "", options = {}) {
       resolvedValue = val !== undefined && val !== null && val !== "" ? String(val) : fullMatch;
     }
 
-    const isVarBold = autoBoldVariables ? true : isBaseBold;
+    // Determine if this specific variable should be bold
+    let isVarBold = isBaseBold;
+    if (variableStyles[varName] && typeof variableStyles[varName].bold === "boolean") {
+      isVarBold = variableStyles[varName].bold;
+    } else if (boldKeysSet !== null) {
+      isVarBold = boldKeysSet.has(normKey);
+    } else if (autoBoldVariables) {
+      isVarBold = true;
+    }
+
+    const varFontWeight = isVarBold ? "700" : String(baseFontWeight || "400");
 
     runs.push({
       type: "variable",
+      key: varName,
       rawVar: varName,
       value: resolvedValue,
       bold: isVarBold,
-      fontWeight: isVarBold ? "700" : String(baseFontWeight || "400"),
+      fontWeight: varFontWeight,
+      style: { fontWeight: varFontWeight },
     });
 
     lastIndex = varRegex.lastIndex;
@@ -109,6 +133,7 @@ export function parseTemplateText(content = "", options = {}) {
       value: remaining,
       bold: isBaseBold,
       fontWeight: isBaseBold ? "700" : String(baseFontWeight || "400"),
+      style: { fontWeight: isBaseBold ? "700" : String(baseFontWeight || "400") },
     });
   }
 

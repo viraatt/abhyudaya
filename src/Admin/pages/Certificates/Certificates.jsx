@@ -17,6 +17,7 @@ import {
 } from "../../../Firebase/certificateTemplateService";
 import { uploadPdfToCloudinary } from "../../../services/cloudinaryService";
 import { parseCSV } from "../../../utils/csvUtils";
+import { allocateCertificateIdsForBatch } from "../../../Firebase/certificateIdService";
 import "../style/admin.css";
 import "./Certificates.css";
 
@@ -47,6 +48,11 @@ export default function Certificates() {
   const [bulkProgress, setBulkProgress] = useState(0);
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkResults, setBulkResults] = useState(null);
+
+  // Pre-upload ID Changes & verification state
+  const [checkingIds, setCheckingIds] = useState(false);
+  const [idAllocations, setIdAllocations] = useState(null);
+  const [idSummary, setIdSummary] = useState(null);
 
   const csvInputRef = useRef(null);
   const pdfInputRef = useRef(null);
@@ -226,7 +232,72 @@ export default function Certificates() {
     }
   };
 
-  // Process Bulk CSV + PDFs upload
+  // Handle CSV file selection and immediate ID verification
+  const handleCsvSelection = async (file) => {
+    setCsvFile(file);
+    setBulkResults(null);
+    if (!file) {
+      setIdAllocations(null);
+      setIdSummary(null);
+      return;
+    }
+
+    setCheckingIds(true);
+    try {
+      const csvText = await file.text();
+      const rows = parseCSV(csvText);
+      if (rows && rows.length > 0) {
+        const result = await allocateCertificateIdsForBatch(rows, {
+          idField: "certificateId",
+          nameField: "name",
+        });
+        setIdAllocations(result.allocations);
+        setIdSummary(result.summary);
+      } else {
+        setIdAllocations([]);
+        setIdSummary({ total: 0, newGenerated: 0, unchanged: 0, reused: 0 });
+      }
+    } catch (err) {
+      console.warn("Could not pre-verify certificate IDs:", err);
+      setIdAllocations(null);
+      setIdSummary(null);
+    } finally {
+      setCheckingIds(false);
+    }
+  };
+
+  // Download updated CSV report with final Certificate IDs
+  const handleDownloadResultsCsv = () => {
+    if (!bulkResults?.successes?.length) return;
+    const headers = [
+      "Certificate ID",
+      "Original Certificate ID",
+      "Name",
+      "Roll No",
+      "Event Name",
+      "Status",
+      "Certificate URL",
+    ];
+    const rows = bulkResults.successes.map((s) => [
+      `"${s.certificateId}"`,
+      `"${s.originalCertificateId || s.certificateId}"`,
+      `"${(s.name || "").replace(/"/g, '""')}"`,
+      `"${(s.rollNo || "").replace(/"/g, '""')}"`,
+      `"${(s.eventName || "").replace(/"/g, '""')}"`,
+      `"${s.changed ? "ID Regenerated" : "Unchanged"}"`,
+      `"${s.url || ""}"`,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Certificate_Batch_Results_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Process Bulk CSV + PDFs upload with safe ID regeneration
   const handleBulkUpload = async (e) => {
     e.preventDefault();
     if (!csvFile) {
@@ -240,7 +311,7 @@ export default function Certificates() {
 
     setBulkProcessing(true);
     setBulkProgress(0);
-    setBulkStatus("Reading CSV file...");
+    setBulkStatus("Reading CSV file and locking Certificate IDs...");
     setBulkResults(null);
 
     const pdfMap = new Map();
@@ -256,7 +327,19 @@ export default function Certificates() {
         throw new Error("CSV file is empty or invalid format.");
       }
 
-      // Format expected: rollNo,name,eventName,eventDate,certificateType,certificateId,fileName
+      // Ensure we have current atomic allocations
+      let currentAllocations = idAllocations;
+      if (!currentAllocations || currentAllocations.length !== rows.length) {
+        setBulkStatus("Verifying Certificate IDs with Firestore registry...");
+        const allocRes = await allocateCertificateIdsForBatch(rows, {
+          idField: "certificateId",
+          nameField: "name",
+        });
+        currentAllocations = allocRes.allocations;
+        setIdAllocations(allocRes.allocations);
+        setIdSummary(allocRes.summary);
+      }
+
       const successes = [];
       const failures = [];
 
@@ -272,13 +355,17 @@ export default function Certificates() {
         const eventName = (row.eventName || row.eventname || row.event || "").trim();
         const eventDate = (row.eventDate || row.eventdate || row.date || "").trim();
         const certificateType = (row.certificateType || row.certificatetype || row.type || "Participation").trim();
-        const certificateId = (row.certificateId || row.certificateid || row.id || "").trim();
+        const originalCertId = (row.certificateId || row.certificateid || row.id || "").trim();
         const fileName = (row.fileName || row.filename || row.file || "").trim();
 
-        if (!rollNo || !name || !eventName || !certificateId || !fileName) {
+        // Use the safe allocated ID (regenerated if original already exists)
+        const alloc = currentAllocations?.[i];
+        const finalCertId = (alloc?.finalId || originalCertId).trim();
+
+        if (!rollNo || !name || !eventName || !finalCertId || !fileName) {
           failures.push({
             row: i + 1,
-            certificateId: certificateId || "N/A",
+            certificateId: finalCertId || originalCertId || "N/A",
             name: name || "N/A",
             reason: "Missing required fields (rollNo, name, eventName, certificateId, fileName)",
           });
@@ -289,7 +376,8 @@ export default function Certificates() {
         if (!pdfFile) {
           failures.push({
             row: i + 1,
-            certificateId,
+            certificateId: finalCertId,
+            originalCertificateId: originalCertId,
             name,
             reason: `Matching PDF file "${fileName}" not provided in selected files.`,
           });
@@ -297,34 +385,41 @@ export default function Certificates() {
         }
 
         setBulkStatus(
-          `Uploading PDF [${i + 1}/${rows.length}]: ${fileName} (${certificateId})...`
+          `Uploading PDF [${i + 1}/${rows.length}]: ${fileName} (${finalCertId})...`
         );
 
         try {
           // Step 1: Upload to Cloudinary
           const uploadRes = await uploadPdfToCloudinary(pdfFile);
 
-          // Step 2: Save metadata to Firestore
-          await createCertificate({
-            certificateId,
-            rollNo,
-            name,
-            eventName,
-            eventDate,
-            certificateType,
-            certificateUrl: uploadRes.secure_url,
-          });
+          // Step 2: Save metadata to Firestore using the FINAL certificate ID
+          await createCertificate(
+            {
+              certificateId: finalCertId,
+              rollNo,
+              name,
+              eventName,
+              eventDate,
+              certificateType,
+              certificateUrl: uploadRes.secure_url,
+            },
+            { autoRegenerate: true }
+          );
 
           successes.push({
-            certificateId,
+            certificateId: finalCertId,
+            originalCertificateId: originalCertId,
             name,
             eventName,
+            rollNo,
             url: uploadRes.secure_url,
+            changed: alloc ? alloc.changed : finalCertId !== originalCertId,
           });
         } catch (err) {
           failures.push({
             row: i + 1,
-            certificateId,
+            certificateId: finalCertId,
+            originalCertificateId: originalCertId,
             name,
             reason: err.message || "Failed to process certificate.",
           });
@@ -471,7 +566,7 @@ export default function Certificates() {
                         accept=".csv,text/csv"
                         ref={csvInputRef}
                         className="admin-input"
-                        onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                        onChange={(e) => handleCsvSelection(e.target.files?.[0] || null)}
                         disabled={bulkProcessing}
                         required
                       />
@@ -500,6 +595,95 @@ export default function Certificates() {
                     </div>
                   </div>
 
+                  {/* ID Pre-verification Spinner */}
+                  {checkingIds && (
+                    <div className="cert-id-checking-box">
+                      <div className="cert-spinner" style={{ width: "20px", height: "20px" }} />
+                      <span>Checking requested Certificate IDs in Firestore registry...</span>
+                    </div>
+                  )}
+
+                  {/* Certificate ID Changes Preview Card */}
+                  {!checkingIds && idSummary && idAllocations && idAllocations.length > 0 && (
+                    <div className="cert-id-changes-card">
+                      <div className="cert-id-changes-header">
+                        <div className="cert-id-changes-title-group">
+                          <h4 className="cert-id-changes-title">Certificate ID Changes</h4>
+                          <p className="cert-id-changes-subtitle">
+                            Pre-upload audit of certificate identifiers against Firestore records.
+                          </p>
+                        </div>
+                        <span className="cert-id-badge cert-id-badge--verified">
+                          ✓ Firestore Verified
+                        </span>
+                      </div>
+
+                      {/* Summary Metrics */}
+                      <div className="cert-id-summary-grid">
+                        <div className="cert-id-stat-card">
+                          <span className="cert-id-stat-val">{idSummary.total}</span>
+                          <span className="cert-id-stat-lbl">Total</span>
+                        </div>
+                        <div className="cert-id-stat-card cert-id-stat-card--new">
+                          <span className="cert-id-stat-val">{idSummary.newGenerated}</span>
+                          <span className="cert-id-stat-lbl">New IDs generated</span>
+                        </div>
+                        <div className="cert-id-stat-card cert-id-stat-card--reused">
+                          <span className="cert-id-stat-val">0</span>
+                          <span className="cert-id-stat-lbl">Existing IDs reused</span>
+                        </div>
+                      </div>
+
+                      {idSummary.newGenerated > 0 && (
+                        <div className="cert-alert cert-alert--info cert-id-alert">
+                          <span className="cert-alert-icon">ℹ️</span>
+                          <div>
+                            <strong>{idSummary.newGenerated} Certificate ID(s) already exist in Firestore.</strong>
+                            <p>
+                              New sequential IDs have been automatically generated using the same prefix format without overwriting old certificates.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Row by Row Mapping */}
+                      <div className="cert-id-changes-list">
+                        {idAllocations.map((alloc) => (
+                          <div
+                            key={alloc.rowNumber}
+                            className={`cert-id-change-row ${alloc.changed ? "is-changed" : "is-unchanged"}`}
+                          >
+                            <div className="cert-id-row-meta">
+                              <span className="cert-id-row-tag">Row {alloc.rowNumber}:</span>
+                              <strong className="cert-id-row-name">{alloc.name}</strong>
+                            </div>
+
+                            <div className="cert-id-row-flow">
+                              {alloc.changed ? (
+                                <>
+                                  <span className="cert-id-pill cert-id-pill--old" title="Requested ID in CSV">
+                                    {alloc.requestedId}
+                                  </span>
+                                  <span className="cert-id-arrow">→</span>
+                                  <span className="cert-id-pill cert-id-pill--new" title="New unique ID allocated">
+                                    {alloc.finalId}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="cert-id-pill cert-id-pill--same" title="ID available in Firestore">
+                                    {alloc.finalId}
+                                  </span>
+                                  <span className="cert-id-no-change-tag">(no change)</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {bulkProcessing && (
                     <div className="bulk-progress-box">
                       <div className="bulk-progress-bar">
@@ -516,7 +700,7 @@ export default function Certificates() {
                     <button
                       type="submit"
                       className="admin-btn admin-btn--primary"
-                      disabled={bulkProcessing || !csvFile || pdfFiles.length === 0}
+                      disabled={bulkProcessing || checkingIds || !csvFile || pdfFiles.length === 0}
                     >
                       {bulkProcessing ? "Processing Batch..." : "Start Bulk Upload →"}
                     </button>
@@ -529,6 +713,9 @@ export default function Certificates() {
                         setCsvFile(null);
                         setPdfFiles([]);
                         setBulkResults(null);
+                        setIdAllocations(null);
+                        setIdSummary(null);
+                        setCheckingIds(false);
                       }}
                       disabled={bulkProcessing}
                     >
@@ -540,7 +727,19 @@ export default function Certificates() {
                 {/* Bulk Results Summary */}
                 {bulkResults && (
                   <div className="bulk-results-box">
-                    <h4>Batch Upload Report</h4>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "10px" }}>
+                      <h4 style={{ margin: 0 }}>Batch Upload Report</h4>
+                      {bulkResults.successes.length > 0 && (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--primary admin-btn--sm"
+                          onClick={handleDownloadResultsCsv}
+                        >
+                          📥 Download Results CSV
+                        </button>
+                      )}
+                    </div>
+
                     <div className="bulk-results-summary">
                       <span className="res-tag res-tag--success">
                         ✅ Successes: {bulkResults.successes.length}
@@ -549,6 +748,24 @@ export default function Certificates() {
                         ⚠️ Failures: {bulkResults.failures.length}
                       </span>
                     </div>
+
+                    {bulkResults.successes.length > 0 && (
+                      <div className="bulk-successes-list" style={{ marginTop: "12px", marginBottom: "12px" }}>
+                        <h5>Processed Certificates</h5>
+                        <ul style={{ maxHeight: "180px", overflowY: "auto", fontSize: "0.82rem" }}>
+                          {bulkResults.successes.map((s, idx) => (
+                            <li key={idx} style={{ padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                              <strong>{s.name}</strong> — Certificate ID: <code>{s.certificateId}</code>
+                              {s.changed && s.originalCertificateId && (
+                                <span style={{ color: "#a5b4fc", marginLeft: "6px" }}>
+                                  (regenerated from <s>{s.originalCertificateId}</s>)
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     {bulkResults.failures.length > 0 && (
                       <div className="bulk-failures-list">

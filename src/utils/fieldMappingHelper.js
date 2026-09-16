@@ -54,16 +54,61 @@ const VARIABLE_ALIASES = {
     "dateofissue",
     "issuedon",
   ],
+  college: [
+    "college",
+    "collegename",
+    "institution",
+    "institutionname",
+    "university",
+    "universityname",
+    "institute",
+    "school",
+  ],
+  organizer: [
+    "organizer",
+    "organizedby",
+    "organization",
+    "club",
+    "clubname",
+    "society",
+    "host",
+  ],
+  certificatetype: [
+    "certificatetype",
+    "type",
+    "certtype",
+    "category",
+    "participation",
+  ],
   position: [
     "position",
     "rank",
     "award",
-    "category",
-    "result",
     "standing",
     "achievement",
     "status",
     "role",
+  ],
+  department: [
+    "department",
+    "dept",
+    "branch",
+    "stream",
+  ],
+  team: [
+    "team",
+    "teamname",
+    "group",
+  ],
+  course: [
+    "course",
+    "degree",
+    "program",
+  ],
+  session: [
+    "session",
+    "academic_year",
+    "batch",
   ],
   certificateid: [
     "certificateid",
@@ -264,6 +309,18 @@ export function resolveFieldValue(field, mapping = {}, row = {}, options = {}) {
   if ((norm === "certificateid" || norm === "certid") && options.certificateId) {
     return options.certificateId;
   }
+  if (norm === "college" || norm === "institution" || norm === "collegename") {
+    return options.college || field.defaultValue || "Maharana Pratap Engineering College";
+  }
+  if (norm === "organizer" || norm === "organizedby" || norm === "club") {
+    return options.organizer || field.defaultValue || "Abhyudaya Club";
+  }
+  if (norm === "certificatetype" || norm === "type") {
+    return options.certificateType || field.defaultValue || "Participation";
+  }
+  if (norm === "qrcode") {
+    return options.certificateId || "";
+  }
 
   return field.defaultValue !== undefined ? field.defaultValue : "";
 }
@@ -374,5 +431,5 @@ export function validateMappingForElements(elements = [], mapping = {}) {
   };
 }
 
-export { parseTemplateText, runsToPlainText } from "./templateParser";
+export { parseTemplateText, runsToPlainText } from "./templateParser.js";
 

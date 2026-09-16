@@ -518,7 +518,12 @@ export async function generateCertificatePdf({
           errorCorrectionLevel: "M",
         });
         const base64Data = qrDataUrl.split(",")[1];
-        const qrPngBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+        // Fast binary decoding without slow char-by-char array iterator
+        const binaryStr = atob(base64Data);
+        const qrPngBytes = new Uint8Array(binaryStr.length);
+        for (let bIdx = 0; bIdx < binaryStr.length; bIdx++) {
+          qrPngBytes[bIdx] = binaryStr.charCodeAt(bIdx);
+        }
         const embeddedQr = await pdfDoc.embedPng(qrPngBytes);
         const pdfY = originalHeight - fieldY - fieldHeight;
         page.drawImage(embeddedQr, {
@@ -611,7 +616,6 @@ export async function generateCertificatePdf({
         const cy = pdfY + fieldHeight / 2;
         const rx = fieldWidth / 2;
         const ry = fieldHeight / 2;
-        // pdf-lib drawEllipse
         try {
           page.drawEllipse({
             x: cx, y: cy,
@@ -622,7 +626,6 @@ export async function generateCertificatePdf({
             opacity: fieldOpacity,
           });
         } catch {
-          // Fallback for older pdf-lib
           page.drawCircle({
             x: cx, y: cy,
             size: Math.min(rx, ry),
@@ -633,7 +636,6 @@ export async function generateCertificatePdf({
           });
         }
       } else {
-        // rectangle / rounded rectangle
         page.drawRectangle({
           x: fieldX, y: pdfY,
           width: fieldWidth, height: fieldHeight,
@@ -672,6 +674,8 @@ export async function generateCertificatePdf({
         row,
         options: { ...options, certificateId: certId },
         autoBoldVariables: field.autoBoldVariables !== false,
+        boldVariables: field.boldVariables || null,
+        variableStyles: field.variableStyles || {},
         isPreview: true,
         baseFontWeight: field.fontWeight || "400",
       });
@@ -700,6 +704,8 @@ export async function generateCertificatePdf({
         row,
         options: { ...options, certificateId: certId },
         autoBoldVariables: field.autoBoldVariables !== false,
+        boldVariables: field.boldVariables || null,
+        variableStyles: field.variableStyles || {},
         isPreview: true,
         baseFontWeight: field.fontWeight || "400",
       });
@@ -729,6 +735,8 @@ export async function generateCertificatePdf({
         row,
         options: { ...options, certificateId: certId },
         autoBoldVariables: field.autoBoldVariables !== false,
+        boldVariables: field.boldVariables || null,
+        variableStyles: field.variableStyles || {},
         isPreview: true,
         baseFontWeight: field.fontWeight || "700",
       });
@@ -832,7 +840,7 @@ export async function createCertificatesZip(certificates = []) {
   const zipBlob = await zip.generateAsync({
     type: "blob",
     compression: "DEFLATE",
-    compressionOptions: { level: 6 },
+    compressionOptions: { level: 1 },
   });
 
   const zipBuffer = await zipBlob.arrayBuffer();

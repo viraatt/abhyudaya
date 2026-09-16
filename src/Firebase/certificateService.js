@@ -12,6 +12,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { allocateCertificateIdsForBatch } from "./certificateIdService";
 
 const CERTIFICATES_COLLECTION = "certificates";
 const certificatesRef = collection(db, CERTIFICATES_COLLECTION);
@@ -126,6 +127,7 @@ export async function getCertificateById(certificateId) {
 
 /**
  * Fetch all certificates for Admin management.
+ * Ignores internal sequence counter documents.
  *
  * @returns {Promise<Array<object>>}
  */
@@ -133,50 +135,57 @@ export async function getCertificates() {
   try {
     const q = query(certificatesRef, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        certificateId: data.certificateId || d.id,
-        rollNo: data.rollNo || "",
-        name: data.name || "",
-        eventName: data.eventName || "",
-        eventDate: data.eventDate || "",
-        certificateType: data.certificateType || "Participation",
-        certificateUrl: data.certificateUrl || "",
-        createdAt: data.createdAt ? data.createdAt.toDate?.() || data.createdAt : null,
-      };
-    });
+    return snapshot.docs
+      .filter((d) => !d.id.startsWith("_counter_") && !d.data()?.isCounter)
+      .map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          certificateId: data.certificateId || d.id,
+          rollNo: data.rollNo || "",
+          name: data.name || "",
+          eventName: data.eventName || "",
+          eventDate: data.eventDate || "",
+          certificateType: data.certificateType || "Participation",
+          certificateUrl: data.certificateUrl || "",
+          createdAt: data.createdAt ? data.createdAt.toDate?.() || data.createdAt : null,
+        };
+      });
   } catch (err) {
     // If composite index is missing for orderBy, fallback without orderBy
     console.warn("Falling back to unordered query:", err);
     const snapshot = await getDocs(certificatesRef);
-    return snapshot.docs.map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        certificateId: data.certificateId || d.id,
-        rollNo: data.rollNo || "",
-        name: data.name || "",
-        eventName: data.eventName || "",
-        eventDate: data.eventDate || "",
-        certificateType: data.certificateType || "Participation",
-        certificateUrl: data.certificateUrl || "",
-        createdAt: data.createdAt ? data.createdAt.toDate?.() || data.createdAt : null,
-      };
-    });
+    return snapshot.docs
+      .filter((d) => !d.id.startsWith("_counter_") && !d.data()?.isCounter)
+      .map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          certificateId: data.certificateId || d.id,
+          rollNo: data.rollNo || "",
+          name: data.name || "",
+          eventName: data.eventName || "",
+          eventDate: data.eventDate || "",
+          certificateType: data.certificateType || "Participation",
+          certificateUrl: data.certificateUrl || "",
+          createdAt: data.createdAt ? data.createdAt.toDate?.() || data.createdAt : null,
+        };
+      });
   }
 }
 
 /**
  * Create a new certificate document in Firestore.
- * Prevents duplicate Certificate IDs.
+ * If autoRegenerate is true and certificateId already exists, automatically
+ * allocates the next sequential ID preserving prefix and leading zeros.
  *
  * @param {object} certData
+ * @param {object} [options]
+ * @param {boolean} [options.autoRegenerate=false]
  * @returns {Promise<string>} Created doc ID
  */
-export async function createCertificate(certData) {
-  const certId = (certData.certificateId || "").trim();
+export async function createCertificate(certData, options = {}) {
+  let certId = (certData.certificateId || "").trim();
   if (!certId) {
     throw new Error("Certificate ID is required.");
   }
@@ -187,7 +196,20 @@ export async function createCertificate(certData) {
   // Check if certificate with this ID already exists
   const existing = await getCertificateById(certId);
   if (existing) {
-    throw new Error(`Certificate ID "${certId}" already exists.`);
+    if (options.autoRegenerate) {
+      const { allocations } = await allocateCertificateIdsForBatch([
+        {
+          certificateId: certId,
+          name: certData.name,
+          rollNo: certData.rollNo,
+        },
+      ]);
+      if (allocations.length > 0 && allocations[0].finalId) {
+        certId = allocations[0].finalId;
+      }
+    } else {
+      throw new Error(`Certificate ID "${certId}" already exists.`);
+    }
   }
 
   const docRef = doc(db, CERTIFICATES_COLLECTION, certId);

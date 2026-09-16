@@ -251,6 +251,10 @@ service cloud.firestore {
     match /certificateJobs/{jobId} {
       allow read, write: if isAdmin(['super_admin', 'event_admin']);
     }
+
+    match /certificateCounters/{counterId} {
+      allow read, write: if isAdmin(['super_admin', 'event_admin']);
+    }
   }
 }
 
