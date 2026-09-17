@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import {
   Navigate,
   Routes,
@@ -14,98 +14,94 @@ import PageLoader from "./components/PageLoader.jsx";
 import { ToastProvider } from "./Admin/components/Toast.jsx";
 import TimeCapsulePopup from "./components/TimeCapsulePopup.jsx";
 
-
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 import ErrorBoundary from "./Admin/components/ErrorBoundary.jsx";
+import { lazyWithRetry } from "./utils/lazyWithRetry.js";
 
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 
 // ─────────────────────────────────────────────────────────────
-// Lazy Loaded Public Pages
+// Lazy Loaded Public Pages (with chunk 404 auto-retry recovery)
 // ─────────────────────────────────────────────────────────────
 
-const Home = lazy(() => import("./pages/Home.jsx"));
-const About = lazy(() => import("./pages/About.jsx"));
-const Events = lazy(() => import("./pages/Events.jsx"));
-const EventDetails = lazy(() => import("./pages/EventDetails.jsx"));
-const Team = lazy(() => import("./pages/Team.jsx"));
-const Gallery = lazy(() => import("./pages/Gallery.jsx"));
-const EventAlbum = lazy(() => import("./pages/EventAlbum.jsx"));
-const Blog = lazy(() => import("./pages/Blog.jsx"));
-const BlogDetails = lazy(() => import("./pages/BlogDetails.jsx"));
-const Contact = lazy(() => import("./pages/Contact.jsx"));
-const JoinClub = lazy(() => import("./pages/JoinClub.jsx"));
-const Announcements = lazy(() => import("./pages/Announcements.jsx"));
-const Register = lazy(() => import("./pages/Register.jsx"));
-const RegisterEvent = lazy(() => import("./pages/RegisterEvent.jsx"));
-const Certificate = lazy(() => import("./pages/Certificate/Certificate.jsx"));
-
-const VerifyCertificate = lazy(() =>
-  import("./pages/VerifyCertificate/VerifyCertificate.jsx")
+const Home = lazyWithRetry(() => import("./pages/Home.jsx"), "Home");
+const About = lazyWithRetry(() => import("./pages/About.jsx"), "About");
+const Events = lazyWithRetry(() => import("./pages/Events.jsx"), "Events");
+const EventDetails = lazyWithRetry(() => import("./pages/EventDetails.jsx"), "EventDetails");
+const Team = lazyWithRetry(() => import("./pages/Team.jsx"), "Team");
+const Gallery = lazyWithRetry(() => import("./pages/Gallery.jsx"), "Gallery");
+const EventAlbum = lazyWithRetry(() => import("./pages/EventAlbum.jsx"), "EventAlbum");
+const Blog = lazyWithRetry(() => import("./pages/Blog.jsx"), "Blog");
+const BlogDetails = lazyWithRetry(() => import("./pages/BlogDetails.jsx"), "BlogDetails");
+const Contact = lazyWithRetry(() => import("./pages/Contact.jsx"), "Contact");
+const JoinClub = lazyWithRetry(() => import("./pages/JoinClub.jsx"), "JoinClub");
+const Announcements = lazyWithRetry(() => import("./pages/Announcements.jsx"), "Announcements");
+const Register = lazyWithRetry(() => import("./pages/Register.jsx"), "Register");
+const RegisterEvent = lazyWithRetry(() => import("./pages/RegisterEvent.jsx"), "RegisterEvent");
+const Certificate = lazyWithRetry(() => import("./pages/Certificate/Certificate.jsx"), "Certificate");
+const VerifyCertificate = lazyWithRetry(
+  () => import("./pages/VerifyCertificate/VerifyCertificate.jsx"),
+  "VerifyCertificate"
 );
-
-const TimeCapsule = lazy(() => import("./pages/TimeCapsule.jsx"));
-const TimeCapsuleOpen = lazy(() => import("./pages/TimeCapsuleOpen.jsx"));
-
-const NotFound = lazy(() => import("./pages/NotFound.jsx"));
+const TimeCapsule = lazyWithRetry(() => import("./pages/TimeCapsule.jsx"), "TimeCapsule");
+const TimeCapsuleOpen = lazyWithRetry(() => import("./pages/TimeCapsuleOpen.jsx"), "TimeCapsuleOpen");
+const NotFound = lazyWithRetry(() => import("./pages/NotFound.jsx"), "NotFound");
 
 // ─────────────────────────────────────────────────────────────
-// Lazy Loaded Admin Pages
+// Lazy Loaded Admin Pages (with chunk 404 auto-retry recovery)
 // ─────────────────────────────────────────────────────────────
 
-const Login = lazy(() => import("./Admin/pages/login.jsx"));
-const Dashboard = lazy(() => import("./Admin/pages/dashboard.jsx"));
-const EventManager = lazy(() => import("./Admin/pages/EventManager.jsx"));
-const AddEvent = lazy(() => import("./Admin/pages/AddEvent.jsx"));
-const EditEvent = lazy(() => import("./Admin/pages/EditEvent.jsx"));
-const Users = lazy(() => import("./Admin/pages/Users.jsx"));
-const BlogManager = lazy(() => import("./Admin/pages/BlogManager.jsx"));
-const AddBlog = lazy(() => import("./Admin/pages/AddBlog.jsx"));
-const EditBlog = lazy(() => import("./Admin/pages/EditBlog.jsx"));
-const AdminTeam = lazy(() => import("./Admin/pages/Team.jsx"));
-const AdminGallery = lazy(() => import("./Admin/pages/Gallery.jsx"));
-const AdminContact = lazy(() => import("./Admin/pages/Contact.jsx"));
-const AdminReviews = lazy(() => import("./Admin/pages/Reviews.jsx"));
+const Login = lazyWithRetry(() => import("./Admin/pages/login.jsx"), "Login");
+const Dashboard = lazyWithRetry(() => import("./Admin/pages/dashboard.jsx"), "Dashboard");
+const EventManager = lazyWithRetry(() => import("./Admin/pages/EventManager.jsx"), "EventManager");
+const AddEvent = lazyWithRetry(() => import("./Admin/pages/AddEvent.jsx"), "AddEvent");
+const EditEvent = lazyWithRetry(() => import("./Admin/pages/EditEvent.jsx"), "EditEvent");
+const Users = lazyWithRetry(() => import("./Admin/pages/Users.jsx"), "Users");
+const BlogManager = lazyWithRetry(() => import("./Admin/pages/BlogManager.jsx"), "BlogManager");
+const AddBlog = lazyWithRetry(() => import("./Admin/pages/AddBlog.jsx"), "AddBlog");
+const EditBlog = lazyWithRetry(() => import("./Admin/pages/EditBlog.jsx"), "EditBlog");
+const AdminTeam = lazyWithRetry(() => import("./Admin/pages/Team.jsx"), "AdminTeam");
+const AdminGallery = lazyWithRetry(() => import("./Admin/pages/Gallery.jsx"), "AdminGallery");
+const AdminContact = lazyWithRetry(() => import("./Admin/pages/Contact.jsx"), "AdminContact");
+const AdminReviews = lazyWithRetry(() => import("./Admin/pages/Reviews.jsx"), "AdminReviews");
 
-const RegistrationOutreach = lazy(() =>
-  import("./Admin/pages/RegistrationOutreach.jsx")
+const RegistrationOutreach = lazyWithRetry(
+  () => import("./Admin/pages/RegistrationOutreach.jsx"),
+  "RegistrationOutreach"
 );
-
-const Students = lazy(() => import("./Admin/pages/Students.jsx"));
-
-const AdminAnnouncements = lazy(() =>
-  import("./Admin/pages/Announcements.jsx")
+const Students = lazyWithRetry(() => import("./Admin/pages/Students.jsx"), "Students");
+const AdminAnnouncements = lazyWithRetry(
+  () => import("./Admin/pages/Announcements.jsx"),
+  "AdminAnnouncements"
 );
-
-const AdminRegistrations = lazy(() =>
-  import("./Admin/pages/Registrations.jsx")
+const AdminRegistrations = lazyWithRetry(
+  () => import("./Admin/pages/Registrations.jsx"),
+  "AdminRegistrations"
 );
-
-const MediaLibraryPage = lazy(() =>
-  import("./Admin/components/media/MediaLibrary.jsx")
+const MediaLibraryPage = lazyWithRetry(
+  () => import("./Admin/components/media/MediaLibrary.jsx"),
+  "MediaLibraryPage"
 );
-
-const Certificates = lazy(() =>
-  import("./Admin/pages/Certificates/Certificates.jsx")
+const Certificates = lazyWithRetry(
+  () => import("./Admin/pages/Certificates/Certificates.jsx"),
+  "Certificates"
 );
-
-const CreateCertificates = lazy(() =>
-  import("./Admin/pages/Certificates/CreateCertificates.jsx")
+const CreateCertificates = lazyWithRetry(
+  () => import("./Admin/pages/Certificates/CreateCertificates.jsx"),
+  "CreateCertificates"
 );
-
-const AddCertificate = lazy(() =>
-  import("./Admin/pages/Certificates/AddCertificate.jsx")
+const AddCertificate = lazyWithRetry(
+  () => import("./Admin/pages/Certificates/AddCertificate.jsx"),
+  "AddCertificate"
 );
-
-const EditCertificate = lazy(() =>
-  import("./Admin/pages/Certificates/EditCertificate.jsx")
+const EditCertificate = lazyWithRetry(
+  () => import("./Admin/pages/Certificates/EditCertificate.jsx"),
+  "EditCertificate"
 );
-
-
-
-const AdminTimeCapsules = lazy(() =>
-  import("./Admin/pages/TimeCapsules.jsx")
+const AdminTimeCapsules = lazyWithRetry(
+  () => import("./Admin/pages/TimeCapsules.jsx"),
+  "AdminTimeCapsules"
 );
 
 // ─────────────────────────────────────────────────────────────
