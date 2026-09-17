@@ -23,6 +23,11 @@ export default function TemplateUploader({
   template,
   onTemplateLoaded,
   onContinue,
+  selectedEventId = "",
+  selectedEvent = null,
+  eventTemplates = [],
+  onSelectExistingTemplate = () => {},
+  templatesLoading = false,
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -122,6 +127,67 @@ export default function TemplateUploader({
           >
             ×
           </button>
+        </div>
+      )}
+
+      {!selectedEventId && (
+        <div className="cert-alert cert-alert--warning" role="alert" style={{ marginBottom: "1.25rem" }}>
+          <span>⚠️ <strong>Select an event to continue.</strong> Please select an event from the dropdown above to load or upload certificates for that event.</span>
+        </div>
+      )}
+
+      {selectedEventId && eventTemplates.length > 0 && (
+        <div className="cert-event-templates-box" style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            <h4 style={{ margin: 0, fontSize: "0.95rem", color: "#334155" }}>
+              Saved Templates for: <strong>{selectedEvent?.title || "Selected Event"}</strong>
+            </h4>
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
+              {eventTemplates.length} template{eventTemplates.length === 1 ? "" : "s"} found
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: "10px" }}>
+            {eventTemplates.map((tpl) => {
+              const isCurrent = template?.id === tpl.id;
+              return (
+                <div
+                  key={tpl.id}
+                  onClick={() => onSelectExistingTemplate(tpl)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelectExistingTemplate(tpl); }}
+                  style={{
+                    border: isCurrent ? "2px solid #6366f1" : "1px solid #e2e8f0",
+                    background: isCurrent ? "#f5f7ff" : "#ffffff",
+                    borderRadius: "8px",
+                    padding: "8px",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  }}
+                >
+                  <div style={{ height: "90px", borderRadius: "6px", overflow: "hidden", background: "#f8fafc", display: "grid", placeItems: "center" }}>
+                    {tpl.templateUrl ? (
+                      <img src={tpl.templateUrl} alt={tpl.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: "2rem" }}>📜</span>
+                    )}
+                  </div>
+                  <strong style={{ fontSize: "0.85rem", color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {tpl.title || "Untitled Template"}
+                  </strong>
+                  <span style={{ fontSize: "0.75rem", color: isCurrent ? "#4f46e5" : "#64748b" }}>
+                    {isCurrent ? "✓ Active Template" : "Click to use this layout"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ margin: "14px 0 8px", fontSize: "0.82rem", color: "#64748b", textAlign: "center" }}>
+            — OR upload a new template background for this event below —
+          </div>
         </div>
       )}
 
@@ -247,8 +313,9 @@ export default function TemplateUploader({
         <button
           type="button"
           className="admin-btn admin-btn--primary"
-          disabled={!template?.previewUrl || loading}
+          disabled={!template?.previewUrl || loading || !selectedEventId}
           onClick={onContinue}
+          title={!selectedEventId ? "Select an event above first" : "Proceed to Certificate Designer"}
         >
           Next: Position Text Fields →
         </button>
@@ -261,4 +328,9 @@ TemplateUploader.propTypes = {
   template: PropTypes.object,
   onTemplateLoaded: PropTypes.func.isRequired,
   onContinue: PropTypes.func.isRequired,
+  selectedEventId: PropTypes.string,
+  selectedEvent: PropTypes.object,
+  eventTemplates: PropTypes.array,
+  onSelectExistingTemplate: PropTypes.func,
+  templatesLoading: PropTypes.bool,
 };

@@ -9,6 +9,7 @@ import {
   setDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
@@ -29,6 +30,7 @@ export async function saveCertificateTemplate(templateData) {
 
   const payload = {
     title: (templateData.title || "Untitled Template").trim(),
+    eventId: (templateData.eventId || "").trim(),
     eventName: (templateData.eventName || "").trim(),
     eventDate: (templateData.eventDate || "").trim(),
     certificateType: templateData.certificateType || "Participation",
@@ -106,6 +108,57 @@ export async function getCertificateTemplates() {
         updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
       };
     });
+  }
+}
+
+/**
+ * Fetch saved certificate templates associated with a specific event.
+ *
+ * @param {string} eventId
+ * @param {string} [eventName]
+ * @returns {Promise<Array<object>>}
+ */
+export async function getCertificateTemplatesByEventId(eventId, eventName = "") {
+  if (!eventId && !eventName) return [];
+  try {
+    const list = [];
+    if (eventId) {
+      const q = query(templatesRef, where("eventId", "==", eventId));
+      const snap = await getDocs(q);
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({
+          id: d.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+        });
+      });
+    }
+
+    // Fallback for legacy templates created before eventId was added
+    if (list.length === 0 && eventName) {
+      const legacyQuery = query(templatesRef, where("eventName", "==", eventName));
+      const legacySnap = await getDocs(legacyQuery);
+      legacySnap.forEach((d) => {
+        const data = d.data();
+        if (!list.some((existing) => existing.id === d.id)) {
+          list.push({
+            id: d.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+          });
+        }
+      });
+    }
+
+    return list;
+  } catch (err) {
+    console.warn(`[certificateTemplateService] Error fetching templates for event ${eventId}:`, err);
+    // In-memory fallback
+    const all = await getCertificateTemplates();
+    return all.filter((t) => (eventId && t.eventId === eventId) || (eventName && t.eventName === eventName));
   }
 }
 
@@ -224,6 +277,7 @@ export async function createCertificateJob(jobData) {
 
   const payload = {
     jobId,
+    eventId: jobData.eventId || "",
     templateId: jobData.templateId || "",
     templateTitle: jobData.templateTitle || "Certificate Batch",
     eventName: jobData.eventName || "",

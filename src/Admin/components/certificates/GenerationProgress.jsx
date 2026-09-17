@@ -12,7 +12,10 @@ import {
   createCertificateJob,
   updateCertificateJob,
 } from "../../../Firebase/certificateTemplateService";
-import { allocateCertificateIdsForBatch } from "../../../Firebase/certificateIdService";
+import {
+  allocateCertificateIdsForBatch,
+  deriveEventCertPrefix,
+} from "../../../Firebase/certificateIdService";
 import { db } from "../../../Firebase/firebase";
 import { doc, writeBatch, serverTimestamp } from "firebase/firestore";
 
@@ -48,6 +51,9 @@ export default function GenerationProgress({
   dataset,
   mapping,
   metaInfo,
+  selectedEventId = "",
+  selectedEvent = null,
+  batchName = "",
   onBack,
 }) {
   // Phase tracking: 'idle' → 'loading_template' → 'generating' → 'uploading' → 'saving_records' → 'packaging_zip' → 'completed' | 'failed' | 'template_error'
@@ -159,13 +165,21 @@ export default function GenerationProgress({
     const currentJobId = `job_${Date.now()}`;
     setJobId(currentJobId);
 
+    // Scoped event details
+    const targetEventId = selectedEventId || metaInfo?.eventId || selectedEvent?.id || "";
+    const targetEventName = selectedEvent?.title || metaInfo?.eventName || "Abhyudaya Event";
+    const targetEventDate = selectedEvent?.eventStartDate || metaInfo?.eventDate || "";
+    const targetBatchTitle = batchName || metaInfo?.title || "Certificate Batch";
+    const eventCertPrefix = deriveEventCertPrefix(selectedEvent || { title: targetEventName, eventStartDate: targetEventDate });
+
     try {
       await createCertificateJob({
         jobId: currentJobId,
+        eventId: targetEventId,
         templateId: template?.id || "custom_template",
-        templateTitle: metaInfo?.title || "Certificate Batch",
-        eventName: metaInfo?.eventName || "Abhyudaya Event",
-        eventDate: metaInfo?.eventDate || "",
+        templateTitle: targetBatchTitle,
+        eventName: targetEventName,
+        eventDate: targetEventDate,
         total: targetRows.length,
         status: "processing",
       });
@@ -208,6 +222,7 @@ export default function GenerationProgress({
       const { allocations, summary } = await allocateCertificateIdsForBatch(batchItems, {
         idField: "certificateId",
         nameField: "name",
+        defaultPrefix: eventCertPrefix,
       });
       setIdSummary(summary);
       allocations.forEach((alloc, idx) => {
@@ -244,8 +259,10 @@ export default function GenerationProgress({
           options: {
             rowIndex: i,
             certificateId: finalCertId,
-            eventName: metaInfo?.eventName,
-            eventDate: metaInfo?.eventDate,
+            eventId: targetEventId,
+            eventName: targetEventName,
+            eventDate: targetEventDate,
+            defaultPrefix: eventCertPrefix,
             college: metaInfo?.college,
             organizer: metaInfo?.organizer,
             templateId: template?.id,
@@ -364,6 +381,8 @@ export default function GenerationProgress({
           const certDocRef = doc(db, "certificates", item.certificateId);
           batch.set(certDocRef, {
             ...item.metadata,
+            eventId: targetEventId || item.metadata?.eventId || "",
+            eventName: targetEventName || item.metadata?.eventName || "",
             certificateUrl: item.certUrl,
             storagePath: item.storagePath || "",
             createdAt: serverTimestamp(),
@@ -718,5 +737,8 @@ GenerationProgress.propTypes = {
   dataset: PropTypes.object.isRequired,
   mapping: PropTypes.object.isRequired,
   metaInfo: PropTypes.object,
+  selectedEventId: PropTypes.string,
+  selectedEvent: PropTypes.object,
+  batchName: PropTypes.string,
   onBack: PropTypes.func.isRequired,
 };

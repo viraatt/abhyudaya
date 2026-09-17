@@ -283,10 +283,65 @@ export async function reserveSequenceInTransaction(
  *   }
  * }>}
  */
+/**
+ * Derives a scoped Certificate ID prefix from an event.
+ * Examples:
+ *  - "Web Dev Workshop" -> "ABH-WDW26-"
+ *  - "TechBloom 2.0"    -> "ABH-TB26-"
+ *  - "International Conference 2026" -> "ABH-IC26-"
+ *
+ * @param {object|string} event - Event object with title/name or event title string
+ * @returns {string} Prefix string ending with '-' (e.g. "ABH-WDW26-")
+ */
+export function deriveEventCertPrefix(event) {
+  if (!event) return "ABH-CERT26-";
+  const title = (typeof event === "string" ? event : (event.title || event.name || "")).trim();
+  if (!title) return "ABH-CERT26-";
+
+  // Clean words (ignoring version digits like 2.0 or special symbols)
+  const words = title
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z0-9]/g, ""))
+    .filter(Boolean);
+
+  let initials = "";
+  if (words.length >= 2) {
+    const alphaWords = words.filter((w) => /^[a-zA-Z]/.test(w));
+    if (alphaWords.length >= 2) {
+      initials = alphaWords.slice(0, 4).map((w) => w[0].toUpperCase()).join("");
+    } else {
+      initials = words.slice(0, 3).map((w) => w[0].toUpperCase()).join("");
+    }
+  } else if (words.length === 1) {
+    const single = words[0];
+    const uppers = single.match(/[A-Z]/g);
+    if (uppers && uppers.length >= 2) {
+      initials = uppers.slice(0, 3).join("");
+    } else {
+      initials = single.slice(0, 3).toUpperCase();
+    }
+  }
+
+  if (!initials) initials = "EVT";
+
+  const dateStr = typeof event === "object" ? (event.eventStartDate || event.date || "") : "";
+  const combined = `${title} ${dateStr}`;
+  const yearMatch = combined.match(/\b(20\d{2})\b/);
+  const yy = yearMatch ? yearMatch[1].slice(-2) : new Date().getFullYear().toString().slice(-2);
+
+  if (initials.endsWith(yy)) {
+    return `ABH-${initials}-`;
+  }
+
+  return `ABH-${initials}${yy}-`;
+}
+
 export async function allocateCertificateIdsForBatch(items = [], options = {}) {
   const idField = options.idField || "certificateId";
   const nameField = options.nameField || "name";
   const reservedSet = new Set(options.preReservedIds || []);
+  const defaultPrefix = options.defaultPrefix || (options.event ? deriveEventCertPrefix(options.event) : "ABH-CERT-");
+  const fallbackPrefix = defaultPrefix.endsWith("-") ? defaultPrefix : `${defaultPrefix}-`;
 
   if (!items || items.length === 0) {
     return {
@@ -314,7 +369,7 @@ export async function allocateCertificateIdsForBatch(items = [], options = {}) {
       `Participant ${index + 1}`
     ).trim();
 
-    const parsed = parseCertificateId(rawId || `ABH-TB26-${String(index + 1).padStart(4, "0")}`);
+    const parsed = parseCertificateId(rawId || `${fallbackPrefix}${String(index + 1).padStart(4, "0")}`);
     return {
       rowNumber: index + 1,
       name,

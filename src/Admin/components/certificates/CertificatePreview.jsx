@@ -279,6 +279,7 @@ export default function CertificatePreview({
   mapping,
   onBack,
   onContinue,
+  eventId = "",
   eventName = "",
   eventDate = "",
 }) {
@@ -328,6 +329,7 @@ export default function CertificatePreview({
     : (fields || []);
 
   const previewOptions = {
+    eventId,
     eventName,
     eventDate,
     rowIndex: currentRowIndex,
@@ -490,6 +492,7 @@ CertificatePreview.propTypes = {
   mapping: PropTypes.object.isRequired,
   onBack: PropTypes.func.isRequired,
   onContinue: PropTypes.func.isRequired,
+  eventId: PropTypes.string,
   eventName: PropTypes.string,
   eventDate: PropTypes.string,
 };

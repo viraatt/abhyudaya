@@ -63,6 +63,7 @@ export async function searchCertificate(rollNo, name) {
   return {
     id: matchDoc.id,
     certificateId: data.certificateId || matchDoc.id,
+    eventId: data.eventId || "",
     rollNo: data.rollNo || "",
     name: data.name || "",
     eventName: data.eventName || "",
@@ -92,6 +93,7 @@ export async function getCertificateById(certificateId) {
     return {
       id: docSnap.id,
       certificateId: data.certificateId || docSnap.id,
+      eventId: data.eventId || "",
       rollNo: data.rollNo || "",
       name: data.name || "",
       eventName: data.eventName || "",
@@ -115,6 +117,7 @@ export async function getCertificateById(certificateId) {
   return {
     id: d.id,
     certificateId: data.certificateId || d.id,
+    eventId: data.eventId || "",
     rollNo: data.rollNo || "",
     name: data.name || "",
     eventName: data.eventName || "",
@@ -142,6 +145,7 @@ export async function getCertificates() {
         return {
           id: d.id,
           certificateId: data.certificateId || d.id,
+          eventId: data.eventId || "",
           rollNo: data.rollNo || "",
           name: data.name || "",
           eventName: data.eventName || "",
@@ -162,6 +166,7 @@ export async function getCertificates() {
         return {
           id: d.id,
           certificateId: data.certificateId || d.id,
+          eventId: data.eventId || "",
           rollNo: data.rollNo || "",
           name: data.name || "",
           eventName: data.eventName || "",
@@ -215,6 +220,7 @@ export async function createCertificate(certData, options = {}) {
   const docRef = doc(db, CERTIFICATES_COLLECTION, certId);
   const payload = {
     certificateId: certId,
+    eventId: (certData.eventId || "").trim(),
     rollNo: certData.rollNo.trim(),
     rollNoClean: normalizeString(certData.rollNo),
     name: certData.name.trim(),
@@ -262,4 +268,67 @@ export async function updateCertificate(id, updates) {
 export async function deleteCertificate(id) {
   const docRef = doc(db, CERTIFICATES_COLLECTION, id);
   await deleteDoc(docRef);
+}
+
+/**
+ * Fetch certificates filtered by eventId (with legacy eventName fallback).
+ *
+ * @param {string} eventId
+ * @param {string} [eventName]
+ * @returns {Promise<Array<object>>}
+ */
+export async function getCertificatesByEventId(eventId, eventName = "") {
+  if (!eventId && !eventName) return [];
+  try {
+    const list = [];
+    if (eventId) {
+      const q = query(certificatesRef, where("eventId", "==", eventId));
+      const snap = await getDocs(q);
+      snap.forEach((d) => {
+        if (d.id.startsWith("_counter_") || d.data()?.isCounter) return;
+        const data = d.data();
+        list.push({
+          id: d.id,
+          certificateId: data.certificateId || d.id,
+          eventId: data.eventId || eventId,
+          rollNo: data.rollNo || "",
+          name: data.name || "",
+          eventName: data.eventName || "",
+          eventDate: data.eventDate || "",
+          certificateType: data.certificateType || "Participation",
+          certificateUrl: data.certificateUrl || "",
+          createdAt: data.createdAt ? data.createdAt.toDate?.() || data.createdAt : null,
+        });
+      });
+    }
+
+    if (list.length === 0 && eventName) {
+      const legacyQuery = query(certificatesRef, where("eventName", "==", eventName));
+      const legacySnap = await getDocs(legacyQuery);
+      legacySnap.forEach((d) => {
+        if (d.id.startsWith("_counter_") || d.data()?.isCounter) return;
+        if (!list.some((existing) => existing.id === d.id)) {
+          const data = d.data();
+          list.push({
+            id: d.id,
+            certificateId: data.certificateId || d.id,
+            eventId: data.eventId || "",
+            rollNo: data.rollNo || "",
+            name: data.name || "",
+            eventName: data.eventName || "",
+            eventDate: data.eventDate || "",
+            certificateType: data.certificateType || "Participation",
+            certificateUrl: data.certificateUrl || "",
+            createdAt: data.createdAt ? data.createdAt.toDate?.() || data.createdAt : null,
+          });
+        }
+      });
+    }
+
+    return list;
+  } catch (err) {
+    console.warn(`[certificateService] Error fetching certificates for event ${eventId}:`, err);
+    const all = await getCertificates();
+    return all.filter((c) => (eventId && c.eventId === eventId) || (eventName && c.eventName === eventName));
+  }
 }

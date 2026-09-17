@@ -471,10 +471,11 @@ export async function generateCertificatePdf({
   if (IS_DEV) console.log(`[PERF] ${_certLabel} templateEmbed: ${(performance.now() - _tEmbed).toFixed(1)}ms`);
 
   // 4. Determine certificate ID
+  const defaultCertPrefix = options.defaultPrefix || options.prefix || "ABH-CERT";
   const certId =
     options.certificateId ||
     resolveFieldValue({ variable: "{{certificateId}}" }, mapping, row, options) ||
-    generateUniqueCertId("ABH-CERT", (options.rowIndex || 0) + 1);
+    generateUniqueCertId(defaultCertPrefix, (options.rowIndex || 0) + 1);
 
   // 5. Preload cached standard fonts to avoid redundant font creation
   const _tFont = IS_DEV ? performance.now() : 0;
@@ -777,6 +778,7 @@ export async function generateCertificatePdf({
   // 9. Prepare metadata matching Abhyudaya's existing certificate schema
   const metadata = {
     certificateId: certId,
+    eventId: options.eventId || "",
     rollNo:
       resolveFieldValue({ variable: "{{rollNo}}" }, mapping, row, options) ||
       row.RollNo ||
