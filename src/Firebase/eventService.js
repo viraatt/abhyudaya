@@ -230,7 +230,19 @@ export async function getEventBySlug(slug) {
       where("slug", "==", normalizedSlug),
       limit(1)
     );
-    const snapshot = await getDocs(q);
+    let snapshot = await getDocs(q);
+
+    // Handle slug typo alias (spardha vs spradha) gracefully
+    if (snapshot.empty && (normalizedSlug === "antariksh-spardha" || normalizedSlug === "antariksh-spradha")) {
+      const altSlug = normalizedSlug === "antariksh-spardha" ? "antariksh-spradha" : "antariksh-spardha";
+      const altQ = query(
+        eventsRef,
+        where("status", "==", "Published"),
+        where("slug", "==", altSlug),
+        limit(1)
+      );
+      snapshot = await getDocs(altQ);
+    }
 
     if (!snapshot.empty) {
       return formatEventDoc(snapshot.docs[0]);

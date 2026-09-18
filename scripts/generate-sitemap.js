@@ -157,7 +157,11 @@ async function generateSitemapsAndFeeds() {
 
   // Build Event Sitemaps
   for (const ev of publishedEvents) {
-    const eventUrl = `${BASE_URL}/events/${ev.slug}`;
+    const rawSlug = ev.slug || "";
+    // Normalize typo antariksh-spradha -> antariksh-spardha for SEO consistency
+    const slug = rawSlug === "antariksh-spradha" ? "antariksh-spardha" : rawSlug;
+    const title = ev.title === "Antariksh Spradha" ? "Antariksh Spardha" : (ev.title || slug);
+    const eventUrl = `${BASE_URL}/events/${slug}`;
     const lastMod = ev.updatedAt?.toDate
       ? ev.updatedAt.toDate().toISOString()
       : ev.createdAt?.toDate
@@ -178,7 +182,7 @@ async function generateSitemapsAndFeeds() {
     <loc>${eventUrl}</loc>
     <image:image>
       <image:loc>${ev.image || ev.banner}</image:loc>
-      <image:title>${escapeXml(ev.title)}</image:title>
+      <image:title>${escapeXml(title)}</image:title>
     </image:image>
   </url>`;
     }
@@ -205,12 +209,23 @@ async function generateSitemapsAndFeeds() {
   </url>`;
   }
 
+  // Helper to write to public/ and additionally dist/ if dist/ exists
+  const writeTarget = (relPath, content) => {
+    const publicPath = path.join(__dirname, "../public", relPath);
+    fs.writeFileSync(publicPath, content, "utf8");
+    const distPath = path.join(__dirname, "../dist", relPath);
+    const distDir = path.dirname(distPath);
+    if (fs.existsSync(distDir)) {
+      fs.writeFileSync(distPath, content, "utf8");
+    }
+  };
+
   // 1. Write Main Sitemap.xml
   const mainSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${mainSitemapUrls}
 </urlset>`;
-  fs.writeFileSync(path.join(__dirname, "../public/sitemap.xml"), mainSitemap, "utf8");
+  writeTarget("sitemap.xml", mainSitemap);
 
   // 2. Write Image Sitemap.xml
   const imageSitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -218,7 +233,7 @@ ${mainSitemapUrls}
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${imageSitemapUrls}
 </urlset>`;
-  fs.writeFileSync(path.join(__dirname, "../public/sitemap-images.xml"), imageSitemap, "utf8");
+  writeTarget("sitemap-images.xml", imageSitemap);
 
   // 3. Write News Sitemap.xml
   const newsSitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -226,7 +241,7 @@ ${imageSitemapUrls}
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
 ${newsSitemapUrls}
 </urlset>`;
-  fs.writeFileSync(path.join(__dirname, "../public/sitemap-news.xml"), newsSitemap, "utf8");
+  writeTarget("sitemap-news.xml", newsSitemap);
 
   // 4. Write RSS Feed.xml
   const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
@@ -240,8 +255,14 @@ ${newsSitemapUrls}
     ${rssItems}
   </channel>
 </rss>`;
-  fs.writeFileSync(path.join(__dirname, "../public/feed.xml"), rssFeed, "utf8");
+  writeTarget("feed.xml", rssFeed);
 
+  console.log(`📊 Sitemap & Feed Generation Summary:`);
+  console.log(`   • Static pages:   ${staticPages.length}`);
+  console.log(`   • Firestore blogs:  ${publishedBlogs.length}`);
+  console.log(`   • Firestore events: ${publishedEvents.length}`);
+  console.log(`   • Gallery albums:   ${galleryAlbums.length}`);
+  console.log(`   • News items (<48h): ${newsSitemapUrls.trim() ? "Active" : "0 (empty stub)"}`);
   console.log("✅ All sitemaps (main, image, news) and RSS feed generated successfully!");
 }
 

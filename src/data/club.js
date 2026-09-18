@@ -114,8 +114,8 @@ export const events = [
   },
 
   {
-    slug: "antariksh-spradha",
-    name: "Antariksh Spradha",
+    slug: "antariksh-spardha",
+    name: "Antariksh Spardha",
     kind: "Astronomy Festival",
     summary:
       "A three-day astronomy and space science festival.",
