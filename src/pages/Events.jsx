@@ -5,6 +5,7 @@ import EventCard from "../components/EventCard.jsx";
 import { getEventsPage } from "../Firebase/eventService.js";
 import CollectionPageSchema from "../components/seo/schemas/CollectionPageSchema.jsx";
 import "./Events.css";
+import { markPrerenderReady } from "../utils/prerender.js";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -61,6 +62,7 @@ export default function Events() {
         setError("Unable to load events at this moment. Please try again.");
       } finally {
         setLoading(false);
+        markPrerenderReady();
       }
     }
 

@@ -21,7 +21,7 @@ function EventCard({ event: rawEvent, reverse }) {
     <section className={`event-showcase ${reverse ? "reverse" : ""}`}>
       <div className="event-showcase-image">
         {image ? (
-          <img src={image} alt={title} loading="lazy" decoding="async" />
+          <img src={image} alt={title} width="1200" height="630" loading="lazy" decoding="async" />
         ) : (
           <div className="event-image-placeholder">
             <span>{icon}</span>

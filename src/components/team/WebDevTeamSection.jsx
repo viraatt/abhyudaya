@@ -58,6 +58,8 @@ export default function WebDevTeamSection({ members = [], onSelectMember }) {
                     src={person.image || avatarFallback}
                     alt={`${person.name} — ${person.role}`}
                     className="webdev-team-card__img"
+                    width="500"
+                    height="500"
                     loading="lazy"
                     onError={(e) => {
                       e.target.src = avatarFallback;

@@ -19,6 +19,7 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import "./Gallery.css";
+import { markPrerenderReady } from "../utils/prerender.js";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -66,7 +67,10 @@ export default function Gallery() {
       } catch (err) {
         console.error("Failed to load gallery albums:", err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          markPrerenderReady();
+        }
       }
     }
     loadAlbums();
@@ -218,6 +222,8 @@ export default function Gallery() {
                   src={HERO_COLLAGE_PHOTOS[0].src}
                   alt={HERO_COLLAGE_PHOTOS[0].title}
                   className="collage-img"
+                  width="1200"
+                  height="800"
                   loading="eager"
                   fetchPriority="high"
                 />
@@ -232,6 +238,8 @@ export default function Gallery() {
                   src={HERO_COLLAGE_PHOTOS[1].src}
                   alt={HERO_COLLAGE_PHOTOS[1].title}
                   className="collage-img"
+                  width="1200"
+                  height="800"
                   loading="eager"
                 />
                 <div className="collage-overlay mini">
@@ -244,6 +252,8 @@ export default function Gallery() {
                   src={HERO_COLLAGE_PHOTOS[2].src}
                   alt={HERO_COLLAGE_PHOTOS[2].title}
                   className="collage-img"
+                  width="1200"
+                  height="800"
                   loading="eager"
                 />
                 <div className="collage-overlay mini">
@@ -338,6 +348,8 @@ export default function Gallery() {
                       src={featuredAlbum.coverThumbnail}
                       alt={featuredAlbum.title}
                       className="featured-cover-img"
+                      width="1200"
+                      height="800"
                       loading="eager"
                     />
                     <div className="featured-floating-tag">
@@ -397,6 +409,8 @@ export default function Gallery() {
                         <img
                           src={album.coverThumbnail}
                           alt={`${album.title} cover`}
+                          width="600"
+                          height="400"
                           loading="lazy"
                           decoding="async"
                           className="album-card-cover"
@@ -455,6 +469,8 @@ export default function Gallery() {
                         <img
                           src={moment.image}
                           alt={moment.title}
+                          width="1200"
+                          height="800"
                           loading="lazy"
                           decoding="async"
                           className="moment-image"

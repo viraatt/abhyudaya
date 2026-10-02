@@ -7,6 +7,7 @@ import CategoryFilter from "../components/blog/CategoryFilter";
 import BlogCard from "../components/blog/BlogCard";
 import CollectionPageSchema from "../components/seo/schemas/CollectionPageSchema";
 import { getBlogsPage } from "../Firebase/blogService";
+import { markPrerenderReady } from "../utils/prerender.js";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -38,6 +39,7 @@ const Blog = () => {
       setError("Unable to load articles right now. Please try again.");
     } finally {
       setLoading(false);
+      markPrerenderReady();
     }
   }, []);
 

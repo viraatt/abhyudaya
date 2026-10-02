@@ -38,6 +38,7 @@ import BlogPostingSchema from "../components/seo/schemas/BlogPostingSchema";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema";
 import OrganizationSchema from "../components/seo/schemas/OrganizationSchema";
 import LatestBlogsSidebar from "../components/blog/LatestBlogsSidebar";
+import { markPrerenderReady } from "../utils/prerender.js";
 
 async function renderBlogContent(content) {
   if (!content) return "";
@@ -337,13 +338,17 @@ export default function BlogDetails() {
     let cancelled = false;
     if (!blog?.content) {
       setRenderedContent("");
+      if (!loading) markPrerenderReady();
       return;
     }
     renderBlogContent(blog.content).then((html) => {
-      if (!cancelled) setRenderedContent(html);
+      if (!cancelled) {
+        setRenderedContent(html);
+        markPrerenderReady();
+      }
     });
     return () => { cancelled = true; };
-  }, [blog?.content]);
+  }, [blog?.content, loading]);
 
   // ==========================
   // COOLDOWN TIMER
@@ -663,10 +668,10 @@ export default function BlogDetails() {
                     <img
                       src={item.featuredImage || "https://placehold.co/400x250?text=No+Image"}
                       alt={`${item.title} featured image`}
-                      loading="lazy"
-                      decoding="async"
                       width="400"
                       height="250"
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="related-body">
                       <span>{item.category}</span>

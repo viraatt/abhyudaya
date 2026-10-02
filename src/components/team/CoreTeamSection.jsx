@@ -55,6 +55,8 @@ export default function CoreTeamSection({ members = [], onSelectMember }) {
                     src={person.image || avatarFallback}
                     alt={`${person.name} — ${person.role}`}
                     className="core-team-card__img"
+                    width="500"
+                    height="500"
                     loading="lazy"
                     onError={(e) => {
                       e.target.src = avatarFallback;

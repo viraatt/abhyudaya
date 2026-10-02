@@ -10,6 +10,7 @@ import EventCard from "../components/EventCard.jsx";
 import EventSchema from "../components/seo/schemas/EventSchema.jsx";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import "./EventDetails.css";
+import { markPrerenderReady } from "../utils/prerender.js";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -41,6 +42,7 @@ export default function EventDetails() {
         setError("Failed to load event details.");
       } finally {
         setLoading(false);
+        markPrerenderReady();
       }
     }
 
@@ -137,7 +139,8 @@ export default function EventDetails() {
     event.image ||
     "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1400";
 
-  const canonicalUrl = `${SITE_URL}/events/${event.slug || event.id}`;
+  const canonicalSlug = event.slug === "antariksh-spradha" ? "antariksh-spardha" : (event.slug || event.id);
+  const canonicalUrl = `${SITE_URL}/events/${canonicalSlug}`;
   const metaDescription =
     event.shortDescription ||
     event.description ||
@@ -187,10 +190,15 @@ export default function EventDetails() {
       {/* 1. HERO BANNER */}
       <section
         className="event-hero"
-        style={{
-          backgroundImage: `url(${heroImage})`,
-        }}
       >
+        <img
+          className="event-hero__image"
+          src={heroImage}
+          alt={`${event.title} event`}
+          width="1200"
+          height="630"
+          fetchPriority="high"
+        />
         <div className="event-hero-overlay">
           <div className="wrap">
             {/* Top Navigation & Status Badges */}

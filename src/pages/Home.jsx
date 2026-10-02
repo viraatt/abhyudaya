@@ -10,6 +10,7 @@ import { getEventById } from '../Firebase/eventService.js'
 import { countRegistrations } from '../Firebase/registrationService.js'
 import { getRegistrationStatus, formatDate } from '../utils/registrationStatus.js'
 import './Home.css'
+import { markPrerenderReady } from '../utils/prerender.js'
 
 const SITE_URL = 'https://www.abhyudayaclub.in'
 
@@ -76,7 +77,10 @@ export default function Home() {
         console.error('Failed to load announcements:', err)
       })
       .finally(() => {
-        if (mounted) setAnnouncementsLoaded(true)
+        if (mounted) {
+          setAnnouncementsLoaded(true)
+          markPrerenderReady()
+        }
       })
     return () => {
       mounted = false

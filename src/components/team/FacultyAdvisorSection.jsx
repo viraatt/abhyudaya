@@ -48,6 +48,8 @@ export default function FacultyAdvisorSection({ advisor, onSelectMember }) {
                   src={advisor.image || avatarFallback}
                   alt={`${advisor.name} — Faculty Advisor`}
                   className="faculty-card__image"
+                  width="500"
+                  height="500"
                   loading="lazy"
                   onError={(e) => {
                     e.target.src = avatarFallback;

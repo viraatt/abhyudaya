@@ -119,6 +119,8 @@ export default function ExecutiveSection({ members = [], onSelectMember }) {
                       src={person.image || avatarFallback}
                       alt={`${person.name} — ${person.role}`}
                       className="executive-card__image"
+                      width="500"
+                      height="500"
                       loading="lazy"
                       onError={(e) => {
                         e.target.src = avatarFallback;

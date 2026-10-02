@@ -8,6 +8,7 @@ import { getEventById } from "../Firebase/eventService.js";
 import { countRegistrations } from "../Firebase/registrationService.js";
 import { getRegistrationStatus, formatDate } from "../utils/registrationStatus.js";
 import "./Announcements.css";
+import { markPrerenderReady } from "../utils/prerender.js";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -108,7 +109,10 @@ export default function Announcements() {
         if (mounted) setError(true);
       })
       .finally(() => {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          markPrerenderReady();
+        }
       });
 
     return () => {
