@@ -14,6 +14,7 @@ import {
   FaExpand,
 } from "react-icons/fa";
 import "./Gallery.css";
+import { markPrerenderReady } from "../utils/prerender.js";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 
@@ -52,7 +53,10 @@ export default function EventAlbum() {
         console.error("Error fetching album details:", err);
         if (isMounted) setError("Failed to load event album.");
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          markPrerenderReady();
+        }
       }
     }
 
@@ -262,6 +266,8 @@ export default function EventAlbum() {
                       <img
                         src={photo.thumbnailSrc}
                         alt={photo.title}
+                        width={photo.width || 1200}
+                        height={photo.height || 800}
                         loading={idx < 4 ? "eager" : "lazy"}
                         decoding="async"
                         onLoad={() => handleImageLoaded(photo.id)}
@@ -325,6 +331,8 @@ export default function EventAlbum() {
                 src={currentPhoto.fullSrc}
                 alt={currentPhoto.title}
                 className="gallery-overlay-img"
+                width={currentPhoto.width || 1200}
+                height={currentPhoto.height || 800}
               />
 
               {/* Prev / Next navigation buttons */}

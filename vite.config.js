@@ -42,6 +42,7 @@ export default defineConfig({
   },
 
   build: {
+    manifest: true,
     // Target modern browsers — removes unnecessary polyfill bloat
     target: ["es2020", "edge88", "firefox78", "chrome87", "safari14"],
     cssCodeSplit: true,

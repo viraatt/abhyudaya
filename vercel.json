@@ -1,7 +1,4 @@
 {
-  "env": {
-    "PUPPETEER_SKIP_DOWNLOAD": "true"
-  },
   "headers": [
     {
       "source": "/(.*)",
@@ -92,4 +89,4 @@
       "destination": "/index.html"
     }
   ]
-}
+}

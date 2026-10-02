@@ -15,6 +15,7 @@ import WebDevTeamSection from '../components/team/WebDevTeamSection.jsx';
 import TeamClosing from '../components/team/TeamClosing.jsx';
 import ProfileModal from '../components/team/ProfileModal.jsx';
 import { groupTeamMembers } from '../components/team/teamUtils.js';
+import { markPrerenderReady } from '../utils/prerender.js';
 
 import './Team.css';
 
@@ -43,6 +44,7 @@ export default function Team() {
       } finally {
         if (isMounted) {
           setLoading(false);
+          markPrerenderReady();
         }
       }
     }

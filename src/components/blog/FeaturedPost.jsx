@@ -26,6 +26,8 @@ export default function FeaturedPost({ blog }) {
               : "https://placehold.co/1600x850?text=No+Image"
           }
           alt={blog.title}
+          width="1600"
+          height="850"
         />
 
         <div className="featured-overlay"></div>

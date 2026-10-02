@@ -15,6 +15,8 @@ function BlogCard({ blog }) {
             "https://placehold.co/600x400?text=No+Image"
           }
           alt={blog.title}
+          width="600"
+          height="400"
           loading="lazy"
           decoding="async"
         />

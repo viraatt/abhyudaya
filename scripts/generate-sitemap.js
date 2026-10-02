@@ -1,285 +1,196 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-import { initializeApp, cert, getApps } from "firebase-admin/app";
+/* global process, Buffer */
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL, fileURLToPath } from "node:url";
+import { initializeApp, cert, applicationDefault, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const serviceAccountPath = path.join(__dirname, "../firebase-service-account.json");
-
-let db = null;
-
-if (fs.existsSync(serviceAccountPath)) {
-  const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
-  if (!getApps().length) {
-    initializeApp({
-      credential: cert(serviceAccount),
-    });
-  }
-  db = getFirestore();
-} else {
-  console.warn("⚠️ firebase-service-account.json not found. Dynamic Firebase content will be skipped during build sitemap generation.");
-}
-
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASE_URL = "https://www.abhyudayaclub.in";
+const DIST_DIR = path.join(ROOT, "dist");
 
-async function generateSitemapsAndFeeds() {
-  console.log("🚀 Generating Sitemaps, Feeds, Image & News Sitemaps...");
-
-  const staticPages = [
-    { url: "/", priority: "1.0", changefreq: "daily" },
-    { url: "/about", priority: "0.8", changefreq: "monthly" },
-    { url: "/events", priority: "0.9", changefreq: "weekly" },
-    { url: "/announcements", priority: "0.9", changefreq: "daily" },
-    { url: "/blog", priority: "0.9", changefreq: "daily" },
-    { url: "/team", priority: "0.7", changefreq: "monthly" },
-    { url: "/gallery", priority: "0.8", changefreq: "weekly" },
-    { url: "/contact", priority: "0.7", changefreq: "monthly" },
-    { url: "/join", priority: "0.8", changefreq: "monthly" },
-  ];
-
-  let mainSitemapUrls = "";
-  let imageSitemapUrls = "";
-  let newsSitemapUrls = "";
-  let rssItems = "";
-
-  const nowISO = new Date().toISOString();
-
-  // Static Pages
-  for (const page of staticPages) {
-    mainSitemapUrls += `
-  <url>
-    <loc>${BASE_URL}${page.url}</loc>
-    <lastmod>${nowISO}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>`;
+function initializeFirebase() {
+  if (getApps().length) return getFirestore();
+  const credentialJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(ROOT, "firebase-service-account.json");
+  if (credentialJson) {
+    initializeApp({ credential: cert(JSON.parse(credentialJson)) });
+  } else if (fs.existsSync(credentialPath)) {
+    initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
+  } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
+    initializeApp({ credential: applicationDefault() });
+  } else {
+    throw new Error("Firebase build credentials are required. Set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS.");
   }
+  return getFirestore();
+}
 
-  let publishedBlogs = [];
-  let publishedEvents = [];
+function escapeXml(value = "") {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;",
+  })[char]);
+}
 
-  if (db) {
-    try {
-      // 1. Fetch Published Blogs
-      const blogSnapshot = await db
-        .collection("blogs")
-        .where("status", "==", "Published")
-        .get();
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
 
-      blogSnapshot.forEach((doc) => {
-        const blog = doc.data();
-        if (!blog.slug) return;
-        publishedBlogs.push({ id: doc.id, ...blog });
-      });
-
-      // 2. Fetch Published Events
-      const eventSnapshot = await db
-        .collection("events")
-        .where("status", "==", "Published")
-        .get();
-
-      eventSnapshot.forEach((doc) => {
-        const ev = doc.data();
-        if (!ev.slug) return;
-        publishedEvents.push({ id: doc.id, ...ev });
-      });
-    } catch (err) {
-      console.warn("Error fetching Firestore collections:", err.message);
+function blogContentImages(content, result = []) {
+  if (!content) return result;
+  if (Array.isArray(content)) {
+    content.forEach((item) => blogContentImages(item, result));
+  } else if (typeof content === "object") {
+    const src = content.attrs?.src || content.src;
+    if (typeof src === "string") result.push(src);
+    if (content.content) blogContentImages(content.content, result);
+  } else if (typeof content === "string") {
+    for (const match of content.matchAll(/<img\b[^>]*\bsrc=["']([^"']+)["']/gi)) result.push(match[1]);
+    if (content.trim().startsWith("{")) {
+      try { blogContentImages(JSON.parse(content), result); } catch { /* legacy HTML is still handled above */ }
     }
   }
+  return result;
+}
 
-  // Build Blog Sitemaps & Feeds
-  for (const blog of publishedBlogs) {
-    const blogUrl = `${BASE_URL}/blog/${blog.slug}`;
-    const lastMod = blog.updatedAt?.toDate
-      ? blog.updatedAt.toDate().toISOString()
-      : blog.createdAt?.toDate
-      ? blog.createdAt.toDate().toISOString()
-      : nowISO;
+function imageUrl(value, manifest) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const raw = value.trim();
+  if (/^https:\/\//i.test(raw)) return raw;
+  if (/^(?:data:|blob:|javascript:|http:\/\/|\/\/)/i.test(raw)) return null;
+  const deployedPath = raw.replace(/^\//, "");
+  if (fs.existsSync(path.join(DIST_DIR, deployedPath)) && !deployedPath.startsWith("..")) {
+    return `${BASE_URL}/${deployedPath}`;
+  }
+  const clean = raw.replace(/^\.\//, "").replace(/^\//, "");
+  if (clean.startsWith("assets/")) {
+    const assetPath = `src/${clean}`;
+    const entry = manifest[assetPath] || Object.entries(manifest).find(([key]) => key.endsWith(`/${clean}`))?.[1];
+    return entry?.file ? `${BASE_URL}/${entry.file.replace(/^\//, "")}` : null;
+  }
+  return null;
+}
 
-    mainSitemapUrls += `
-  <url>
-    <loc>${blogUrl}</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>`;
+function parseStaticGallery(manifest) {
+  const sourcePath = path.join(ROOT, "src/data/staticGalleryAlbums.js");
+  let source = fs.readFileSync(sourcePath, "utf8");
+  const imports = [...source.matchAll(/^import\s+(\w+)\s+from\s+["'](\.\.\/assets\/[^"']+)["'];?\s*$/gm)];
+  for (const [, binding, assetPath] of imports) {
+    const key = `src/assets/${path.basename(assetPath)}`;
+    const entry = manifest[key] || Object.entries(manifest).find(([name]) => name.endsWith(`/assets/${path.basename(assetPath)}`))?.[1];
+    if (!entry?.file) throw new Error(`Vite manifest is missing the gallery image ${assetPath}`);
+    source = source.replace(new RegExp(`^import\\s+${binding}\\s+from\\s+["'][^"']+["'];?\\s*$`, "m"), `const ${binding} = ${JSON.stringify(`/${entry.file.replace(/^\//, "")}`)};`);
+  }
+  const isolated = source.replace(/export\s+const\s+STATIC_ALBUMS\s*=/, "const STATIC_ALBUMS =").concat("\nexport { STATIC_ALBUMS };");
+  const encoded = Buffer.from(isolated).toString("base64");
+  return import(`data:text/javascript;base64,${encoded}`).then((module) => module.STATIC_ALBUMS);
+}
 
-    // Image Sitemap entry
-    if (blog.featuredImage) {
-      imageSitemapUrls += `
-  <url>
-    <loc>${blogUrl}</loc>
-    <image:image>
-      <image:loc>${blog.featuredImage}</image:loc>
-      <image:title>${escapeXml(blog.title)}</image:title>
-    </image:image>
-  </url>`;
-    }
+async function generate() {
+  if (!fs.existsSync(path.join(DIST_DIR, ".vite/manifest.json"))) {
+    throw new Error("Vite build manifest is missing. Run vite build before sitemap generation.");
+  }
+  const manifest = JSON.parse(fs.readFileSync(path.join(DIST_DIR, ".vite/manifest.json"), "utf8"));
+  const db = initializeFirebase();
+  const [blogSnapshot, eventSnapshot, gallerySnapshot, teamSnapshot, galleryMeta, announcementSnapshot] = await Promise.all([
+    db.collection("blogs").where("status", "==", "Published").get(),
+    db.collection("events").where("status", "==", "Published").get(),
+    db.collection("gallery").where("status", "==", "Published").get(),
+    db.collection("team").get(),
+    db.doc("gallery_meta/deleted_static_albums").get(),
+    db.collection("announcements").get(),
+  ]);
 
-    // News Sitemap (last 48 hours)
-    const createdDate = blog.createdAt?.toDate ? blog.createdAt.toDate() : new Date();
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-
-    if (createdDate >= twoDaysAgo) {
-      newsSitemapUrls += `
-  <url>
-    <loc>${blogUrl}</loc>
-    <news:news>
-      <news:publication>
-        <news:name>Abhyudaya Club Blog</news:name>
-        <news:language>en</news:language>
-      </news:publication>
-      <news:publication_date>${createdDate.toISOString()}</news:publication_date>
-      <news:title>${escapeXml(blog.title)}</news:title>
-    </news:news>
-  </url>`;
-    }
-
-    // RSS Feed item
-    const pubDate = createdDate.toUTCString();
-    const excerpt = escapeXml(blog.excerpt || blog.seo || blog.title);
-    rssItems += `
-    <item>
-      <title>${escapeXml(blog.title)}</title>
-      <link>${blogUrl}</link>
-      <guid isPermaLink="true">${blogUrl}</guid>
-      <pubDate>${pubDate}</pubDate>
-      <description>${excerpt}</description>
-      <category>${escapeXml(blog.category || "Blog")}</category>
-      ${blog.featuredImage ? `<media:content url="${blog.featuredImage}" medium="image" />` : ""}
-    </item>`;
+  const byCreatedDate = (a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
+  const blogs = blogSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
+  const events = eventSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
+  const announcements = announcementSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    .filter((item) => item.status === "published")
+    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+  let albums = gallerySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug);
+  const deletedIds = galleryMeta.exists && Array.isArray(galleryMeta.data().ids) ? galleryMeta.data().ids : [];
+  if (albums.length === 0) {
+    albums = (await parseStaticGallery(manifest)).filter((album) => !deletedIds.includes(album.id) && !deletedIds.includes(album.slug));
+  }
+  const { team: staticTeam } = await import(pathToFileURL(path.join(ROOT, "src/data/club.js")));
+  let team = teamSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((member) => member.active !== false);
+  if (teamSnapshot.empty) {
+    team = Object.values(staticTeam).flat().filter((member) => member && typeof member === "object");
+  } else {
+    const hasWebDevelopmentMembers = team.some((member) => member.level === "web-dev" || member.department === "Web Development" || /web\s?dev|web development/i.test(member.category || ""));
+    if (!hasWebDevelopmentMembers) team.push(...(staticTeam.webDev || []));
+    if (team.length === 0) team = staticTeam.webDev || [];
   }
 
-  // Build Event Sitemaps
-  for (const ev of publishedEvents) {
-    const rawSlug = ev.slug || "";
-    // Normalize typo antariksh-spradha -> antariksh-spardha for SEO consistency
-    const slug = rawSlug === "antariksh-spradha" ? "antariksh-spardha" : rawSlug;
-    const title = ev.title === "Antariksh Spradha" ? "Antariksh Spardha" : (ev.title || slug);
-    const eventUrl = `${BASE_URL}/events/${slug}`;
-    const lastMod = ev.updatedAt?.toDate
-      ? ev.updatedAt.toDate().toISOString()
-      : ev.createdAt?.toDate
-      ? ev.createdAt.toDate().toISOString()
-      : nowISO;
-
-    mainSitemapUrls += `
-  <url>
-    <loc>${eventUrl}</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-
-    if (ev.image || ev.banner) {
-      imageSitemapUrls += `
-  <url>
-    <loc>${eventUrl}</loc>
-    <image:image>
-      <image:loc>${ev.image || ev.banner}</image:loc>
-      <image:title>${escapeXml(title)}</image:title>
-    </image:image>
-  </url>`;
-    }
-  }
-
-  // Build Event Gallery Album Sitemaps
-  const galleryAlbums = [
-    { slug: "techbloom-2", title: "TechBloom 2.0 Flagship Fest Photo Album" },
-    { slug: "antariksh-spardha", title: "Antariksh Spardha Astronomy Fest Photo Album" },
-    { slug: "aeromodelling-workshop", title: "Aeromodelling & RC Flying Workshop Photo Album" },
-    { slug: "web-dev-workshop", title: "Fullstack Web Development Boot Camp Photo Album" },
-    { slug: "communicraft-summit", title: "CommuniCraft Leadership Summit Photo Album" },
-    { slug: "poster-verse", title: "Poster Verse Art Exhibition Photo Album" },
-  ];
-
-  for (const alb of galleryAlbums) {
-    const albUrl = `${BASE_URL}/gallery/${alb.slug}`;
-    mainSitemapUrls += `
-  <url>
-    <loc>${albUrl}</loc>
-    <lastmod>${nowISO}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-  }
-
-  // Helper to write to public/ and additionally dist/ if dist/ exists
-  const writeTarget = (relPath, content) => {
-    const publicPath = path.join(__dirname, "../public", relPath);
-    fs.writeFileSync(publicPath, content, "utf8");
-    const distPath = path.join(__dirname, "../dist", relPath);
-    const distDir = path.dirname(distPath);
-    if (fs.existsSync(distDir)) {
-      fs.writeFileSync(distPath, content, "utf8");
-    }
+  const pages = new Map();
+  const addPage = (url, imageValues = []) => {
+    const normalized = url.endsWith("/") && url !== BASE_URL + "/" ? url.slice(0, -1) : url;
+    if (!normalized.startsWith(`${BASE_URL}/`) && normalized !== BASE_URL) return;
+    const images = unique(imageValues.map((value) => imageUrl(value, manifest)).filter(Boolean));
+    pages.set(normalized, unique([...(pages.get(normalized) || []), ...images]));
   };
-
-  // 1. Write Main Sitemap.xml
-  const mainSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${mainSitemapUrls}
-</urlset>`;
-  writeTarget("sitemap.xml", mainSitemap);
-
-  // 2. Write Image Sitemap.xml
-  const imageSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${imageSitemapUrls}
-</urlset>`;
-  writeTarget("sitemap-images.xml", imageSitemap);
-
-  // 3. Write News Sitemap.xml
-  const newsSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-${newsSitemapUrls}
-</urlset>`;
-  writeTarget("sitemap-news.xml", newsSitemap);
-
-  // 4. Write RSS Feed.xml
-  const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
-  <channel>
-    <title>Abhyudaya Club Blog</title>
-    <link>${BASE_URL}/blog</link>
-    <description>Official Blog of Abhyudaya Club — Science &amp; Literary Club of MPEC Kanpur</description>
-    <language>en-in</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    ${rssItems}
-  </channel>
-</rss>`;
-  writeTarget("feed.xml", rssFeed);
-
-  console.log(`📊 Sitemap & Feed Generation Summary:`);
-  console.log(`   • Static pages:   ${staticPages.length}`);
-  console.log(`   • Firestore blogs:  ${publishedBlogs.length}`);
-  console.log(`   • Firestore events: ${publishedEvents.length}`);
-  console.log(`   • Gallery albums:   ${galleryAlbums.length}`);
-  console.log(`   • News items (<48h): ${newsSitemapUrls.trim() ? "Active" : "0 (empty stub)"}`);
-  console.log("✅ All sitemaps (main, image, news) and RSS feed generated successfully!");
-}
-
-function escapeXml(unsafe = "") {
-  if (typeof unsafe !== "string") return "";
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-generateSitemapsAndFeeds()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error("❌ Failed to generate sitemaps and feeds");
-    console.error(err);
-    process.exit(1);
+  const staticPaths = ["/", "/about", "/events", "/announcements", "/blog", "/team", "/gallery", "/contact", "/join"];
+  staticPaths.forEach((route) => addPage(`${BASE_URL}${route}`));
+  blogs.slice(0, 9).forEach((blog) => addPage(`${BASE_URL}/blog`, [blog.featuredImage]));
+  events.slice(0, 6).forEach((event) => addPage(`${BASE_URL}/events`, [event.banner, event.image]));
+  blogs.forEach((blog) => addPage(`${BASE_URL}/blog/${encodeURIComponent(blog.slug)}`, [blog.featuredImage, ...blogContentImages(blog.content)]));
+  events.forEach((event) => addPage(`${BASE_URL}/events/${encodeURIComponent(event.slug === "antariksh-spradha" ? "antariksh-spardha" : event.slug)}`, [event.banner, event.image, ...(Array.isArray(event.gallery) ? event.gallery : [])]));
+  announcements.forEach((announcement) => addPage(`${BASE_URL}/announcements`, [announcement.imageUrl]));
+  announcements.slice(0, 3).forEach((announcement) => addPage(`${BASE_URL}/`, [announcement.imageUrl]));
+  team.forEach((member) => addPage(`${BASE_URL}/team`, [member.image]));
+  albums.forEach((album) => {
+    const albumUrl = `${BASE_URL}/gallery/${encodeURIComponent(album.slug)}`;
+    const photos = Array.isArray(album.photos) ? album.photos.filter((photo) => !photo.isVideo) : [];
+    addPage(albumUrl, [album.coverImage, ...photos.map((photo) => photo.src || photo.thumbnailSrc || photo.rawSrc)]);
+    addPage(`${BASE_URL}/gallery`, [album.coverImage]);
   });
+  // These bundled images are the meaningful, visible editorial collage on /gallery.
+  for (const asset of ["9ae3f21a-b6bf-4115-8c6b-a44b01f95bf9.jpg", "AM3COVER.jpg", "cover2.jpg", "WD4COVER.jpg"]) {
+    addPage(`${BASE_URL}/gallery`, [`assets/${asset}`]);
+  }
+
+  const now = new Date().toISOString();
+  const sitemapBody = [...pages].map(([url]) => `  <url><loc>${escapeXml(url)}</loc><lastmod>${now}</lastmod></url>`).join("\n");
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapBody}\n</urlset>`;
+  const imageBody = [...pages].filter(([, images]) => images.length).map(([url, images]) => `  <url><loc>${escapeXml(url)}</loc>${images.map((image) => `<image:image><image:loc>${escapeXml(image)}</image:loc></image:image>`).join("")}</url>`).join("\n");
+  const imageSitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${imageBody}\n</urlset>`;
+
+  const newsItems = blogs.filter((blog) => {
+    const date = blog.createdAt?.toDate ? blog.createdAt.toDate() : null;
+    return date && date >= new Date(Date.now() - 48 * 60 * 60 * 1000);
+  }).map((blog) => {
+    const date = blog.createdAt.toDate().toISOString();
+    const slug = encodeURIComponent(blog.slug);
+    return `<url><loc>${escapeXml(`${BASE_URL}/blog/${slug}`)}</loc><news:news><news:publication><news:name>Abhyudaya Club Blog</news:name><news:language>en</news:language></news:publication><news:publication_date>${date}</news:publication_date><news:title>${escapeXml(blog.title || blog.slug)}</news:title></news:news></url>`;
+  }).join("\n");
+  const newsSitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">${newsItems}</urlset>`;
+  const rssItems = blogs.map((blog) => {
+    const url = `${BASE_URL}/blog/${encodeURIComponent(blog.slug)}`;
+    const date = blog.createdAt?.toDate ? blog.createdAt.toDate().toUTCString() : new Date().toUTCString();
+    const cover = imageUrl(blog.featuredImage, manifest);
+    return `<item><title>${escapeXml(blog.title)}</title><link>${escapeXml(url)}</link><guid isPermaLink="true">${escapeXml(url)}</guid><pubDate>${date}</pubDate><description>${escapeXml(blog.excerpt || blog.seo || blog.title)}</description><category>${escapeXml(blog.category || "Blog")}</category>${cover ? `<media:content url="${escapeXml(cover)}" medium="image" />` : ""}</item>`;
+  }).join("\n");
+  const feed = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>Abhyudaya Club Blog</title><link>${BASE_URL}/blog</link><description>Official Blog of Abhyudaya Club — Science &amp; Literary Club of MPEC Kanpur</description><language>en-in</language><lastBuildDate>${new Date().toUTCString()}</lastBuildDate>${rssItems}</channel></rss>`;
+
+  const writeBoth = (name, content) => {
+    fs.writeFileSync(path.join(ROOT, "public", name), content, "utf8");
+    fs.writeFileSync(path.join(DIST_DIR, name), content, "utf8");
+  };
+  writeBoth("sitemap.xml", sitemap);
+  writeBoth("sitemap-images.xml", imageSitemap);
+  writeBoth("sitemap-news.xml", newsSitemap);
+  writeBoth("feed.xml", feed);
+
+  const blogImages = unique(blogs.flatMap((blog) => [blog.featuredImage, ...blogContentImages(blog.content)]).map((value) => imageUrl(value, manifest)).filter(Boolean));
+  const eventImages = unique(events.flatMap((event) => [event.banner, event.image, ...(Array.isArray(event.gallery) ? event.gallery : [])]).map((value) => imageUrl(value, manifest)).filter(Boolean));
+  const teamImages = unique(team.map((member) => imageUrl(member.image, manifest)).filter(Boolean));
+  const galleryImages = unique([...albums.flatMap((album) => [album.coverImage, ...(album.photos || []).filter((photo) => !photo.isVideo).map((photo) => photo.src || photo.thumbnailSrc || photo.rawSrc)]), "assets/9ae3f21a-b6bf-4115-8c6b-a44b01f95bf9.jpg", "assets/AM3COVER.jpg", "assets/cover2.jpg", "assets/WD4COVER.jpg"].map((value) => imageUrl(value, manifest)).filter(Boolean));
+  const announcementImages = unique(announcements.map((announcement) => imageUrl(announcement.imageUrl, manifest)).filter(Boolean));
+  const allImageReferences = [...pages.values()].flat();
+  console.log(`Sitemaps generated: ${pages.size} page URLs, ${allImageReferences.length} image references, ${unique(allImageReferences).length} unique image URLs.`);
+  console.log(`Unique content image URLs: team ${teamImages.length}, gallery ${galleryImages.length}, events ${eventImages.length}, blogs ${blogImages.length}, announcements ${announcementImages.length}.`);
+}
+
+generate().catch((error) => {
+  console.error("Sitemap generation failed:", error);
+  process.exitCode = 1;
+});
