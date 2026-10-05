@@ -191,6 +191,11 @@ export const publishBlog = async (blog) => {
     publishDate: blog.publishDate || "",
     status: blog.status || "Draft",
     author: blog.author || "Admin",
+    isAlumniContribution: Boolean(blog.isAlumniContribution),
+    alumniAuthor: blog.alumniAuthor || null,
+    reviewedBy: blog.reviewedBy || null,
+    publishedBy: blog.publishedBy || null,
+    submissionId: blog.submissionId || null,
     excerpt: blog.excerpt || "",
     content: blog.content || null,
     createdAt: serverTimestamp(),
@@ -238,7 +243,15 @@ export const updateBlogService = async (id, blogData) => {
     seo: blogData.seo || "",
     publishDate: blogData.publishDate || "",
     status: blogData.status || "Draft",
-    author: blogData.author || "Admin",
+    author: blogData.author || currentData.author || "Admin",
+    isAlumniContribution:
+      blogData.isAlumniContribution !== undefined
+        ? Boolean(blogData.isAlumniContribution)
+        : Boolean(currentData.isAlumniContribution),
+    alumniAuthor: blogData.alumniAuthor !== undefined ? blogData.alumniAuthor : (currentData.alumniAuthor || null),
+    reviewedBy: blogData.reviewedBy !== undefined ? blogData.reviewedBy : (currentData.reviewedBy || null),
+    publishedBy: blogData.publishedBy !== undefined ? blogData.publishedBy : (currentData.publishedBy || null),
+    submissionId: blogData.submissionId !== undefined ? blogData.submissionId : (currentData.submissionId || null),
     excerpt: blogData.excerpt || "",
     content: blogData.content || null,
     updatedAt: serverTimestamp(),

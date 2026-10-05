@@ -17,6 +17,7 @@ export const PERMISSIONS = {
   [ROLES.SUPER_ADMIN]: {
     dashboard: true,
     blogs: true,
+    alumniArticles: true,
     events: true,
     media: true,
     users: true,
@@ -30,6 +31,7 @@ export const PERMISSIONS = {
   [ROLES.BLOG_ADMIN]: {
     dashboard: false,
     blogs: true,
+    alumniArticles: true,
     events: false,
     media: false,
     users: false,

@@ -80,6 +80,31 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // ALUMNI ARTICLE SUBMISSIONS
+    // Public: create a new submission, read by ID or status, or update if resubmitting.
+    // Admins (super_admin, blog_admin): full read, update, delete.
+    // ============================================================
+    match /alumniSubmissions/{submissionId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.status in ['pending', 'submitted']
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.author.name is string;
+
+      allow update: if isAdmin(['super_admin', 'blog_admin'])
+        || (
+          // Authors can resubmit when changes are requested
+          resource.data.status == 'changes_requested'
+          && request.resource.data.status in ['resubmitted', 'pending']
+        );
+
+      allow delete: if isAdmin(['super_admin', 'blog_admin']);
+    }
+
+    // ============================================================
     // BLOG COMMENTS
     // Public: read + create.
     // Admins: update/delete.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
 import "./Blog.css";
 
 import SearchBar from "../components/blog/SearchBar";
@@ -133,6 +134,24 @@ const Blog = () => {
         </header>
 
         {/* ---------- CONTROLS SECTION ---------- */}
+
+        {/* ── ALUMNI CTA BANNER ── */}
+        <div className="alumni-cta-banner">
+          <div className="alumni-cta-inner">
+            <div className="alumni-cta-text">
+              <span className="alumni-cta-eyebrow">🎓 ALUMNI SPOTLIGHT</span>
+              <h2 className="alumni-cta-heading">Share Your Story with the Abhyudaya Community</h2>
+              <p className="alumni-cta-sub">
+                Are you an MPEC alumnus? Write about your career journey, industry insights,
+                college memories, or advice for current students.
+              </p>
+            </div>
+            <Link to="/blog/write" className="alumni-cta-btn">
+              Write for Abhyudaya ✍️
+            </Link>
+          </div>
+        </div>
+
         <div className="blog-controls">
           <SearchBar
             value={search}

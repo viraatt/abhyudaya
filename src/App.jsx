@@ -103,6 +103,18 @@ const AdminTimeCapsules = lazyWithRetry(
   () => import("./Admin/pages/TimeCapsules.jsx"),
   "AdminTimeCapsules"
 );
+const AlumniArticles = lazyWithRetry(
+  () => import("./Admin/pages/AlumniArticles.jsx"),
+  "AlumniArticles"
+);
+const ReviewAlumniArticle = lazyWithRetry(
+  () => import("./Admin/pages/ReviewAlumniArticle.jsx"),
+  "ReviewAlumniArticle"
+);
+const AlumniWriteArticle = lazyWithRetry(
+  () => import("./pages/AlumniWriteArticle.jsx"),
+  "AlumniWriteArticle"
+);
 
 // ─────────────────────────────────────────────────────────────
 // NProgress Configuration
@@ -429,6 +441,25 @@ export default function App() {
               }
             />
 
+            {/* Alumni Articles */}
+            <Route
+              path="/admin/alumni-articles"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                  <AlumniArticles />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/alumni-articles/review/:id"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                  <ReviewAlumniArticle />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Any other /admin routes - redirect non-super admins to their role home */}
             <Route
               path="/admin/*"
@@ -457,6 +488,7 @@ export default function App() {
               />
 
               <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/write" element={<AlumniWriteArticle />} />
               <Route path="/blog/:slug" element={<BlogDetails />} />
 
               <Route

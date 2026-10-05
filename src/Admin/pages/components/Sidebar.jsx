@@ -28,7 +28,27 @@ export default function Sidebar() {
       { name: "Announcements", path: "/admin/announcements", icon: "📢" },
       { name: "Students", path: "/admin/students", icon: "👨‍🎓" },
       { name: "Registration Outreach", path: "/admin/registration-outreach", icon: "📧" },
-      { name: "Blogs", path: "/admin/blogs", icon: "📝" },
+      {
+        name: "Blogs",
+        path: "/admin/blogs",
+        icon: "📝",
+        subItems: [
+          { name: "All Posts", path: "/admin/blogs" },
+          { name: "Published", path: "/admin/blogs?status=Published" },
+          { name: "Drafts", path: "/admin/blogs?status=Draft" },
+          { name: "Archived", path: "/admin/blogs?status=Archived" },
+        ],
+      },
+      {
+        name: "Alumni Articles",
+        path: "/admin/alumni-articles",
+        icon: "🎓",
+        subItems: [
+          { name: "Pending", path: "/admin/alumni-articles?status=pending" },
+          { name: "Approved", path: "/admin/alumni-articles?status=approved" },
+          { name: "Rejected", path: "/admin/alumni-articles?status=rejected" },
+        ],
+      },
       { name: "Media Library", path: "/admin/media", icon: "📁" },
       { name: "Team", path: "/admin/team", icon: "👥" },
       { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
@@ -38,7 +58,27 @@ export default function Sidebar() {
     ],
 
     [ROLES.BLOG_ADMIN]: [
-      { name: "Blogs", path: "/admin/blogs", icon: "📝" },
+      {
+        name: "Blogs",
+        path: "/admin/blogs",
+        icon: "📝",
+        subItems: [
+          { name: "All Posts", path: "/admin/blogs" },
+          { name: "Published", path: "/admin/blogs?status=Published" },
+          { name: "Drafts", path: "/admin/blogs?status=Draft" },
+          { name: "Archived", path: "/admin/blogs?status=Archived" },
+        ],
+      },
+      {
+        name: "Alumni Articles",
+        path: "/admin/alumni-articles",
+        icon: "🎓",
+        subItems: [
+          { name: "Pending", path: "/admin/alumni-articles?status=pending" },
+          { name: "Approved", path: "/admin/alumni-articles?status=approved" },
+          { name: "Rejected", path: "/admin/alumni-articles?status=rejected" },
+        ],
+      },
     ],
 
     [ROLES.EVENT_ADMIN]: [
@@ -86,15 +126,39 @@ export default function Sidebar() {
               location.pathname.startsWith(item.path + "/"));
 
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`sidebar-link ${isActive ? "active" : ""}`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <span>{item.icon}</span>
-              <span>{item.name}</span>
-            </Link>
+            <div key={item.path} className="sidebar-item-group">
+              <Link
+                to={item.path}
+                className={`sidebar-link ${isActive ? "active" : ""}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <span>{item.icon}</span>
+                <span>{item.name}</span>
+              </Link>
+
+              {item.subItems && (
+                <div className="sidebar-submenu">
+                  {item.subItems.map((sub) => {
+                    const isSubActive =
+                      location.pathname + location.search === sub.path ||
+                      (sub.path === item.path &&
+                        location.pathname === item.path &&
+                        !location.search);
+
+                    return (
+                      <Link
+                        key={sub.path + sub.name}
+                        to={sub.path}
+                        className={`sidebar-sublink ${isSubActive ? "active" : ""}`}
+                      >
+                        <span className="sublink-bullet">•</span>
+                        <span>{sub.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
 
