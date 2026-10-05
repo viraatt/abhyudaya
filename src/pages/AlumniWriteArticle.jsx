@@ -123,8 +123,9 @@ export default function AlumniWriteArticle() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setErrorMsg("");
     if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file (JPG, PNG, WebP).");
+      setErrorMsg("Please upload a valid image file (JPG, PNG, WebP).");
       return;
     }
 
@@ -134,7 +135,7 @@ export default function AlumniWriteArticle() {
       handleInputChange("featuredImage", url);
     } catch (err) {
       console.error(err);
-      alert("Failed to upload featured image. Please try again.");
+      setErrorMsg(err.message || "Failed to upload featured image. Please try again.");
     } finally {
       setUploadingImage(false);
     }
@@ -145,8 +146,9 @@ export default function AlumniWriteArticle() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setErrorMsg("");
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file.");
+      setErrorMsg("Please upload a valid profile photo image file (JPG, PNG, WebP).");
       return;
     }
 
@@ -156,7 +158,7 @@ export default function AlumniWriteArticle() {
       handleAuthorChange("profilePhoto", url);
     } catch (err) {
       console.error(err);
-      alert("Failed to upload photo.");
+      setErrorMsg(err.message || "Failed to upload profile photo.");
     } finally {
       setUploadingPhoto(false);
     }

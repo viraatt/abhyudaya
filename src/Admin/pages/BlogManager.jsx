@@ -113,11 +113,17 @@ function BlogManager() {
         !searchQuery.trim() ||
         (blog.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (blog.slug || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (blog.category || "").toLowerCase().includes(searchQuery.toLowerCase());
+        (blog.category || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (blog.author || "").toLowerCase().includes(searchQuery.toLowerCase());
 
       return matchesStatus && matchesSearch;
     });
   }, [blogs, statusFilter, searchQuery]);
+
+  const alumniCount = useMemo(
+    () => blogs.filter((b) => b.isAlumniContribution).length,
+    [blogs]
+  );
 
   return (
     <div className="dashboard-layout">
@@ -133,8 +139,11 @@ function BlogManager() {
               <div>
                 <h1>Blog Manager</h1>
                 <p>
-                  Total Posts: <strong>{blogs.length}</strong> | Showing:{" "}
-                  <strong>{filteredBlogs.length}</strong>
+                  Total Posts: <strong>{blogs.length}</strong>
+                  {" • "}
+                  Alumni Articles: <strong>{alumniCount}</strong>
+                  {" • "}
+                  Showing: <strong>{filteredBlogs.length}</strong>
                 </p>
               </div>
 
@@ -239,7 +248,16 @@ function BlogManager() {
                           </span>
                         </td>
 
-                        <td>{blog.author || "Admin"}</td>
+                        <td>
+                          {blog.isAlumniContribution ? (
+                            <div className="alumni-author-tag-wrapper">
+                              <span className="alumni-author-badge">🎓 Alumni</span>
+                              <span className="alumni-author-name">{blog.author}</span>
+                            </div>
+                          ) : (
+                            blog.author || "Admin"
+                          )}
+                        </td>
 
                         <td>{formatDate(blog.createdAt)}</td>
 

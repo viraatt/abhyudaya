@@ -42,12 +42,16 @@ export default function ReviewAlumniArticle() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Modals for feedback & rejection
+  // Modals for workflow actions
   const [showChangesModal, setShowChangesModal] = useState(false);
   const [feedbackInput, setFeedbackInput] = useState("");
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionInput, setRejectionInput] = useState("");
+
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const fetchArticle = useCallback(async () => {
     setLoading(true);
@@ -86,10 +90,10 @@ export default function ReviewAlumniArticle() {
 
   // Handle Approve
   const handleApprove = async () => {
-    if (!window.confirm("Approve this alumni article?")) return;
     setActionLoading(true);
     try {
       await approveAlumniArticle(id, reviewerInfo);
+      setShowApproveModal(false);
       toast.success("Article approved successfully!");
       await fetchArticle();
     } catch (err) {
@@ -102,17 +106,10 @@ export default function ReviewAlumniArticle() {
 
   // Handle Publish
   const handlePublish = async () => {
-    if (
-      !window.confirm(
-        `Publish "${article.title}" to the live Abhyudaya Blog? ${article.author?.name} will be credited as the author.`
-      )
-    ) {
-      return;
-    }
-
     setActionLoading(true);
     try {
-      const res = await publishAlumniArticleToBlog(id, reviewerInfo);
+      await publishAlumniArticleToBlog(id, reviewerInfo);
+      setShowPublishModal(false);
       toast.success("🚀 Article published to Abhyudaya Blog!");
       await fetchArticle();
     } catch (err) {
@@ -169,16 +166,10 @@ export default function ReviewAlumniArticle() {
 
   // Handle Delete
   const handleDelete = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to permanently delete this submission by ${article.author?.name}?`
-      )
-    ) {
-      return;
-    }
     setActionLoading(true);
     try {
       await deleteAlumniSubmission(id);
+      setShowDeleteModal(false);
       toast.success("Submission deleted.");
       navigate("/admin/alumni-articles");
     } catch (err) {
@@ -340,7 +331,7 @@ export default function ReviewAlumniArticle() {
                       <button
                         type="button"
                         className="action-btn approve"
-                        onClick={handleApprove}
+                        onClick={() => setShowApproveModal(true)}
                         disabled={actionLoading}
                       >
                         {actionLoading ? <FaSpinner className="spin" /> : <FaCheck />}
@@ -348,12 +339,12 @@ export default function ReviewAlumniArticle() {
                       </button>
                     )}
 
-                    {/* Publish button */}
-                    {!isPublished && (
+                    {/* Publish button — ONLY for approved articles */}
+                    {isApproved && !isPublished && (
                       <button
                         type="button"
                         className="action-btn publish"
-                        onClick={handlePublish}
+                        onClick={() => setShowPublishModal(true)}
                         disabled={actionLoading}
                       >
                         {actionLoading ? <FaSpinner className="spin" /> : <FaRocket />}
@@ -389,7 +380,7 @@ export default function ReviewAlumniArticle() {
                     <button
                       type="button"
                       className="action-btn delete"
-                      onClick={handleDelete}
+                      onClick={() => setShowDeleteModal(true)}
                       disabled={actionLoading}
                     >
                       <FaTrash />
@@ -576,6 +567,105 @@ export default function ReviewAlumniArticle() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Approve Confirmation */}
+          {showApproveModal && (
+            <div className="review-modal-backdrop" onClick={() => setShowApproveModal(false)}>
+              <div className="review-modal-card" onClick={(e) => e.stopPropagation()}>
+                <h3>Approve Alumni Article</h3>
+                <p>
+                  Are you sure you want to approve <strong>"{article.title}"</strong> submitted by <strong>{article.author?.name}</strong>?
+                </p>
+                <p style={{ color: "#cbd5e1", fontSize: "13px" }}>
+                  Once approved, the article will be ready for final publishing to the live Abhyudaya Blog.
+                </p>
+                <div className="modal-actions-row">
+                  <button
+                    type="button"
+                    className="modal-cancel-btn"
+                    onClick={() => setShowApproveModal(false)}
+                    disabled={actionLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="modal-submit-btn approve"
+                    onClick={handleApprove}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Approving..." : "Confirm Approval"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Publish Confirmation */}
+          {showPublishModal && (
+            <div className="review-modal-backdrop" onClick={() => setShowPublishModal(false)}>
+              <div className="review-modal-card" onClick={(e) => e.stopPropagation()}>
+                <h3>🚀 Publish to Live Abhyudaya Blog</h3>
+                <p>
+                  You are about to publish <strong>"{article.title}"</strong> to the live blog.
+                </p>
+                <p style={{ color: "#facc15", fontSize: "13px", fontWeight: "600" }}>
+                  ✓ Author attribution will permanently be credited to {article.author?.name} (Class of {article.author?.graduationYear}, {article.author?.branch}).
+                </p>
+                <div className="modal-actions-row">
+                  <button
+                    type="button"
+                    className="modal-cancel-btn"
+                    onClick={() => setShowPublishModal(false)}
+                    disabled={actionLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="modal-submit-btn publish"
+                    onClick={handlePublish}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Publishing..." : "Publish Live Now"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Delete Confirmation */}
+          {showDeleteModal && (
+            <div className="review-modal-backdrop" onClick={() => setShowDeleteModal(false)}>
+              <div className="review-modal-card" onClick={(e) => e.stopPropagation()}>
+                <h3 style={{ color: "#f87171" }}>Delete Submission</h3>
+                <p>
+                  Are you sure you want to permanently delete this submission by <strong>{article.author?.name}</strong>?
+                </p>
+                <p style={{ color: "#ef4444", fontSize: "12.5px" }}>
+                  ⚠️ This action cannot be undone.
+                </p>
+                <div className="modal-actions-row">
+                  <button
+                    type="button"
+                    className="modal-cancel-btn"
+                    onClick={() => setShowDeleteModal(false)}
+                    disabled={actionLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="modal-submit-btn delete"
+                    onClick={handleDelete}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Deleting..." : "Permanently Delete"}
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -2,6 +2,16 @@ const CLOUD_NAME = "cn11zsvp";
 const UPLOAD_PRESET = "abhyudaya_blog";
 
 export const uploadImage = async (file) => {
+  if (!file) {
+    throw new Error("No file selected.");
+  }
+
+  // Enforce 10MB file size limit
+  const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    throw new Error("File size must be under 10 MB. Please compress your image.");
+  }
+
   const formData = new FormData();
 
   formData.append("file", file);

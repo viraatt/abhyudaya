@@ -141,7 +141,7 @@ export async function resubmitAlumniArticle(id, editToken, formData) {
   }
 
   const existing = snap.data();
-  if (existing.editToken && existing.editToken !== editToken) {
+  if (!existing.editToken || existing.editToken !== editToken) {
     throw new Error("Invalid authorization token for this submission.");
   }
 

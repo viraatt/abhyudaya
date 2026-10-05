@@ -305,6 +305,124 @@
   border-color: #ef4444;
 }
 
+/* Header Actions & Refresh Button */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background: #334155;
+  color: #f8fafc;
+  border-color: #64748b;
+}
+
+/* Search Input in Dark Theme */
+.search-input-wrapper {
+  position: relative;
+  min-width: 320px;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.search-input-field {
+  width: 100%;
+  padding: 10px 16px 10px 38px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.search-input-field:focus {
+  border-color: #facc15;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.15);
+}
+
+.search-input-field::placeholder {
+  color: #64748b;
+}
+
+/* Status Pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.status-pill.published {
+  background: #059669;
+  color: #ffffff;
+}
+
+.status-pill.draft {
+  background: rgba(234, 179, 8, 0.18);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.status-pill.archived {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Empty State Box */
+.empty-state-box {
+  background: #1e293b;
+  border: 1px dashed #334155;
+  border-radius: 16px;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.empty-state-box h2 {
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.empty-state-box p {
+  color: #94a3b8;
+  font-size: 14px;
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .admin-alumni-header {
     flex-direction: column;
@@ -313,5 +431,9 @@
   .admin-alumni-filter-bar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .search-input-wrapper {
+    min-width: 100%;
   }
 }

@@ -566,11 +566,27 @@
   background: #d97706;
 }
 
-.modal-submit-btn.reject {
-  background: #ef4444;
-  color: #fff;
+.modal-submit-btn.approve {
+  background: #10b981;
+  color: #ffffff;
 }
-.modal-submit-btn.reject:hover:not(:disabled) {
+.modal-submit-btn.approve:hover:not(:disabled) {
+  background: #059669;
+}
+
+.modal-submit-btn.publish {
+  background: #facc15;
+  color: #0f172a;
+}
+.modal-submit-btn.publish:hover:not(:disabled) {
+  background: #eab308;
+}
+
+.modal-submit-btn.delete {
+  background: #ef4444;
+  color: #ffffff;
+}
+.modal-submit-btn.delete:hover:not(:disabled) {
   background: #dc2626;
 }
 
