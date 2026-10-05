@@ -172,6 +172,22 @@ body{
 
 }
 
+.sidebar-logout-btn{
+  width:100%;
+  background:transparent;
+  border:none;
+  font-family:inherit;
+  font-size:inherit;
+  cursor:pointer;
+  text-align:left;
+  margin-top:6px;
+}
+
+.sidebar-logout-btn:hover{
+  background:rgba(239, 68, 68, 0.16);
+  color:#fca5a5;
+}
+
 /*==============================*/
 
 .dashboard-main{

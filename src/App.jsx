@@ -182,6 +182,15 @@ export default function App() {
               element={<Login />}
             />
 
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <Navigate to="/admin/dashboard" replace />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Dashboard */}
             <Route
               path="/admin/dashboard"
@@ -265,11 +274,25 @@ export default function App() {
                 <ProtectedRoute
                   allowedRoles={[
                     "super_admin",
-                    "blog_admin",
                     "event_admin",
                   ]}
                 >
                   <MediaLibraryPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Media Library Alias */}
+            <Route
+              path="/admin/media-library"
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "super_admin",
+                    "event_admin",
+                  ]}
+                >
+                  <Navigate to="/admin/media" replace />
                 </ProtectedRoute>
               }
             />
@@ -292,7 +315,6 @@ export default function App() {
                   allowedRoles={[
                     "super_admin",
                     "event_admin",
-                    "blog_admin",
                   ]}
                 >
                   <AdminGallery />
@@ -403,6 +425,16 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
                   <AdminTimeCapsules />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Any other /admin routes - redirect non-super admins to their role home */}
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <Navigate to="/admin/dashboard" replace />
                 </ProtectedRoute>
               }
             />

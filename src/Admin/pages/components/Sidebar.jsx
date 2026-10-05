@@ -1,12 +1,25 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { auth } from "../../../Firebase/firebase";
 import { useAuth } from "../../../context/AuthContext";
+import { ROLES, normalizeRole } from "../../config/roles";
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/admin/login", { replace: true });
+    } catch (err) {
+      console.error("[Sidebar] logout error:", err);
+    }
+  };
+
   const menus = {
-    super_admin: [
+    [ROLES.SUPER_ADMIN]: [
       { name: "Dashboard", path: "/admin/dashboard", icon: "📊" },
       { name: "Events", path: "/admin/events", icon: "📅" },
       { name: "Certificates", path: "/admin/certificates", icon: "📜" },
@@ -24,13 +37,11 @@ export default function Sidebar() {
       { name: "Users", path: "/admin/users", icon: "👤" },
     ],
 
-    blog_admin: [
+    [ROLES.BLOG_ADMIN]: [
       { name: "Blogs", path: "/admin/blogs", icon: "📝" },
-      { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
-      { name: "Media Library", path: "/admin/media", icon: "📁" },
     ],
 
-    event_admin: [
+    [ROLES.EVENT_ADMIN]: [
       { name: "Events", path: "/admin/events", icon: "📅" },
       { name: "Certificates", path: "/admin/certificates", icon: "📜" },
       { name: "Registrations", path: "/admin/registrations", icon: "📋" },
@@ -43,12 +54,13 @@ export default function Sidebar() {
     ],
   };
 
-  const menu = menus[currentUser?.role] || [];
+  const currentRole = normalizeRole(currentUser?.role);
+  const menu = menus[currentRole] || [];
 
   const roleLabel = {
-    super_admin: "Super Admin",
-    blog_admin: "Blog Admin",
-    event_admin: "Event Admin",
+    [ROLES.SUPER_ADMIN]: "Super Admin",
+    [ROLES.BLOG_ADMIN]: "Blog Admin",
+    [ROLES.EVENT_ADMIN]: "Event Admin",
   };
 
   return (
@@ -61,7 +73,7 @@ export default function Sidebar() {
         </h2>
 
         <p className="sidebar-role">
-          {roleLabel[currentUser?.role] || "Admin"}
+          {roleLabel[currentRole] || "Admin"}
         </p>
 
       </div>
@@ -85,6 +97,16 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="sidebar-link sidebar-logout-btn"
+          aria-label="Logout"
+        >
+          <span>🚪</span>
+          <span>Logout</span>
+        </button>
       </nav>
 
     </aside>

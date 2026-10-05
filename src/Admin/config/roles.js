@@ -31,10 +31,10 @@ export const PERMISSIONS = {
     dashboard: false,
     blogs: true,
     events: false,
-    media: true,
+    media: false,
     users: false,
     team: false,
-    gallery: true,
+    gallery: false,
     contact: false,
     reviews: false,
     timeCapsules: false,
@@ -53,3 +53,27 @@ export const PERMISSIONS = {
     timeCapsules: true,
   },
 };
+
+/**
+ * Normalizes role string variations into canonical role identifiers.
+ * e.g. "superadmin", "super_admin", "admin" -> "super_admin"
+ *      "blogadmin", "blog_admin", "Blog Admin" -> "blog_admin"
+ *      "eventadmin", "event_admin", "Event Admin" -> "event_admin"
+ */
+export const normalizeRole = (role) => {
+  if (!role || typeof role !== "string") return null;
+  const clean = role.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (clean === "superadmin" || clean === "super_admin" || clean === "admin") {
+    return ROLES.SUPER_ADMIN;
+  }
+  if (clean === "blogadmin" || clean === "blog_admin") {
+    return ROLES.BLOG_ADMIN;
+  }
+  if (clean === "eventadmin" || clean === "event_admin") {
+    return ROLES.EVENT_ADMIN;
+  }
+  return clean;
+};
+
+export const isBlogAdmin = (role) => normalizeRole(role) === ROLES.BLOG_ADMIN;
+export const isSuperAdmin = (role) => normalizeRole(role) === ROLES.SUPER_ADMIN;
