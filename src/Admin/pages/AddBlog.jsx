@@ -44,8 +44,37 @@ function AddBlog() {
 
     let cancelled = false;
     setAlumniProfileLoading(true);
-    setAlumniProfile(null);
 
+    // ── Immediately seed the card with whatever AuthContext already has.
+    //    AuthContext already spread the Firestore users/{uid} doc into
+    //    currentUser, so currentUser.name is available right away without
+    //    waiting for a second Firestore round-trip.
+    const immediateProfile = {
+      uid: currentUser.uid,
+      name:
+        currentUser.name ||
+        currentUser.fullName ||
+        currentUser.displayName ||
+        currentUser.authorName ||
+        "",
+      email: currentUser.email || "",
+      graduationYear: currentUser.graduationYear || "",
+      branch:
+        currentUser.branch ||
+        currentUser.department ||
+        currentUser.course ||
+        currentUser.program ||
+        "",
+      organization: currentUser.organization || "",
+      designation: currentUser.designation || "",
+      linkedin: currentUser.linkedin || "",
+      profilePhoto: currentUser.profilePhoto || currentUser.photoURL || "",
+    };
+    setAlumniProfile(immediateProfile);
+
+    // ── Still refetch from Firestore in case the Firestore doc has fields
+    //    that differ from the AuthContext snapshot (e.g. profile was updated
+    //    after login).  This also acts as a definitive "doc exists" check.
     (async () => {
       try {
         const userRef = doc(db, "users", currentUser.uid);
@@ -54,18 +83,35 @@ function AddBlog() {
         if (cancelled) return;
 
         if (!userSnap.exists()) {
-          setAlumniProfile(false); // signals "doc not found" error
+          // If there is already a name from AuthContext keep it; only mark
+          // error when we have nothing at all.
+          if (!immediateProfile.name) setAlumniProfile(false);
           return;
         }
 
         const data = userSnap.data();
-        // Resolve display name: Firestore name fields → Firebase Auth displayName → email prefix
+
+        // Diagnostic log — remove after confirming the correct field.
+        console.log("[AddBlog] Firestore users doc fields:", {
+          uid: currentUser.uid,
+          name: data.name,
+          displayName: data.displayName,
+          fullName: data.fullName,
+          authorName: data.authorName,
+          graduationYear: data.graduationYear,
+          branch: data.branch,
+          role: data.role,
+        });
+
+        // Resolve display name: prefer Firestore fields → AuthContext fields
         const resolvedName =
           data.name ||
           data.displayName ||
           data.fullName ||
           data.authorName ||
+          currentUser.name ||
           currentUser.displayName ||
+          currentUser.fullName ||
           "";
 
         // Resolve branch: try multiple common field names
@@ -74,23 +120,28 @@ function AddBlog() {
           data.department ||
           data.course ||
           data.program ||
+          currentUser.branch ||
           "";
 
-        setAlumniProfile({
-          uid: currentUser.uid,
-          name: resolvedName,
-          email: currentUser.email || data.email || "",
-          graduationYear: data.graduationYear || "",
-          branch: resolvedBranch,
-          organization: data.organization || "",
-          designation: data.designation || "",
-          linkedin: data.linkedin || "",
-          profilePhoto: data.profilePhoto || data.photoURL || currentUser.photoURL || "",
-        });
+        if (!cancelled) {
+          setAlumniProfile({
+            uid: currentUser.uid,
+            name: resolvedName,
+            email: currentUser.email || data.email || "",
+            graduationYear: data.graduationYear || currentUser.graduationYear || "",
+            branch: resolvedBranch,
+            organization: data.organization || currentUser.organization || "",
+            designation: data.designation || currentUser.designation || "",
+            linkedin: data.linkedin || currentUser.linkedin || "",
+            profilePhoto: data.profilePhoto || data.photoURL || currentUser.photoURL || "",
+          });
+        }
       } catch (err) {
         if (!cancelled) {
           console.error("[AddBlog] Failed to load alumni profile:", err);
-          setAlumniProfile(false);
+          // Keep the immediate profile seeded from AuthContext rather than
+          // wiping it to false — the user can still write their article.
+          if (!immediateProfile.name) setAlumniProfile(false);
         }
       } finally {
         if (!cancelled) setAlumniProfileLoading(false);
@@ -149,7 +200,9 @@ function AddBlog() {
       publishDate: publishDate || new Date().toISOString().split("T")[0],
       status: "Draft",
       author: isAlumniUser
-        ? (alumniProfile && alumniProfile !== false ? alumniProfile.name : (currentUser?.displayName || ""))
+        ? (alumniProfile && alumniProfile !== false
+            ? (alumniProfile.name || currentUser?.name || currentUser?.fullName || currentUser?.displayName || "")
+            : (currentUser?.name || currentUser?.fullName || currentUser?.displayName || ""))
         : "Admin",
       excerpt: contentExcerpt.trim().substring(0, 180),
       content: contentJson,
@@ -533,10 +586,17 @@ function AddBlog() {
                       </p>
                     )}
 
-                    {/* ── Loaded successfully ── */}
+                     {/* ── Loaded successfully ── */}
                     {!alumniProfileLoading && alumniProfile && alumniProfile !== false && (
                       <div style={{ fontSize: "13px", color: "#e2e8f0", display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <strong>{alumniProfile.name || <em style={{ color: "#94a3b8" }}>Name not set</em>}</strong>
+                        <strong>
+                          {/* Prefer loaded profile name; fall back to AuthContext currentUser */}
+                          {alumniProfile.name ||
+                            currentUser?.name ||
+                            currentUser?.fullName ||
+                            currentUser?.displayName ||
+                            <em style={{ color: "#f87171" }}>Name not found — please contact admin</em>}
+                        </strong>
                         {(alumniProfile.branch || alumniProfile.graduationYear) && (
                           <span style={{ color: "#94a3b8" }}>
                             {alumniProfile.branch
