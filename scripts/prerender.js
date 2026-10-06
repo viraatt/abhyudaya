@@ -17,209 +17,51 @@ const BASE_URL = "https://www.abhyudayaclub.in";
 function initializeFirebase() {
   if (getApps().length) return getFirestore();
   const credentialJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-  const credentialPath =
-    process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(ROOT, "firebase-service-account.json");
-  try {
-    if (credentialJson) {
-      initializeApp({ credential: cert(JSON.parse(credentialJson)) });
-    } else if (fs.existsSync(credentialPath)) {
-      initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
-    } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
-      initializeApp({ credential: applicationDefault() });
-    } else {
-      console.warn("⚠️ Firebase build credentials not found. Dynamic Firestore routes will be skipped during prerendering.");
-      return null;
-    }
-    return getFirestore();
-  } catch (error) {
-    console.warn("⚠️ Failed to initialize Firebase Admin:", error.message);
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Route Metadata & Definitions
-// ─────────────────────────────────────────────────────────────
-const STATIC_PAGE_META = {
-  "/": {
-    title: "Abhyudaya Club | MPEC Kanpur",
-    description:
-      "Abhyudaya Club — the Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur, under the Department of Basic Sciences & Humanities.",
-  },
-  "/about": {
-    title: "About Us | Abhyudaya Club",
-    description:
-      "Learn about Abhyudaya Club, the official Science & Literary club of Maharana Pratap Engineering College (MPEC), Kanpur.",
-  },
-  "/events": {
-    title: "Events & Workshops | Abhyudaya Club",
-    description:
-      "Explore exciting technical and cultural events, hackathons, and workshops organized by Abhyudaya Club at MPEC Kanpur.",
-    imageSelector: ".event-showcase-image img",
-  },
-  "/announcements": {
-    title: "Announcements & Notices | Abhyudaya Club",
-    description:
-      "Stay up to date with the latest announcements, contest results, and important notices from Abhyudaya Club.",
-  },
-  "/blog": {
-    title: "Blog & Editorial | Abhyudaya Club",
-    description:
-      "Read insightful articles, technical deep dives, scientific reviews, and literary pieces penned by members and students of Abhyudaya Club.",
-    imageSelector: ".blog-card-image img, .featured-image img",
-  },
-  "/team": {
-    title: "Our Team & Leadership | Abhyudaya Club",
-    description:
-      "Meet the faculty advisors, student coordinators, and executive committee members leading Abhyudaya Club at MPEC Kanpur.",
-    imageSelector:
-      ".faculty-card__image, .leadership-card__image, .core-team-card__img, .executive-card__image, .webdev-team-card__img",
-  },
-  "/gallery": {
-    title: "Event Gallery | Abhyudaya Club",
-    description:
-      "Visual memories, photo albums, and event highlights from past workshops, summits, and festivals at Abhyudaya Club.",
-    imageSelector: ".collage-img",
-  },
-  "/contact": {
-    title: "Contact Us | Abhyudaya Club",
-    description:
-      "Get in touch with the student leadership and faculty advisors of Abhyudaya Club for partnerships, event queries, or suggestions.",
-  },
-  "/join": {
-    title: "Join the Club | Abhyudaya Club",
-    description:
-      "Apply to become an active member of Abhyudaya Club and grow your technical, literary, and leadership potential.",
-  },
-  "/verify": {
-    title: "Verify Certificate | Abhyudaya Club",
-    description:
-      "Verify the authenticity of participation and merit certificates issued by Abhyudaya Club, MPEC Kanpur.",
-  },
-  "/time-capsule": {
-    title: "Digital Time Capsule | Abhyudaya Club",
-    description:
-      "Leave your thoughts, wishes, and memories sealed in the Abhyudaya Club Digital Time Capsule to be unlocked in the future.",
-  },
-};
-
-const STATIC_GALLERY_ALBUMS = [
-  { slug: "techbloom-2", title: "TechBloom 2.0 Flagship Fest Photo Album" },
-  { slug: "antariksh-spardha", title: "Antariksh Spardha Astronomy Fest Photo Album" },
-  { slug: "aeromodelling-workshop", title: "Aeromodelling & RC Flying Workshop Photo Album" },
-  { slug: "web-dev-workshop", title: "Fullstack Web Development Boot Camp Photo Album" },
-  { slug: "communicraft-summit", title: "CommuniCraft Leadership Summit Photo Album" },
-  { slug: "poster-verse", title: "Poster Verse Art Exhibition Photo Album" },
-];
-
-function escapeHtml(unsafe = "") {
-  if (typeof unsafe !== "string") return "";
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function unique(values) {
-  return [...new Set(values.filter(Boolean))];
+  const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(ROOT, "firebase-service-account.json");
+  if (credentialJson) initializeApp({ credential: cert(JSON.parse(credentialJson)) });
+  else if (fs.existsSync(credentialPath)) initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
+  else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) initializeApp({ credential: applicationDefault() });
+  else throw new Error("Firebase build credentials are required. Set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS.");
+  return getFirestore();
 }
 
 async function getRoutesToPrerender(db) {
-  const routes = [];
-
-  // 1. Core Static Routes
-  for (const [routePath, meta] of Object.entries(STATIC_PAGE_META)) {
-    routes.push({
-      path: routePath,
-      title: meta.title,
-      description: meta.description,
-      canonical: `${BASE_URL}${routePath === "/" ? "" : routePath}`,
-      image: `${BASE_URL}/og-image.jpg`,
-      type: "website",
-      dataReady: true,
-      imageSelector: meta.imageSelector,
-    });
-  }
-
-  // 2. Static Gallery Albums
-  for (const album of STATIC_GALLERY_ALBUMS) {
-    routes.push({
-      path: `/gallery/${encodeURIComponent(album.slug)}`,
-      title: `${album.title} | Abhyudaya Club`,
-      description: `Explore photos and memories from ${album.title} hosted by Abhyudaya Club at MPEC Kanpur.`,
-      canonical: `${BASE_URL}/gallery/${encodeURIComponent(album.slug)}`,
-      image: `${BASE_URL}/og-image.jpg`,
-      type: "website",
-      dataReady: true,
-      imageSelector: ".gallery-clean-media",
-    });
-  }
-
-  // 3. Dynamic Firestore Routes (when credentials are present)
-  if (db) {
-    try {
-      const [blogs, events, albums] = await Promise.all([
-        db.collection("blogs").where("status", "==", "Published").get(),
-        db.collection("events").where("status", "==", "Published").get(),
-        db.collection("gallery").where("status", "==", "Published").get(),
-      ]);
-
-      blogs.forEach((doc) => {
-        const item = doc.data();
-        if (item.slug) {
-          routes.push({
-            path: `/blog/${encodeURIComponent(item.slug)}`,
-            title: `${item.title || "Blog Post"} | Abhyudaya Club Blog`,
-            description: item.excerpt || item.seo || item.title || "Read this article on the Abhyudaya Club official blog.",
-            canonical: `${BASE_URL}/blog/${encodeURIComponent(item.slug)}`,
-            image: item.featuredImage || item.image || `${BASE_URL}/og-image.jpg`,
-            type: "article",
-            dataReady: true,
-            imageSelector: ".details-featured-image",
-          });
-        }
-      });
-
-      events.forEach((doc) => {
-        const item = doc.data();
-        if (item.slug) {
-          const slug = item.slug === "antariksh-spradha" ? "antariksh-spardha" : item.slug;
-          routes.push({
-            path: `/events/${encodeURIComponent(slug)}`,
-            title: `${item.title || "Event"} | Abhyudaya Club Events`,
-            description: item.shortDescription || item.description || item.title || "Event details and registration for Abhyudaya Club.",
-            canonical: `${BASE_URL}/events/${encodeURIComponent(slug)}`,
-            image: item.banner || item.image || `${BASE_URL}/og-image.jpg`,
-            type: "website",
-            dataReady: true,
-            imageSelector: ".event-hero__image",
-          });
-        }
-      });
-
-      albums.forEach((doc) => {
-        const item = doc.data();
-        if (item.slug) {
-          routes.push({
-            path: `/gallery/${encodeURIComponent(item.slug)}`,
-            title: `${item.title || "Gallery"} | Abhyudaya Club`,
-            description: `Explore photos and memories from ${item.title || "events"} hosted by Abhyudaya Club at MPEC Kanpur.`,
-            canonical: `${BASE_URL}/gallery/${encodeURIComponent(item.slug)}`,
-            image: item.coverImage || `${BASE_URL}/og-image.jpg`,
-            type: "website",
-            dataReady: true,
-            imageSelector: ".gallery-clean-media",
-          });
-        }
-      });
-    } catch (err) {
-      console.warn("⚠️ Could not fetch Firestore routes for prerendering:", err.message);
+  const routes = [
+    { path: "/", dataReady: true, canonical: "/" },
+    { path: "/about", canonical: "/about" },
+    { path: "/events", dataReady: true, canonical: "/events", imageSelector: ".event-showcase-image img" },
+    { path: "/blog", dataReady: true, canonical: "/blog", imageSelector: ".blog-card-image img, .featured-image img" },
+    { path: "/team", dataReady: true, canonical: "/team", imageSelector: ".faculty-card__image, .leadership-card__image, .core-team-card__img, .executive-card__image, .webdev-team-card__img" },
+    { path: "/gallery", dataReady: true, canonical: "/gallery", imageSelector: ".collage-img" },
+    { path: "/announcements", dataReady: true, canonical: "/announcements" },
+    { path: "/contact", canonical: "/contact" },
+    { path: "/join", canonical: "/join" },
+  ];
+  const [blogs, events, albums] = await Promise.all([
+    db.collection("blogs").where("status", "==", "Published").get(),
+    db.collection("events").where("status", "==", "Published").get(),
+    db.collection("gallery").where("status", "==", "Published").get(),
+  ]);
+  blogs.forEach((doc) => {
+    const item = doc.data();
+    if (item.slug) routes.push({ path: `/blog/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/blog/${encodeURIComponent(item.slug)}`, imageSelector: ".details-featured-image" });
+  });
+  events.forEach((doc) => {
+    const item = doc.data();
+    if (item.slug) {
+      const slug = item.slug === "antariksh-spradha" ? "antariksh-spardha" : item.slug;
+      routes.push({ path: `/events/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/events/${encodeURIComponent(slug)}`, imageSelector: ".event-hero__image" });
     }
+  });
+  albums.forEach((doc) => {
+    const item = doc.data();
+    if (item.slug) routes.push({ path: `/gallery/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(item.slug)}`, imageSelector: ".gallery-clean-media" });
+  });
+  if (albums.empty) {
+    const staticSource = fs.readFileSync(path.join(ROOT, "src/data/staticGalleryAlbums.js"), "utf8");
+    const staticSlugs = [...staticSource.matchAll(/^\s*slug:\s*["']([^"']+)["'],?\s*$/gm)].map((match) => match[1]);
+    unique(staticSlugs).forEach((slug) => routes.push({ path: `/gallery/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(slug)}`, imageSelector: ".gallery-clean-media" }));
   }
-
-  // Deduplicate by path
   return [...new Map(routes.map((route) => [route.path, route])).values()];
 }
 
@@ -395,7 +237,6 @@ async function prerenderWithBrowser() {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
-
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(45000);
     page.setDefaultTimeout(45000);
@@ -422,7 +263,7 @@ async function prerenderWithBrowser() {
         await page.waitForFunction(() => document.querySelector("#root > *") !== null, { timeout: 15000 });
 
         if (route.dataReady) {
-          await page.waitForFunction(() => window.__PRERENDER_READY__ === true, { timeout: 20000 }).catch(() => {});
+          await page.waitForFunction(() => window.__PRERENDER_READY__ === true, { timeout: 20000 }).catch(() => { });
         }
 
         const result = await page.evaluate((selector) => ({
@@ -434,9 +275,9 @@ async function prerenderWithBrowser() {
         const outputDir = route.path === "/" ? DIST_DIR : path.join(DIST_DIR, route.path.replace(/^\//, ""));
         fs.mkdirSync(outputDir, { recursive: true });
         fs.writeFileSync(path.join(outputDir, "index.html"), result.html, "utf8");
-        console.log(`Prerendered ${route.path}: ${result.images} images; ${result.title}`);
-      } catch (err) {
-        console.warn(`  └─ Snapshot skipped for ${route.path}: ${err.message}`);
+        console.log(`Prerendered ${route.path}: ${result.images} relevant images; ${result.title}`);
+      } catch (error) {
+        throw new Error(`Prerender failed for ${route.path}: ${error.message}`);
       }
     }
   } finally {

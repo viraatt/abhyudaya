@@ -252,6 +252,70 @@ export default function BlogDetails() {
           return;
         }
 
+        // If this is an alumni contribution, ensure author profile is resolved with real user data
+        if (currentBlog.isAlumniContribution) {
+          const authorUid =
+            currentBlog.authorUid ||
+            currentBlog.authorId ||
+            currentBlog.alumniAuthor?.uid ||
+            currentBlog.createdBy;
+
+          const currentAuthorName = resolveAuthorName(
+            currentBlog.alumniAuthor,
+            currentBlog.author
+          );
+
+          // If name is legacy fallback / generic and authorUid exists, fetch actual profile
+          if (
+            authorUid &&
+            (!currentAuthorName || currentAuthorName === "Abhyudaya Alumni")
+          ) {
+            try {
+              const userRef = doc(db, "users", authorUid);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const actualName = resolveAuthorName(userData);
+                if (actualName && actualName !== "Abhyudaya Alumni") {
+                  currentBlog.alumniAuthor = {
+                    ...currentBlog.alumniAuthor,
+                    name: actualName,
+                    graduationYear:
+                      currentBlog.alumniAuthor?.graduationYear ||
+                      userData.graduationYear ||
+                      "",
+                    branch:
+                      currentBlog.alumniAuthor?.branch ||
+                      userData.branch ||
+                      userData.department ||
+                      "",
+                    designation:
+                      currentBlog.alumniAuthor?.designation ||
+                      userData.designation ||
+                      "",
+                    organization:
+                      currentBlog.alumniAuthor?.organization ||
+                      userData.organization ||
+                      "",
+                    linkedin:
+                      currentBlog.alumniAuthor?.linkedin ||
+                      userData.linkedin ||
+                      "",
+                    profilePhoto:
+                      currentBlog.alumniAuthor?.profilePhoto ||
+                      userData.profilePhoto ||
+                      userData.photoURL ||
+                      "",
+                  };
+                  currentBlog.author = actualName;
+                }
+              }
+            } catch (err) {
+              console.warn("Could not fetch user profile for alumni article author:", err);
+            }
+          }
+        }
+
         setBlogDocId(currentBlog.id);
         setBlog(currentBlog);
 
@@ -514,12 +578,9 @@ export default function BlogDetails() {
           <h1>{blog.title}</h1>
 
           <div className="details-meta">
-            <span className={blog.isAlumniContribution ? "alumni-author-span" : ""}>
+            <span>
               <FiUser aria-hidden="true" />
               {blog.isAlumniContribution ? authorDisplayName : (blog.author || "Admin")}
-              {blog.isAlumniContribution && (
-                <span className="alumni-author-pill">🎓 Alumni Contributor</span>
-              )}
             </span>
             <span>
               <FiCalendar aria-hidden="true" />
@@ -534,10 +595,6 @@ export default function BlogDetails() {
           {/* Alumni Contributor Spotlight Card */}
           {blog.isAlumniContribution && (blog.alumniAuthor || blog.author) && (
             <div className="alumni-author-spotlight">
-              <div className="alumni-spotlight-badge">
-                <span className="cap-icon">🎓</span>
-                <span>Alumni Contribution</span>
-              </div>
               <div className="alumni-spotlight-content">
                 {blog.alumniAuthor?.profilePhoto ? (
                   <img

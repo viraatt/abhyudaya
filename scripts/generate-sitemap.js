@@ -16,6 +16,20 @@ function initializeFirebase() {
   try {
     if (credentialJson) {
       initializeApp({ credential: cert(JSON.parse(credentialJson)) });
+<<<<<<< HEAD
+      return getFirestore();
+    } else if (fs.existsSync(credentialPath)) {
+      initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
+      return getFirestore();
+    } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
+      initializeApp({ credential: applicationDefault() });
+      return getFirestore();
+    }
+  } catch (err) {
+    console.warn("[sitemap] Warning: Could not initialize Firebase Admin credentials:", err.message);
+  }
+  return null;
+=======
     } else if (fs.existsSync(credentialPath)) {
       initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
     } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
@@ -29,6 +43,7 @@ function initializeFirebase() {
     console.warn("⚠️ Failed to initialize Firebase Admin:", error.message);
     return null;
   }
+>>>>>>> origin/main
 }
 
 function escapeXml(value = "") {
@@ -97,6 +112,8 @@ async function generate() {
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(DIST_DIR, ".vite/manifest.json"), "utf8"));
   const db = initializeFirebase();
+<<<<<<< HEAD
+=======
   const [blogSnapshot, eventSnapshot, gallerySnapshot, teamSnapshot, galleryMeta, announcementSnapshot] = db
     ? await Promise.all([
         db.collection("blogs").where("status", "==", "Published").get(),
@@ -107,27 +124,79 @@ async function generate() {
         db.collection("announcements").get(),
       ])
     : [{ docs: [] }, { docs: [] }, { docs: [] }, { docs: [], empty: true }, { exists: false }, { docs: [] }];
+>>>>>>> origin/main
 
-  const byCreatedDate = (a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
-  const blogs = blogSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
-  const events = eventSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
-  const announcements = announcementSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-    .filter((item) => item.status === "published")
-    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-  let albums = gallerySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug);
-  const deletedIds = galleryMeta.exists && Array.isArray(galleryMeta.data().ids) ? galleryMeta.data().ids : [];
-  if (albums.length === 0) {
-    albums = (await parseStaticGallery(manifest)).filter((album) => !deletedIds.includes(album.id) && !deletedIds.includes(album.slug));
-  }
-  const { team: staticTeam } = await import(pathToFileURL(path.join(ROOT, "src/data/club.js")));
-  let team = teamSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((member) => member.active !== false);
-  if (teamSnapshot.empty) {
-    team = Object.values(staticTeam).flat().filter((member) => member && typeof member === "object");
+  let blogs = [];
+  let events = [];
+  let announcements = [];
+  let albums = [];
+  let team = [];
+
+  if (db) {
+    try {
+      const [blogSnapshot, eventSnapshot, gallerySnapshot, teamSnapshot, galleryMeta, announcementSnapshot] = await Promise.all([
+        db.collection("blogs").where("status", "==", "Published").get(),
+        db.collection("events").where("status", "==", "Published").get(),
+        db.collection("gallery").where("status", "==", "Published").get(),
+        db.collection("team").get(),
+        db.doc("gallery_meta/deleted_static_albums").get(),
+        db.collection("announcements").get(),
+      ]);
+
+      const byCreatedDate = (a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
+      blogs = blogSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
+      events = eventSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
+      announcements = announcementSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((item) => item.status === "published")
+        .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      albums = gallerySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug);
+      const deletedIds = galleryMeta.exists && Array.isArray(galleryMeta.data().ids) ? galleryMeta.data().ids : [];
+      if (albums.length === 0) {
+        albums = (await parseStaticGallery(manifest)).filter((album) => !deletedIds.includes(album.id) && !deletedIds.includes(album.slug));
+      }
+      const { team: staticTeam } = await import(pathToFileURL(path.join(ROOT, "src/data/club.js")));
+      team = teamSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((member) => member.active !== false);
+      if (teamSnapshot.empty) {
+        team = Object.values(staticTeam).flat().filter((member) => member && typeof member === "object");
+      } else {
+        const hasWebDevelopmentMembers = team.some((member) => member.level === "web-dev" || member.department === "Web Development" || /web\s?dev|web development/i.test(member.category || ""));
+        if (!hasWebDevelopmentMembers) team.push(...(staticTeam.webDev || []));
+        if (team.length === 0) team = staticTeam.webDev || [];
+      }
+    } catch (fbErr) {
+      console.warn("[sitemap] Warning: Could not query Firestore for dynamic sitemap data:", fbErr.message);
+    }
   } else {
-    const hasWebDevelopmentMembers = team.some((member) => member.level === "web-dev" || member.department === "Web Development" || /web\s?dev|web development/i.test(member.category || ""));
-    if (!hasWebDevelopmentMembers) team.push(...(staticTeam.webDev || []));
-    if (team.length === 0) team = staticTeam.webDev || [];
+    console.warn("[sitemap] Warning: Firebase build credentials are not available. Falling back to static/public routes and bundled data.");
   }
+
+  // Safe fallbacks when Firestore is unavailable or collections are empty
+  if (albums.length === 0) {
+    try {
+      albums = await parseStaticGallery(manifest);
+    } catch (e) {
+      console.warn("[sitemap] Could not parse static gallery:", e.message);
+      albums = [];
+    }
+  }
+  if (team.length === 0) {
+    try {
+      const { team: staticTeam } = await import(pathToFileURL(path.join(ROOT, "src/data/club.js")));
+      team = Object.values(staticTeam).flat().filter((member) => member && typeof member === "object");
+    } catch (e) {
+      console.warn("[sitemap] Could not load static team:", e.message);
+      team = [];
+    }
+  }
+  if (blogs.length === 0) {
+    try {
+      const { blogs: staticBlogs } = await import(pathToFileURL(path.join(ROOT, "src/data/blogs.js")));
+      blogs = Array.isArray(staticBlogs) ? staticBlogs : [];
+    } catch {
+      blogs = [];
+    }
+  }
+
 
   const pages = new Map();
   const addPage = (url, imageValues = []) => {

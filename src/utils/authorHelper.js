@@ -3,7 +3,14 @@
  * Prevents "Alumnus" fallback and ensures emails/UIDs are never displayed.
  */
 
-const GENERIC_NAMES = new Set(["alumnus", "alumni", "anonymous", "admin"]);
+const GENERIC_NAMES = new Set([
+  "alumnus",
+  "alumni",
+  "anonymous",
+  "admin",
+  "abhyudaya alumni",
+  "name not set",
+]);
 
 function isValidName(val) {
   if (!val || typeof val !== "string") return false;
@@ -17,14 +24,14 @@ function isValidName(val) {
 }
 
 /**
- * Resolves the author's actual name from any combination of author and user objects.
+ * Resolves the author's actual name from any combination of author and user objects/strings.
  * Priority:
- * 1. author.name / author.authorName / author.fullName / author.displayName
- * 2. user.name / user.authorName / user.fullName / user.displayName
- * 3. Default fallback: "Abhyudaya Alumni" (never "Alumnus", never email)
+ * 1. author string (if valid) or author object candidate fields (name, authorName, fullName, displayName)
+ * 2. user string (if valid) or user object candidate fields (name, authorName, fullName, displayName)
+ * 3. Default legacy fallback: "Abhyudaya Alumni" (only when no actual name is available)
  */
 export function resolveAuthorName(author, user = null) {
-  // Direct string check
+  // Direct string check on author
   if (typeof author === "string" && isValidName(author)) {
     return author.trim();
   }
@@ -44,6 +51,11 @@ export function resolveAuthorName(author, user = null) {
     }
   }
 
+  // Direct string check on user
+  if (typeof user === "string" && isValidName(user)) {
+    return user.trim();
+  }
+
   // Object checks on user / profile
   if (user && typeof user === "object") {
     const candidates = [
@@ -61,3 +73,4 @@ export function resolveAuthorName(author, user = null) {
 
   return "Abhyudaya Alumni";
 }
+
