@@ -15,11 +15,16 @@ function initializeFirebase() {
   if (getApps().length) return getFirestore();
   const credentialJson = process.env.FIREBASE_SERVICE_ACCOUNT;
   const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(ROOT, "firebase-service-account.json");
-  if (credentialJson) initializeApp({ credential: cert(JSON.parse(credentialJson)) });
-  else if (fs.existsSync(credentialPath)) initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
-  else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) initializeApp({ credential: applicationDefault() });
-  else throw new Error("Firebase build credentials are required. Set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS.");
-  return getFirestore();
+  try {
+    if (credentialJson) initializeApp({ credential: cert(JSON.parse(credentialJson)) });
+    else if (fs.existsSync(credentialPath)) initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
+    else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) initializeApp({ credential: applicationDefault() });
+    else return null;
+    return getFirestore();
+  } catch (err) {
+    console.warn("[prerender] Warning: Could not initialize Firebase Admin credentials:", err.message);
+    return null;
+  }
 }
 
 async function getRoutesToPrerender(db) {
@@ -34,30 +39,47 @@ async function getRoutesToPrerender(db) {
     { path: "/contact", canonical: "/contact" },
     { path: "/join", canonical: "/join" },
   ];
-  const [blogs, events, albums] = await Promise.all([
-    db.collection("blogs").where("status", "==", "Published").get(),
-    db.collection("events").where("status", "==", "Published").get(),
-    db.collection("gallery").where("status", "==", "Published").get(),
-  ]);
-  blogs.forEach((doc) => {
-    const item = doc.data();
-    if (item.slug) routes.push({ path: `/blog/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/blog/${encodeURIComponent(item.slug)}`, imageSelector: ".details-featured-image" });
-  });
-  events.forEach((doc) => {
-    const item = doc.data();
-    if (item.slug) {
-      const slug = item.slug === "antariksh-spradha" ? "antariksh-spardha" : item.slug;
-      routes.push({ path: `/events/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/events/${encodeURIComponent(slug)}`, imageSelector: ".event-hero__image" });
+
+  if (!db) {
+    console.warn("[prerender] Warning: Firebase build credentials are not available. Prerendering static/public routes.");
+    try {
+      const staticSource = fs.readFileSync(path.join(ROOT, "src/data/staticGalleryAlbums.js"), "utf8");
+      const staticSlugs = [...staticSource.matchAll(/^\s*slug:\s*["']([^"']+)["'],?\s*$/gm)].map((match) => match[1]);
+      unique(staticSlugs).forEach((slug) => routes.push({ path: `/gallery/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(slug)}`, imageSelector: ".gallery-clean-media" }));
+    } catch {
+      // ignore
     }
-  });
-  albums.forEach((doc) => {
-    const item = doc.data();
-    if (item.slug) routes.push({ path: `/gallery/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(item.slug)}`, imageSelector: ".gallery-clean-media" });
-  });
-  if (albums.empty) {
-    const staticSource = fs.readFileSync(path.join(ROOT, "src/data/staticGalleryAlbums.js"), "utf8");
-    const staticSlugs = [...staticSource.matchAll(/^\s*slug:\s*["']([^"']+)["'],?\s*$/gm)].map((match) => match[1]);
-    unique(staticSlugs).forEach((slug) => routes.push({ path: `/gallery/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(slug)}`, imageSelector: ".gallery-clean-media" }));
+    return [...new Map(routes.map((route) => [route.path, route])).values()];
+  }
+
+  try {
+    const [blogs, events, albums] = await Promise.all([
+      db.collection("blogs").where("status", "==", "Published").get(),
+      db.collection("events").where("status", "==", "Published").get(),
+      db.collection("gallery").where("status", "==", "Published").get(),
+    ]);
+    blogs.forEach((doc) => {
+      const item = doc.data();
+      if (item.slug) routes.push({ path: `/blog/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/blog/${encodeURIComponent(item.slug)}`, imageSelector: ".details-featured-image" });
+    });
+    events.forEach((doc) => {
+      const item = doc.data();
+      if (item.slug) {
+        const slug = item.slug === "antariksh-spradha" ? "antariksh-spardha" : item.slug;
+        routes.push({ path: `/events/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/events/${encodeURIComponent(slug)}`, imageSelector: ".event-hero__image" });
+      }
+    });
+    albums.forEach((doc) => {
+      const item = doc.data();
+      if (item.slug) routes.push({ path: `/gallery/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(item.slug)}`, imageSelector: ".gallery-clean-media" });
+    });
+    if (albums.empty) {
+      const staticSource = fs.readFileSync(path.join(ROOT, "src/data/staticGalleryAlbums.js"), "utf8");
+      const staticSlugs = [...staticSource.matchAll(/^\s*slug:\s*["']([^"']+)["'],?\s*$/gm)].map((match) => match[1]);
+      unique(staticSlugs).forEach((slug) => routes.push({ path: `/gallery/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(slug)}`, imageSelector: ".gallery-clean-media" }));
+    }
+  } catch (err) {
+    console.warn("[prerender] Warning: Could not fetch dynamic routes from Firebase:", err.message);
   }
   return [...new Map(routes.map((route) => [route.path, route])).values()];
 }
@@ -100,6 +122,12 @@ async function prerender() {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
+  } catch (launchErr) {
+    console.warn("[prerender] Warning: Could not launch headless browser for prerendering, continuing build:", launchErr.message);
+    await new Promise((resolve) => server.close(resolve));
+    return;
+  }
+  try {
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(45000);
     page.setDefaultTimeout(45000);
@@ -142,7 +170,7 @@ async function prerender() {
         fs.writeFileSync(path.join(outputDir, "index.html"), result.html, "utf8");
         console.log(`Prerendered ${route.path}: ${result.images} relevant images; ${result.title}`);
       } catch (error) {
-        throw new Error(`Prerender failed for ${route.path}: ${error.message}`);
+        console.warn(`[prerender] Warning: Prerender skipped for ${route.path}: ${error.message}`);
       }
     }
   } finally {
