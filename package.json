@@ -13,11 +13,8 @@
     "generate:sitemap": "node scripts/generate-sitemap.js",
     "generate-sitemap": "node scripts/generate-sitemap.js",
     "prerender": "node scripts/prerender.js",
-<<<<<<< ours
-    "verify:image-urls": "node scripts/verify-image-urls.js"
-=======
+    "verify:image-urls": "node scripts/verify-image-urls.js",
     "prerender:browser": "node scripts/prerender.js --browser"
->>>>>>> theirs
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
