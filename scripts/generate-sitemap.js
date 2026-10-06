@@ -5,53 +5,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { initializeApp, cert, applicationDefault, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
-<<<<<<< ours
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-=======
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const serviceAccountPath = path.join(__dirname, "../firebase-service-account.json");
-let serviceAccount = null;
-let db = null;
-
-if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-  try {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  } catch {
-    if (fs.existsSync(process.env.FIREBASE_SERVICE_ACCOUNT)) {
-      serviceAccount = JSON.parse(fs.readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT, "utf8"));
-    }
-  }
-} else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-  try {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-  } catch {
-    // ignore
-  }
-} else if (fs.existsSync(serviceAccountPath)) {
-  try {
-    serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
-  } catch {
-    // ignore
-  }
-}
-
-if (serviceAccount) {
-  try {
-    if (!getApps().length) {
-      initializeApp({
-        credential: cert(serviceAccount),
-      });
-    }
-    db = getFirestore();
-  } catch (err) {
-    console.warn("⚠️ Failed to initialize Firebase Admin:", err.message);
-  }
-} else {
-  console.warn("⚠️ Firebase service account not found. Dynamic Firebase content will be skipped during build sitemap generation.");
-}
-
->>>>>>> theirs
 const BASE_URL = "https://www.abhyudayaclub.in";
 const DIST_DIR = path.join(ROOT, "dist");
 
