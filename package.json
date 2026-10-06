@@ -13,7 +13,8 @@
     "generate:sitemap": "node scripts/generate-sitemap.js",
     "generate-sitemap": "node scripts/generate-sitemap.js",
     "prerender": "node scripts/prerender.js",
-    "verify:image-urls": "node scripts/verify-image-urls.js"
+    "verify:image-urls": "node scripts/verify-image-urls.js",
+    "prerender:browser": "node scripts/prerender.js --browser"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -51,7 +52,6 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.4.11",
     "puppeteer": "^25.5.0",
-    "react-snap": "^1.23.0",
     "serve-handler": "^6.1.7",
     "vite": "^7.3.6"
   }

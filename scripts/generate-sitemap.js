@@ -16,6 +16,7 @@ function initializeFirebase() {
   try {
     if (credentialJson) {
       initializeApp({ credential: cert(JSON.parse(credentialJson)) });
+<<<<<<< HEAD
       return getFirestore();
     } else if (fs.existsSync(credentialPath)) {
       initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
@@ -28,6 +29,21 @@ function initializeFirebase() {
     console.warn("[sitemap] Warning: Could not initialize Firebase Admin credentials:", err.message);
   }
   return null;
+=======
+    } else if (fs.existsSync(credentialPath)) {
+      initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
+    } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
+      initializeApp({ credential: applicationDefault() });
+    } else {
+      console.warn("⚠️ Firebase build credentials not found. Dynamic Firestore collections will be skipped during sitemap generation.");
+      return null;
+    }
+    return getFirestore();
+  } catch (error) {
+    console.warn("⚠️ Failed to initialize Firebase Admin:", error.message);
+    return null;
+  }
+>>>>>>> origin/main
 }
 
 function escapeXml(value = "") {
@@ -96,6 +112,19 @@ async function generate() {
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(DIST_DIR, ".vite/manifest.json"), "utf8"));
   const db = initializeFirebase();
+<<<<<<< HEAD
+=======
+  const [blogSnapshot, eventSnapshot, gallerySnapshot, teamSnapshot, galleryMeta, announcementSnapshot] = db
+    ? await Promise.all([
+        db.collection("blogs").where("status", "==", "Published").get(),
+        db.collection("events").where("status", "==", "Published").get(),
+        db.collection("gallery").where("status", "==", "Published").get(),
+        db.collection("team").get(),
+        db.doc("gallery_meta/deleted_static_albums").get(),
+        db.collection("announcements").get(),
+      ])
+    : [{ docs: [] }, { docs: [] }, { docs: [] }, { docs: [], empty: true }, { exists: false }, { docs: [] }];
+>>>>>>> origin/main
 
   let blogs = [];
   let events = [];
