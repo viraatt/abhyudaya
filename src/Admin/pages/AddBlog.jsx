@@ -26,6 +26,7 @@ import "./addBlog.css";
 
 import { publishBlog, updateBlogService } from "./services/blogService";
 import { uploadImage } from "./services/imageUpload";
+import { resolveAuthorName } from "../../utils/authorHelper";
 
 function AddBlog() {
   const navigate = useNavigate();
@@ -65,7 +66,6 @@ function AddBlog() {
           data.fullName ||
           data.authorName ||
           currentUser.displayName ||
-          (currentUser.email ? currentUser.email.split("@")[0] : "") ||
           "";
 
         // Resolve branch: try multiple common field names

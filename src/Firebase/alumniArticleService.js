@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { generateUniqueSlug } from "../utils/slug";
 import { publishBlog, updateBlogService } from "./blogService";
+import { resolveAuthorName } from "../utils/authorHelper";
 
 const ALUMNI_SUBMISSIONS_COLLECTION = "alumniSubmissions";
 const alumniRef = collection(db, ALUMNI_SUBMISSIONS_COLLECTION);
@@ -188,7 +189,7 @@ export async function saveAlumniArticleDraft(docId, formData, user) {
   const slug = customSlug ? customSlug.trim() : (title?.trim() ? await generateUniqueSlug(title) : "draft-" + Date.now());
 
   const authorData = {
-    name: (author?.name || user?.name || user?.displayName || "Alumnus").trim(),
+    name: resolveAuthorName(author, user),
     graduationYear: String(author?.graduationYear || user?.graduationYear || "").trim(),
     branch: (author?.branch || user?.branch || "").trim(),
     organization: (author?.organization || user?.organization || "").trim(),
@@ -244,7 +245,7 @@ export async function submitAlumniArticleForApproval(docId, formData, user) {
   const slug = customSlug ? customSlug.trim() : await generateUniqueSlug(title);
 
   const authorData = {
-    name: (author?.name || user?.name || user?.displayName || "Alumnus").trim(),
+    name: resolveAuthorName(author, user),
     graduationYear: String(author?.graduationYear || user?.graduationYear || "").trim(),
     branch: (author?.branch || user?.branch || "").trim(),
     organization: (author?.organization || user?.organization || "").trim(),
@@ -383,7 +384,7 @@ export async function approveAlumniArticle(id, reviewer) {
   // Build clean, sanitized alumni author object (NO email!)
   const safeAlumniAuthor = submission.author
     ? {
-        name: (submission.author.name || "Alumnus").trim(),
+        name: resolveAuthorName(submission.author),
         graduationYear: submission.author.graduationYear
           ? String(submission.author.graduationYear).trim()
           : "",
@@ -394,7 +395,7 @@ export async function approveAlumniArticle(id, reviewer) {
         profilePhoto: submission.author.profilePhoto || "",
       }
     : {
-        name: "Alumnus",
+        name: "Abhyudaya Alumni",
       };
 
   const finalSlug = submission.slug || (await generateUniqueSlug(submission.title));
@@ -408,7 +409,7 @@ export async function approveAlumniArticle(id, reviewer) {
     excerpt: (submission.excerpt || "").trim(),
     content: submission.content || "",
     status: "Published",
-    author: safeAlumniAuthor.name || "Alumnus",
+    author: safeAlumniAuthor.name,
     isAlumniContribution: true,
     alumniAuthor: safeAlumniAuthor,
     authorUid: submission.authorUid || submission.authorId || null,
