@@ -207,8 +207,8 @@ export async function saveAlumniArticleDraft(docId, formData, user) {
     featuredImage: featuredImage || "",
     tags: Array.isArray(tags) ? tags : [],
     author: authorData,
-    authorUid: user?.uid || null,
-    authorId: formData.authorId || user?.uid || null,
+    authorUid: user?.uid || formData.authorId || null,
+    authorId: user?.uid || formData.authorId || null,
     authorEmail: formData.authorEmail || user?.email || "",
     authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || "",
     status: SUBMISSION_STATUSES.DRAFT,
@@ -263,8 +263,8 @@ export async function submitAlumniArticleForApproval(docId, formData, user) {
     featuredImage: featuredImage || "",
     tags: Array.isArray(tags) ? tags : [],
     author: authorData,
-    authorUid: user?.uid || null,
-    authorId: formData.authorId || user?.uid || null,
+    authorUid: user?.uid || formData.authorId || null,
+    authorId: user?.uid || formData.authorId || null,
     authorEmail: formData.authorEmail || user?.email || "",
     authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || "",
     status: SUBMISSION_STATUSES.PENDING,
@@ -306,31 +306,45 @@ export async function getAlumniSubmissions() {
 /**
  * Fetch all alumni submissions authored by a specific logged-in alumni user.
  */
+/**
+ * Fetch all alumni submissions authored by a specific logged-in alumni user.
+ */
 export async function getAlumniSubmissionsByAuthor(authorUid) {
   if (!authorUid) return [];
   try {
-    const q = query(
-      alumniRef,
-      where("authorUid", "==", authorUid),
-      orderBy("submittedAt", "desc")
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(formatSubmissionDoc);
-  } catch (err) {
-    console.error("Error fetching author submissions with sort, trying fallback:", err);
+    const docsMap = new Map();
+
+    // Query 1: by authorUid
     try {
-      const q = query(alumniRef, where("authorUid", "==", authorUid));
-      const snapshot = await getDocs(q);
-      const items = snapshot.docs.map(formatSubmissionDoc);
-      return items.sort((a, b) => {
-        const timeA = a.submittedAt?.seconds || 0;
-        const timeB = b.submittedAt?.seconds || 0;
-        return timeB - timeA;
-      });
-    } catch (fallbackErr) {
-      console.error("Fallback author query failed:", fallbackErr);
-      return [];
+      const q1 = query(alumniRef, where("authorUid", "==", authorUid));
+      const snap1 = await getDocs(q1);
+      snap1.docs.forEach((d) => docsMap.set(d.id, formatSubmissionDoc(d)));
+    } catch (err1) {
+      console.warn("Author query by authorUid failed, trying secondary:", err1);
     }
+
+    // Query 2: by authorId (fallback for any older records)
+    try {
+      const q2 = query(alumniRef, where("authorId", "==", authorUid));
+      const snap2 = await getDocs(q2);
+      snap2.docs.forEach((d) => {
+        if (!docsMap.has(d.id)) {
+          docsMap.set(d.id, formatSubmissionDoc(d));
+        }
+      });
+    } catch (err2) {
+      console.warn("Author query by authorId failed:", err2);
+    }
+
+    const items = Array.from(docsMap.values());
+    return items.sort((a, b) => {
+      const timeA = a.submittedAt?.seconds || a.updatedAt?.seconds || 0;
+      const timeB = b.submittedAt?.seconds || b.updatedAt?.seconds || 0;
+      return timeB - timeA;
+    });
+  } catch (err) {
+    console.error("Error fetching author submissions:", err);
+    return [];
   }
 }
 
@@ -346,25 +360,107 @@ export async function getAlumniSubmissionById(id) {
 
 /**
  * Admin action: Approve an alumni article.
+ * CRITICAL FIX: Approving an article immediately publishes it to the main `blogs` collection,
+ * updates the public blog, and updates the submission document with published status and blog ID.
+ * Author privacy is strictly preserved: author email is NEVER copied to the public blog collection.
  */
 export async function approveAlumniArticle(id, reviewer) {
-  const ref = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, id);
-  const payload = {
-    status: SUBMISSION_STATUSES.APPROVED,
+  const submissionRef = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, id);
+  const snap = await getDoc(submissionRef);
+
+  if (!snap.exists()) {
+    throw new Error("Article submission not found.");
+  }
+
+  const submission = snap.data();
+  const reviewerInfo = {
+    uid: reviewer?.uid || null,
+    name: reviewer?.name || reviewer?.email || "Admin",
+    email: reviewer?.email || "",
+    role: reviewer?.role || "admin",
+  };
+
+  // Build clean, sanitized alumni author object (NO email!)
+  const safeAlumniAuthor = submission.author
+    ? {
+        name: (submission.author.name || "Alumnus").trim(),
+        graduationYear: submission.author.graduationYear
+          ? String(submission.author.graduationYear).trim()
+          : "",
+        branch: (submission.author.branch || "").trim(),
+        organization: (submission.author.organization || "").trim(),
+        designation: (submission.author.designation || "").trim(),
+        linkedin: (submission.author.linkedin || "").trim(),
+        profilePhoto: submission.author.profilePhoto || "",
+      }
+    : {
+        name: "Alumnus",
+      };
+
+  const finalSlug = submission.slug || (await generateUniqueSlug(submission.title));
+
+  // Prepare blog payload for public blogs collection
+  const blogPayload = {
+    title: (submission.title || "").trim(),
+    slug: finalSlug,
+    category: submission.category || "Alumni Stories",
+    featuredImage: submission.featuredImage || "",
+    excerpt: (submission.excerpt || "").trim(),
+    content: submission.content || "",
+    status: "Published",
+    author: safeAlumniAuthor.name || "Alumnus",
+    isAlumniContribution: true,
+    alumniAuthor: safeAlumniAuthor,
+    authorUid: submission.authorUid || submission.authorId || null,
+    authorId: submission.authorId || submission.authorUid || null,
+    submissionId: id,
+    tags:
+      Array.isArray(submission.tags) && submission.tags.length > 0
+        ? submission.tags
+        : ["Alumni Contribution", submission.category || "Alumni Stories"].filter(Boolean),
+  };
+
+  let publishedBlogId = submission.publishedBlogId;
+
+  if (publishedBlogId) {
+    try {
+      const blogDocRef = doc(db, "blogs", publishedBlogId);
+      const blogSnap = await getDoc(blogDocRef);
+      if (blogSnap.exists()) {
+        await updateBlogService(publishedBlogId, blogPayload);
+      } else {
+        const created = await publishBlog(blogPayload);
+        publishedBlogId = created.id;
+      }
+    } catch {
+      const created = await publishBlog(blogPayload);
+      publishedBlogId = created.id;
+    }
+  } else {
+    const created = await publishBlog(blogPayload);
+    publishedBlogId = created.id;
+  }
+
+  // Update submission status to published & approved
+  const submissionUpdate = {
+    status: SUBMISSION_STATUSES.PUBLISHED,
+    publishedBlogId,
     reviewedAt: serverTimestamp(),
-    reviewedBy: {
-      uid: reviewer?.uid || null,
-      name: reviewer?.name || reviewer?.email || "Admin",
-      email: reviewer?.email || "",
-      role: reviewer?.role || "admin",
-    },
+    reviewedBy: reviewerInfo,
+    publishedAt: serverTimestamp(),
     adminFeedback: null,
     rejectionReason: null,
     updatedAt: serverTimestamp(),
   };
 
-  await updateDoc(ref, payload);
-  return { id, status: SUBMISSION_STATUSES.APPROVED };
+  await updateDoc(submissionRef, submissionUpdate);
+
+  return {
+    id,
+    blogId: publishedBlogId,
+    slug: finalSlug,
+    status: SUBMISSION_STATUSES.PUBLISHED,
+  };
 }
 
 /**
@@ -421,68 +517,10 @@ export async function rejectAlumniArticle(id, reviewer, reason) {
 
 /**
  * Admin action: Publish an approved article to the main `blogs` collection.
- * CRITICAL: The alumni author is preserved and NEVER replaced with 'Admin'.
+ * Calls approveAlumniArticle for unified, canonical behavior.
  */
 export async function publishAlumniArticleToBlog(submissionId, publisher) {
-  const submissionRef = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, submissionId);
-  const snap = await getDoc(submissionRef);
-
-  if (!snap.exists()) {
-    throw new Error("Submission not found.");
-  }
-
-  const submission = snap.data();
-  const publisherInfo = {
-    uid: publisher?.uid || null,
-    name: publisher?.name || publisher?.email || "Admin",
-    email: publisher?.email || "",
-  };
-
-  // Prepare blog payload for main blogs collection
-  const blogPayload = {
-    title: submission.title,
-    slug: submission.slug,
-    category: submission.category || "Alumni Stories",
-    featuredImage: submission.featuredImage || "",
-    excerpt: submission.excerpt || "",
-    content: submission.content || "",
-    status: "Published",
-    // IMPORTANT: The author is the real alumni, never "Admin"!
-    author: submission.author.name,
-    isAlumniContribution: true,
-    alumniAuthor: submission.author,
-    reviewedBy: submission.reviewedBy || publisherInfo,
-    publishedBy: publisherInfo,
-    submissionId: submissionId,
-    tags: ["Alumni Contribution", submission.category].filter(Boolean),
-  };
-
-  let publishedBlogId = submission.publishedBlogId;
-
-  if (publishedBlogId) {
-    // Update existing published blog
-    await updateBlogService(publishedBlogId, blogPayload);
-  } else {
-    // Create new published blog
-    const created = await publishBlog(blogPayload);
-    publishedBlogId = created.id;
-  }
-
-  // Mark submission as published
-  await updateDoc(submissionRef, {
-    status: SUBMISSION_STATUSES.PUBLISHED,
-    publishedBlogId,
-    publishedAt: serverTimestamp(),
-    publishedBy: publisherInfo,
-    updatedAt: serverTimestamp(),
-  });
-
-  return {
-    submissionId,
-    blogId: publishedBlogId,
-    slug: submission.slug,
-    status: SUBMISSION_STATUSES.PUBLISHED,
-  };
+  return await approveAlumniArticle(submissionId, publisher);
 }
 
 /**

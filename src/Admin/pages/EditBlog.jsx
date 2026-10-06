@@ -11,6 +11,7 @@ import SlugInput from "../components/SlugInput";
 import AutosaveIndicator from "../components/AutosaveIndicator";
 import MediaLibrary from "../components/media/MediaLibrary";
 import ErrorBoundary from "../components/ErrorBoundary";
+import FeaturedImageUpload from "../components/FeaturedImageUpload";
 import { useToast } from "../components/Toast";
 import { useAutosave } from "../hooks/useAutosave";
 import { useAuth } from "../../context/AuthContext";
@@ -210,8 +211,10 @@ function EditBlog() {
   }, []);
 
   // Upload Featured Image
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = async (fileOrEvent) => {
+    const file = fileOrEvent?.target?.files
+      ? fileOrEvent.target.files[0]
+      : fileOrEvent;
     if (!file) return;
 
     try {
@@ -537,7 +540,7 @@ function EditBlog() {
               </div>
             )}
 
-            {isAlumniUser && status === "published" && (
+            {isAlumniUser && (status === "published" || status === "approved") && (
               <div style={{ background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.4)", borderRadius: "8px", padding: "14px 18px", marginBottom: "18px", color: "#d1fae5" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "bold", fontSize: "15px", color: "#34d399" }}>
                   <span>🚀 Article Published Live</span>
@@ -585,49 +588,14 @@ function EditBlog() {
                 <div className="card">
                   <h3>Featured Image</h3>
 
-                  {uploadingImage ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#2563eb", fontSize: "14px", fontWeight: 600, padding: "10px 0" }}>
-                      <FaSpinner className="spin" /> Uploading image...
-                    </div>
-                  ) : featuredImage ? (
-                    <div className="featured-image-preview">
-                      <img
-                        src={featuredImage}
-                        alt="Featured post visual"
-                      />
-
-                      {(!isAlumniUser || isEditableForAlumni) && (
-                        <button
-                          type="button"
-                          className="remove-image-btn"
-                          onClick={removeImage}
-                        >
-                          <FaTrash /> Remove Image
-                        </button>
-                      )}
-                    </div>
-                  ) : (!isAlumniUser || isEditableForAlumni) ? (
-                    <div className="featured-image-box">
-                      <label className="upload-btn-primary" style={{ cursor: "pointer" }}>
-                        <FaCloudUploadAlt style={{ fontSize: "18px" }} /> Upload Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="media-library-btn"
-                        onClick={() => setShowMediaModal(true)}
-                      >
-                        <FaImages /> Choose from Library
-                      </button>
-                    </div>
-                  ) : (
-                    <p style={{ color: "#94a3b8", fontSize: "13px" }}>No featured image provided.</p>
-                  )}
+                  <FeaturedImageUpload
+                    imageUrl={featuredImage}
+                    onImageChange={handleImageUpload}
+                    onRemove={removeImage}
+                    onOpenMediaLibrary={() => setShowMediaModal(true)}
+                    uploading={uploadingImage}
+                    disabled={isAlumniUser && !isEditableForAlumni}
+                  />
                 </div>
 
                 <div className="card">
