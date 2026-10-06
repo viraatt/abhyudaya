@@ -19,6 +19,7 @@ import Topbar from "./components/Topbar";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../../context/AuthContext";
+import { ROLES, normalizeRole } from "../config/roles";
 import {
   getAlumniSubmissionById,
   approveAlumniArticle,
@@ -37,6 +38,7 @@ export default function ReviewAlumniArticle() {
   const navigate = useNavigate();
   const toast = useToast();
   const { currentUser } = useAuth();
+  const isSuper = normalizeRole(currentUser?.role) === ROLES.SUPER_ADMIN;
 
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -115,6 +117,22 @@ export default function ReviewAlumniArticle() {
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Failed to publish article.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Approve & Publish in one step (Super Admin only)
+  const handleApproveAndPublish = async () => {
+    setActionLoading(true);
+    try {
+      await approveAlumniArticle(id, reviewerInfo);
+      await publishAlumniArticleToBlog(id, reviewerInfo);
+      toast.success("🚀 Article approved and published to Abhyudaya Blog!");
+      await fetchArticle();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to approve and publish article.");
     } finally {
       setActionLoading(false);
     }
@@ -308,9 +326,46 @@ export default function ReviewAlumniArticle() {
                   <div className="review-article-body">
                     <h3>Article Content</h3>
                     <div className="article-prose-render">
-                      {article.content.split("\n\n").map((para, idx) => (
-                        <p key={idx}>{para}</p>
-                      ))}
+                      {(() => {
+                        const content = article.content;
+                        if (!content) {
+                          return <p style={{ color: "#94a3b8" }}>No content provided.</p>;
+                        }
+                        // TipTap JSON object — extract plain text from nodes
+                        if (typeof content === "object" && content !== null) {
+                          const extractText = (node) => {
+                            if (!node) return "";
+                            if (node.text) return node.text;
+                            if (node.type === "image") return `[Image: ${node.attrs?.alt || ""}]`;
+                            if (Array.isArray(node.content)) {
+                              return node.content.map(extractText).join("");
+                            }
+                            return "";
+                          };
+                          const paragraphs = Array.isArray(content.content)
+                            ? content.content.map((node) => extractText(node)).filter(Boolean)
+                            : [extractText(content)].filter(Boolean);
+                          return paragraphs.length > 0
+                            ? paragraphs.map((para, idx) => <p key={idx}>{para}</p>)
+                            : <p style={{ color: "#94a3b8" }}>Content is empty.</p>;
+                        }
+                        // HTML string
+                        if (typeof content === "string" && content.trim().startsWith("<")) {
+                          return (
+                            <div
+                              dangerouslySetInnerHTML={{ __html: content }}
+                              style={{ lineHeight: 1.7 }}
+                            />
+                          );
+                        }
+                        // Plain text
+                        if (typeof content === "string") {
+                          return content.split("\n\n").map((para, idx) => (
+                            <p key={idx}>{para}</p>
+                          ));
+                        }
+                        return <p style={{ color: "#94a3b8" }}>Unable to render content.</p>;
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -326,30 +381,52 @@ export default function ReviewAlumniArticle() {
                   </p>
 
                   <div className="action-buttons-stack">
-                    {/* Approve button */}
-                    {!isApproved && !isPublished && (
-                      <button
-                        type="button"
-                        className="action-btn approve"
-                        onClick={() => setShowApproveModal(true)}
-                        disabled={actionLoading}
-                      >
-                        {actionLoading ? <FaSpinner className="spin" /> : <FaCheck />}
-                        <span>Approve Article</span>
-                      </button>
-                    )}
+                    {/* Approve & Publish actions: SUPER ADMIN ONLY */}
+                    {isSuper ? (
+                      <>
+                        {/* Approve button */}
+                        {!isApproved && !isPublished && (
+                          <button
+                            type="button"
+                            className="action-btn approve"
+                            onClick={() => setShowApproveModal(true)}
+                            disabled={actionLoading}
+                          >
+                            {actionLoading ? <FaSpinner className="spin" /> : <FaCheck />}
+                            <span>Approve Article</span>
+                          </button>
+                        )}
 
-                    {/* Publish button — ONLY for approved articles */}
-                    {isApproved && !isPublished && (
-                      <button
-                        type="button"
-                        className="action-btn publish"
-                        onClick={() => setShowPublishModal(true)}
-                        disabled={actionLoading}
-                      >
-                        {actionLoading ? <FaSpinner className="spin" /> : <FaRocket />}
-                        <span>Publish to Blog</span>
-                      </button>
+                        {/* Publish button — for approved articles */}
+                        {isApproved && !isPublished && (
+                          <button
+                            type="button"
+                            className="action-btn publish"
+                            onClick={() => setShowPublishModal(true)}
+                            disabled={actionLoading}
+                          >
+                            {actionLoading ? <FaSpinner className="spin" /> : <FaRocket />}
+                            <span>Publish to Blog</span>
+                          </button>
+                        )}
+
+                        {/* Convenient 1-Click Approve & Publish for pending articles */}
+                        {!isApproved && !isPublished && (
+                          <button
+                            type="button"
+                            className="action-btn publish"
+                            onClick={handleApproveAndPublish}
+                            disabled={actionLoading}
+                          >
+                            {actionLoading ? <FaSpinner className="spin" /> : <FaRocket />}
+                            <span>Approve &amp; Publish</span>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ background: "rgba(100, 116, 139, 0.2)", padding: "10px 12px", borderRadius: "6px", fontSize: "12px", color: "#94a3b8", lineHeight: "1.4" }}>
+                        🔒 Only <strong>Super Admin</strong> has authority to approve and publish alumni articles.
+                      </div>
                     )}
 
                     {/* Request changes */}

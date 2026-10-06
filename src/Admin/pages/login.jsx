@@ -54,6 +54,10 @@ export default function Login() {
           navigate("/admin/events", { replace: true });
           break;
 
+        case ROLES.ALUMNI:
+          navigate("/admin/blogs", { replace: true });
+          break;
+
         default:
           setError("You don't have permission to access this panel.");
       }

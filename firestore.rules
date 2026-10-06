@@ -70,60 +70,63 @@ service cloud.firestore {
     // ============================================================
     // BLOGS
     // Public: read published blogs only.
-    // Admins: read ALL + write.
+    // Super Admin: full create/update/delete including publishing alumni articles.
+    // Blog Admin: can manage standard blogs, but CANNOT publish alumni articles.
+    // Alumni: CANNOT write to blogs directly at all.
     // ============================================================
     match /blogs/{blogId} {
       allow read: if isAdmin(['super_admin', 'blog_admin'])
         || resource.data.status == 'Published';
 
-      allow create, update, delete: if isAdmin(['super_admin', 'blog_admin']);
+      // Only super_admin can create/update alumni contribution blogs
+      // Blog Admin can manage regular blogs only
+      allow create, update: if isAdmin(['super_admin'])
+        || (isAdmin(['blog_admin']) && request.resource.data.isAlumniContribution != true);
+
+      allow delete: if isAdmin(['super_admin', 'blog_admin']);
     }
 
     // ============================================================
     // ALUMNI ARTICLE SUBMISSIONS
-    // Public: create a new submission.
-    //   Read: public can read a single doc only if status is published
-    //          (so published articles can load alumni author info),
-    //          or if they provide the correct editToken in their query.
-    //          We allow unauthenticated reads broadly here because the
-    //          alumni submission form needs to load their own submission
-    //          by ID+token to display admin feedback. Token verification
-    //          is enforced in application code; Firestore rules enforce
-    //          that only admins can write sensitive fields.
-    // Admins (super_admin, blog_admin): full read, update, delete.
+    // Alumni can create/save Drafts and Submit for Approval (Pending).
+    // Alumni CANNOT set status to 'Approved' or 'Published'.
+    // Only Super Admin can approve, reject, or publish.
     // ============================================================
     match /alumniSubmissions/{submissionId} {
-      // Admins can read everything; public can read published submissions
-      // or their own pending submission (needed for resubmit flow).
-      // editToken protection happens in application code — Firestore
-      // rules cannot check query parameters, so we restrict writes instead.
-      allow read: if isAdmin(['super_admin', 'blog_admin'])
-        || resource.data.status == 'published';
-
-      // Allow unauthenticated read for own submission (edit/resubmit flow)
-      // by allowing read when the editToken is stored in the document —
-      // application code validates the token before showing form data.
-      // This is a pragmatic compromise: submissions are semi-public
-      // (alumni want to track their own article), but sensitive fields
-      // (email, linkedin) are only accessed by authenticated admins.
-      // For stronger security, move the submission load to a Cloud Function.
       allow read: if true;
 
-      allow create: if request.resource.data.status == 'pending'
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.content is string
-        && request.resource.data.content.size() > 0
-        && request.resource.data.author.name is string;
-
-      allow update: if isAdmin(['super_admin', 'blog_admin'])
+      allow create: if (isAdmin(['super_admin', 'blog_admin']))
         || (
-          // Authors can resubmit when changes are requested
-          resource.data.status == 'changes_requested'
-          && request.resource.data.status == 'resubmitted'
+          request.auth != null
+          && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending')
+          && request.resource.data.status != 'published'
+          && request.resource.data.status != 'approved'
         );
 
-      allow delete: if isAdmin(['super_admin', 'blog_admin']);
+      // Super Admin has full review/publish rights.
+      // Blog Admin cannot approve or publish alumni submissions.
+      // Alumni can only update their own drafts or when changes are requested.
+      allow update: if isAdmin(['super_admin'])
+        || (
+          isAdmin(['blog_admin'])
+          && request.resource.data.status != 'published'
+          && request.resource.data.status != 'approved'
+        )
+        || (
+          request.auth != null
+          && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid)
+          && (resource.data.status == 'draft' || resource.data.status == 'changes_requested')
+          && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending' || request.resource.data.status == 'resubmitted')
+          && request.resource.data.status != 'published'
+          && request.resource.data.status != 'approved'
+        );
+
+      allow delete: if isAdmin(['super_admin'])
+        || (
+          request.auth != null
+          && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid)
+          && resource.data.status == 'draft'
+        );
     }
 
     // ============================================================

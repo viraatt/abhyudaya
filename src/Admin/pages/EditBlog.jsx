@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import { FaCloudUploadAlt, FaImages, FaTrash, FaSpinner } from "react-icons/fa";
+import { FaCloudUploadAlt, FaImages, FaTrash, FaSpinner, FaPaperPlane, FaExclamationTriangle, FaExternalLinkAlt } from "react-icons/fa";
 import { db } from "../../Firebase/firebase";
 
 import Sidebar from "./components/Sidebar";
@@ -13,6 +13,14 @@ import MediaLibrary from "../components/media/MediaLibrary";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { useToast } from "../components/Toast";
 import { useAutosave } from "../hooks/useAutosave";
+import { useAuth } from "../../context/AuthContext";
+import { ROLES, normalizeRole } from "../config/roles";
+import {
+  saveAlumniArticleDraft,
+  submitAlumniArticleForApproval,
+  ALUMNI_CATEGORIES,
+  SUBMISSION_STATUSES,
+} from "../../Firebase/alumniArticleService";
 
 import "./style/admin.css";
 import "./addBlog.css";
@@ -23,6 +31,8 @@ function EditBlog() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { currentUser } = useAuth();
+  const isAlumniUser = normalizeRole(currentUser?.role) === ROLES.ALUMNI;
 
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +43,8 @@ function EditBlog() {
   const [seo, setSeo] = useState("");
   const [publishDate, setPublishDate] = useState("");
   const [status, setStatus] = useState("Draft");
+  const [adminFeedback, setAdminFeedback] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
 
   // Editor States
   const [contentJson, setContentJson] = useState(null);
@@ -46,35 +58,78 @@ function EditBlog() {
   // Save / Action Loaders
   const [saving, setSaving] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
+  const [submittingApproval, setSubmittingApproval] = useState(false);
 
-  // Fetch Blog Data
+  // Fetch Blog / Alumni Article Data
   useEffect(() => {
     async function loadBlog() {
       try {
         setLoading(true);
-        const docRef = doc(db, "blogs", id);
-        const snapshot = await getDoc(docRef);
 
-        if (!snapshot.exists()) {
-          toast.error("Blog post not found.");
-          navigate("/admin/blogs");
-          return;
+        if (isAlumniUser) {
+          // Fetch from alumniSubmissions
+          const docRef = doc(db, "alumniSubmissions", id);
+          const snapshot = await getDoc(docRef);
+
+          if (!snapshot.exists()) {
+            toast.error("Article submission not found.");
+            navigate("/admin/blogs");
+            return;
+          }
+
+          const data = snapshot.data();
+
+          // Authorization check: must be author
+          if (
+            currentUser?.uid &&
+            data.authorUid &&
+            data.authorUid !== currentUser.uid &&
+            data.authorId !== currentUser.uid
+          ) {
+            toast.error("You are not authorized to edit this article.");
+            navigate("/admin/blogs");
+            return;
+          }
+
+          setTitle(data.title || "");
+          setCategory(data.category || "Alumni Stories");
+          setTags(Array.isArray(data.tags) ? data.tags.join(", ") : "");
+          setSlug(data.slug || "");
+          setSeo(data.seo || "");
+          setFeaturedImage(data.featuredImage || "");
+          setStatus(data.status || "draft");
+          setContentExcerpt(data.excerpt || "");
+          setAdminFeedback(data.adminFeedback || "");
+          setRejectionReason(data.rejectionReason || "");
+
+          // RichEditor content could be JSON or string
+          setContentJson(typeof data.content === "object" ? data.content : data.content);
+        } else {
+          // Standard admin blog fetch
+          const docRef = doc(db, "blogs", id);
+          const snapshot = await getDoc(docRef);
+
+          if (!snapshot.exists()) {
+            toast.error("Blog post not found.");
+            navigate("/admin/blogs");
+            return;
+          }
+
+          const data = snapshot.data();
+          setTitle(data.title || "");
+          setCategory(data.category || "Club News");
+          setTags(Array.isArray(data.tags) ? data.tags.join(", ") : "");
+          setSlug(data.slug || "");
+          setSeo(data.seo || "");
+          setPublishDate(data.publishDate || "");
+          setStatus(data.status || "Draft");
+          setFeaturedImage(data.featuredImage || "");
+          setContentJson(data.content || null);
+          setContentExcerpt(data.excerpt || "");
         }
-
-        const data = snapshot.data();
-        setTitle(data.title || "");
-        setCategory(data.category || "Club News");
-        setTags(Array.isArray(data.tags) ? data.tags.join(", ") : "");
-        setSlug(data.slug || "");
-        setSeo(data.seo || "");
-        setPublishDate(data.publishDate || "");
-        setStatus(data.status || "Draft");
-        setFeaturedImage(data.featuredImage || "");
-        setContentJson(data.content || null);
-        setContentExcerpt(data.excerpt || "");
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load blog post.");
+        toast.error("Failed to load article.");
       } finally {
         setLoading(false);
       }
@@ -83,7 +138,14 @@ function EditBlog() {
     if (id) {
       loadBlog();
     }
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, isAlumniUser, currentUser]);
+
+  // Is editable check for alumni (can only edit if draft or changes_requested)
+  const isEditableForAlumni = useMemo(() => {
+    if (!isAlumniUser) return true;
+    const st = (status || "").toLowerCase();
+    return st === "draft" || st === "changes_requested";
+  }, [isAlumniUser, status]);
 
   // Callback to compute blog data payload for autosave
   const getAutosaveData = useCallback(() => {
@@ -99,19 +161,34 @@ function EditBlog() {
       seo,
       publishDate,
       status,
-      author: "Admin",
+      author: isAlumniUser ? (currentUser?.name || currentUser?.displayName || "Alumnus") : "Admin",
       excerpt: contentExcerpt.trim().substring(0, 180),
       content: contentJson,
     };
-  }, [title, category, featuredImage, tags, slug, seo, publishDate, status, contentExcerpt, contentJson]);
+  }, [title, category, featuredImage, tags, slug, seo, publishDate, status, contentExcerpt, contentJson, isAlumniUser, currentUser]);
 
   // Handle autosave callback from hook
   const handleAutosave = useCallback(
     async (blogData) => {
-      await updateBlogService(id, blogData);
-      return id;
+      if (isAlumniUser) {
+        if (!isEditableForAlumni) return id;
+        await saveAlumniArticleDraft(id, {
+          title,
+          category,
+          featuredImage,
+          tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+          slug,
+          seo,
+          excerpt: contentExcerpt.trim().substring(0, 180),
+          content: contentJson,
+        }, currentUser);
+        return id;
+      } else {
+        await updateBlogService(id, blogData);
+        return id;
+      }
     },
-    [id]
+    [id, isAlumniUser, isEditableForAlumni, title, category, featuredImage, tags, slug, seo, contentExcerpt, contentJson, currentUser]
   );
 
   // Use Autosave Hook (30 sec interval)
@@ -122,7 +199,7 @@ function EditBlog() {
     hasUnsavedChanges,
     retrySave,
   } = useAutosave(getAutosaveData, handleAutosave, {
-    enabled: !loading && Boolean(id),
+    enabled: !loading && Boolean(id) && (!isAlumniUser || isEditableForAlumni),
     interval: 30000,
   });
 
@@ -163,8 +240,37 @@ function EditBlog() {
     }
   };
 
-  // Manual Save (Draft or Published)
+  // Manual Save (Draft for alumni, Draft/Published for Admin)
   const handleSave = async (targetStatus = status) => {
+    if (isAlumniUser) {
+      try {
+        setSaving(true);
+        const articleData = {
+          title: title.trim(),
+          category,
+          featuredImage,
+          tags: tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+          slug: slug.trim(),
+          seo,
+          excerpt: contentExcerpt.trim().substring(0, 180),
+          content: contentJson,
+        };
+
+        await saveAlumniArticleDraft(id, articleData, currentUser);
+        toast.success("💾 Draft Saved Successfully!");
+      } catch (err) {
+        console.error(err);
+        toast.error(err.message || "Failed to save article draft.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    // Admin save
     try {
       setSaving(true);
       const blogData = {
@@ -199,7 +305,46 @@ function EditBlog() {
     }
   };
 
-  // Unpublish (Revert to Draft)
+  // Submit / Resubmit for Approval (Alumni Only)
+  const handleSubmitForApproval = async () => {
+    if (!title.trim()) {
+      toast.error("Please enter a title for your article.");
+      return;
+    }
+    if (!contentExcerpt.trim() && !contentJson) {
+      toast.error("Please write your article content before submitting.");
+      return;
+    }
+
+    try {
+      setSubmittingApproval(true);
+      const articleData = {
+        title: title.trim(),
+        category,
+        featuredImage,
+        tags: tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        slug: slug.trim(),
+        seo,
+        excerpt: contentExcerpt.trim().substring(0, 180),
+        content: contentJson,
+      };
+
+      await submitAlumniArticleForApproval(id, articleData, currentUser);
+      setStatus("pending");
+      toast.success("📨 Article submitted for approval! Super Admin will review it.");
+      navigate("/admin/blogs");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to submit article for approval.");
+    } finally {
+      setSubmittingApproval(false);
+    }
+  };
+
+  // Unpublish (Admins Only)
   const handleUnpublish = async () => {
     try {
       setUnpublishing(true);
@@ -240,9 +385,13 @@ function EditBlog() {
             <div className="create-header">
               <div className="header-left">
                 <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-                  <h1>Edit Blog</h1>
+                  <h1>{isAlumniUser ? "Edit Article" : "Edit Blog"}</h1>
                   <span className={`status-pill ${status.toLowerCase()}`}>
-                    {status}
+                    {status === "pending"
+                      ? "Pending Approval"
+                      : status === "changes_requested"
+                      ? "Changes Requested"
+                      : status}
                   </span>
                   <AutosaveIndicator
                     status={autosaveStatus}
@@ -252,66 +401,163 @@ function EditBlog() {
                     onRetry={retrySave}
                   />
                 </div>
-                <p>Editing post: <strong>{title || "Untitled"}</strong></p>
+                <p>Editing {isAlumniUser ? "article" : "post"}: <strong>{title || "Untitled"}</strong></p>
               </div>
 
               <div className="header-buttons">
-                {status === "Draft" && (
+                {isAlumniUser ? (
                   <>
-                    <button
-                      type="button"
-                      className="draft-btn"
-                      onClick={() => handleSave("Draft")}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "💾 Save Draft"}
-                    </button>
+                    {isEditableForAlumni && (
+                      <>
+                        <button
+                          type="button"
+                          className="draft-btn"
+                          onClick={() => handleSave()}
+                          disabled={saving || submittingApproval}
+                        >
+                          {saving ? "Saving..." : "💾 Save Draft"}
+                        </button>
 
-                    <button
-                      type="button"
-                      className="publish-btn"
-                      onClick={() => handleSave("Published")}
-                      disabled={saving}
-                    >
-                      {saving ? "Publishing..." : "🚀 Publish"}
-                    </button>
+                        <button
+                          type="button"
+                          className="publish-btn"
+                          style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
+                          onClick={handleSubmitForApproval}
+                          disabled={submittingApproval || saving}
+                        >
+                          {submittingApproval
+                            ? "Submitting..."
+                            : status === "changes_requested"
+                            ? "📨 Resubmit for Approval"
+                            : "📨 Submit for Approval"}
+                        </button>
+                      </>
+                    )}
+
+                    {status === "published" && (
+                      <Link
+                        to={`/blog/${slug}`}
+                        className="publish-btn"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}
+                      >
+                        <FaExternalLinkAlt /> View Live Article
+                      </Link>
+                    )}
+
+                    {status === "pending" && (
+                      <div style={{ color: "#94a3b8", fontSize: "14px", fontWeight: "600" }}>
+                        ⏳ Under Review by Super Admin
+                      </div>
+                    )}
                   </>
-                )}
-
-                {status === "Published" && (
+                ) : (
                   <>
-                    <button
-                      type="button"
-                      className="draft-btn"
-                      onClick={handleUnpublish}
-                      disabled={unpublishing || saving}
-                    >
-                      {unpublishing ? "Unpublishing..." : "↩ Unpublish to Draft"}
-                    </button>
+                    {status === "Draft" && (
+                      <>
+                        <button
+                          type="button"
+                          className="draft-btn"
+                          onClick={() => handleSave("Draft")}
+                          disabled={saving}
+                        >
+                          {saving ? "Saving..." : "💾 Save Draft"}
+                        </button>
 
-                    <button
-                      type="button"
-                      className="publish-btn"
-                      onClick={() => handleSave("Published")}
-                      disabled={saving || unpublishing}
-                    >
-                      {saving ? "Saving..." : "💾 Update Post"}
-                    </button>
+                        <button
+                          type="button"
+                          className="publish-btn"
+                          onClick={() => handleSave("Published")}
+                          disabled={saving}
+                        >
+                          {saving ? "Publishing..." : "🚀 Publish"}
+                        </button>
+                      </>
+                    )}
+
+                    {status === "Published" && (
+                      <>
+                        <button
+                          type="button"
+                          className="draft-btn"
+                          onClick={handleUnpublish}
+                          disabled={unpublishing || saving}
+                        >
+                          {unpublishing ? "Unpublishing..." : "↩ Unpublish to Draft"}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="publish-btn"
+                          onClick={() => handleSave("Published")}
+                          disabled={saving || unpublishing}
+                        >
+                          {saving ? "Saving..." : "💾 Update Post"}
+                        </button>
+                      </>
+                    )}
+
+                    {status === "Archived" && (
+                      <button
+                        type="button"
+                        className="publish-btn"
+                        onClick={() => handleSave("Draft")}
+                        disabled={saving}
+                      >
+                        Restore to Draft
+                      </button>
+                    )}
                   </>
-                )}
-
-                {status === "Archived" && (
-                  <button
-                    type="button"
-                    className="publish-btn"
-                    onClick={() => handleSave("Draft")}
-                    disabled={saving}
-                  >
-                    Restore to Draft
-                  </button>
                 )}
               </div>
             </div>
+
+            {/* Alumni Feedback & Status Alert Banners */}
+            {isAlumniUser && status === "changes_requested" && (
+              <div style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.4)", borderRadius: "8px", padding: "14px 18px", marginBottom: "18px", color: "#fef3c7" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "bold", fontSize: "15px", color: "#fbbf24" }}>
+                  <FaExclamationTriangle />
+                  <span>Super Admin Feedback (Changes Requested):</span>
+                </div>
+                <p style={{ margin: "8px 0 0", color: "#fde68a", fontSize: "14px", lineHeight: "1.5" }}>
+                  {adminFeedback || "Please update your article according to editorial standards and click 'Resubmit for Approval'."}
+                </p>
+              </div>
+            )}
+
+            {isAlumniUser && status === "pending" && (
+              <div style={{ background: "rgba(59, 130, 246, 0.12)", border: "1px solid rgba(59, 130, 246, 0.35)", borderRadius: "8px", padding: "14px 18px", marginBottom: "18px", color: "#bfdbfe" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "bold", fontSize: "15px", color: "#60a5fa" }}>
+                  <span>⏳ Submission Under Review</span>
+                </div>
+                <p style={{ margin: "8px 0 0", color: "#93c5fd", fontSize: "14px", lineHeight: "1.5" }}>
+                  Your article is currently being reviewed by Super Admin. Submissions cannot be edited while awaiting approval.
+                </p>
+              </div>
+            )}
+
+            {isAlumniUser && status === "published" && (
+              <div style={{ background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.4)", borderRadius: "8px", padding: "14px 18px", marginBottom: "18px", color: "#d1fae5" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "bold", fontSize: "15px", color: "#34d399" }}>
+                  <span>🚀 Article Published Live</span>
+                </div>
+                <p style={{ margin: "8px 0 0", color: "#a7f3d0", fontSize: "14px" }}>
+                  This article has been approved and published to the Abhyudaya Blog. <Link to={`/blog/${slug}`} target="_blank" style={{ color: "#6ee7b7", textDecoration: "underline" }}>View live post →</Link>
+                </p>
+              </div>
+            )}
+
+            {isAlumniUser && status === "rejected" && (
+              <div style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "8px", padding: "14px 18px", marginBottom: "18px", color: "#fee2e2" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "bold", fontSize: "15px", color: "#f87171" }}>
+                  <span>❌ Submission Not Selected</span>
+                </div>
+                <p style={{ margin: "8px 0 0", color: "#fca5a5", fontSize: "14px" }}>
+                  {rejectionReason || "This submission was not selected for publication."}
+                </p>
+              </div>
+            )}
 
             <div className="editor-layout">
               <section className="editor-section">
@@ -321,6 +567,7 @@ function EditBlog() {
                   placeholder="Enter Blog Title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  disabled={isAlumniUser && !isEditableForAlumni}
                   aria-label="Blog title"
                 />
 
@@ -328,6 +575,7 @@ function EditBlog() {
                   <RichEditor
                     value={contentJson}
                     onChange={handleEditorChange}
+                    readOnly={isAlumniUser && !isEditableForAlumni}
                     placeholder="Write your story here..."
                   />
                 </ErrorBoundary>
@@ -348,15 +596,17 @@ function EditBlog() {
                         alt="Featured post visual"
                       />
 
-                      <button
-                        type="button"
-                        className="remove-image-btn"
-                        onClick={removeImage}
-                      >
-                        <FaTrash /> Remove Image
-                      </button>
+                      {(!isAlumniUser || isEditableForAlumni) && (
+                        <button
+                          type="button"
+                          className="remove-image-btn"
+                          onClick={removeImage}
+                        >
+                          <FaTrash /> Remove Image
+                        </button>
+                      )}
                     </div>
-                  ) : (
+                  ) : (!isAlumniUser || isEditableForAlumni) ? (
                     <div className="featured-image-box">
                       <label className="upload-btn-primary" style={{ cursor: "pointer" }}>
                         <FaCloudUploadAlt style={{ fontSize: "18px" }} /> Upload Image
@@ -375,6 +625,8 @@ function EditBlog() {
                         <FaImages /> Choose from Library
                       </button>
                     </div>
+                  ) : (
+                    <p style={{ color: "#94a3b8", fontSize: "13px" }}>No featured image provided.</p>
                   )}
                 </div>
 
@@ -384,15 +636,42 @@ function EditBlog() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
+                    disabled={isAlumniUser && !isEditableForAlumni}
                     aria-label="Category"
                   >
-                    <option>Club News</option>
-                    <option>Workshop</option>
-                    <option>Technology</option>
-                    <option>Events</option>
-                    <option>Achievement</option>
+                    {isAlumniUser ? (
+                      ALUMNI_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option>Club News</option>
+                        <option>Workshop</option>
+                        <option>Technology</option>
+                        <option>Events</option>
+                        <option>Achievement</option>
+                        <option>Alumni Stories</option>
+                      </>
+                    )}
                   </select>
                 </div>
+
+                {isAlumniUser && (
+                  <div className="card">
+                    <h3>Alumni Author</h3>
+                    <div style={{ fontSize: "13px", color: "#e2e8f0", display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <strong>{currentUser?.name || currentUser?.displayName || "Alumnus"}</strong>
+                      <span style={{ color: "#94a3b8" }}>
+                        {currentUser?.branch || "Engineering"} • Class of {currentUser?.graduationYear || "Alumni"}
+                      </span>
+                      {currentUser?.organization && (
+                        <span style={{ color: "#94a3b8" }}>
+                          {currentUser?.designation ? `${currentUser.designation} at ` : ""}{currentUser.organization}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="card">
                   <h3>Tags</h3>
@@ -402,6 +681,7 @@ function EditBlog() {
                     placeholder="React, Firebase, AI"
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
+                    disabled={isAlumniUser && !isEditableForAlumni}
                     aria-label="Tags separated by comma"
                   />
                 </div>
@@ -415,41 +695,66 @@ function EditBlog() {
                 </div>
 
                 <div className="card">
+                  <h3>Short Excerpt</h3>
+
+                  <textarea
+                    rows="3"
+                    placeholder="Brief description for blog card..."
+                    value={contentExcerpt}
+                    onChange={(e) => setContentExcerpt(e.target.value)}
+                    disabled={isAlumniUser && !isEditableForAlumni}
+                    aria-label="Article excerpt"
+                  />
+                </div>
+
+                <div className="card">
                   <h3>SEO Description</h3>
 
                   <textarea
-                    rows="4"
+                    rows="3"
                     placeholder="Write SEO description..."
                     value={seo}
                     onChange={(e) => setSeo(e.target.value)}
+                    disabled={isAlumniUser && !isEditableForAlumni}
                     aria-label="SEO meta description"
                   />
                 </div>
 
-                <div className="card">
-                  <h3>Publish Date</h3>
+                {!isAlumniUser && (
+                  <div className="card">
+                    <h3>Publish Date</h3>
 
-                  <input
-                    type="date"
-                    value={publishDate}
-                    onChange={(e) => setPublishDate(e.target.value)}
-                    aria-label="Publish Date"
-                  />
-                </div>
+                    <input
+                      type="date"
+                      value={publishDate}
+                      onChange={(e) => setPublishDate(e.target.value)}
+                      aria-label="Publish Date"
+                    />
+                  </div>
+                )}
 
-                <div className="card">
-                  <h3>Status</h3>
+                {!isAlumniUser ? (
+                  <div className="card">
+                    <h3>Status</h3>
 
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    aria-label="Post Status"
-                  >
-                    <option value="Draft">Draft</option>
-                    <option value="Published">Published</option>
-                    <option value="Archived">Archived</option>
-                  </select>
-                </div>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      aria-label="Post Status"
+                    >
+                      <option value="Draft">Draft</option>
+                      <option value="Published">Published</option>
+                      <option value="Archived">Archived</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="card" style={{ borderLeft: "3px solid #3b82f6" }}>
+                    <h3 style={{ color: "#60a5fa" }}>Approval Workflow</h3>
+                    <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: 1.5, margin: "6px 0 0" }}>
+                      Current status: <strong>{status}</strong>. Only Super Admin has final authority to publish articles to the public blog.
+                    </p>
+                  </div>
+                )}
               </aside>
             </div>
           </div>

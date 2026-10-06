@@ -2,6 +2,7 @@ export const ROLES = {
   SUPER_ADMIN: "super_admin",
   BLOG_ADMIN: "blog_admin",
   EVENT_ADMIN: "event_admin",
+  ALUMNI: "alumni",
 };
 
 // Default landing page for each admin role.
@@ -11,6 +12,7 @@ export const ROLE_HOME = {
   [ROLES.SUPER_ADMIN]: "/admin/dashboard",
   [ROLES.BLOG_ADMIN]: "/admin/blogs",
   [ROLES.EVENT_ADMIN]: "/admin/events",
+  [ROLES.ALUMNI]: "/admin/blogs",
 };
 
 export const PERMISSIONS = {
@@ -54,6 +56,22 @@ export const PERMISSIONS = {
     reviews: false,
     timeCapsules: true,
   },
+
+  [ROLES.ALUMNI]: {
+    dashboard: false,
+    blogs: false,
+    alumniArticles: false,
+    events: false,
+    media: false,
+    users: false,
+    team: false,
+    gallery: false,
+    contact: false,
+    reviews: false,
+    timeCapsules: false,
+    writeArticle: true,
+    myArticles: true,
+  },
 };
 
 /**
@@ -61,6 +79,7 @@ export const PERMISSIONS = {
  * e.g. "superadmin", "super_admin", "admin" -> "super_admin"
  *      "blogadmin", "blog_admin", "Blog Admin" -> "blog_admin"
  *      "eventadmin", "event_admin", "Event Admin" -> "event_admin"
+ *      "alumni" -> "alumni"
  */
 export const normalizeRole = (role) => {
   if (!role || typeof role !== "string") return null;
@@ -74,8 +93,16 @@ export const normalizeRole = (role) => {
   if (clean === "eventadmin" || clean === "event_admin") {
     return ROLES.EVENT_ADMIN;
   }
+  if (clean === "alumni") {
+    return ROLES.ALUMNI;
+  }
   return clean;
 };
 
 export const isBlogAdmin = (role) => normalizeRole(role) === ROLES.BLOG_ADMIN;
-export const isSuperAdmin = (role) => normalizeRole(role) === ROLES.SUPER_ADMIN;
+export const isSuperAdmin = (role) => normalizeRole(role) === ROLES.SUPER_ADMIN;
+export const isAlumni = (role) => normalizeRole(role) === ROLES.ALUMNI;
+export const isAdminRole = (role) => {
+  const r = normalizeRole(role);
+  return r === ROLES.SUPER_ADMIN || r === ROLES.BLOG_ADMIN || r === ROLES.EVENT_ADMIN;
+};

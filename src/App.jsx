@@ -111,10 +111,7 @@ const ReviewAlumniArticle = lazyWithRetry(
   () => import("./Admin/pages/ReviewAlumniArticle.jsx"),
   "ReviewAlumniArticle"
 );
-const AlumniWriteArticle = lazyWithRetry(
-  () => import("./pages/AlumniWriteArticle.jsx"),
-  "AlumniWriteArticle"
-);
+
 
 // ─────────────────────────────────────────────────────────────
 // NProgress Configuration
@@ -255,7 +252,7 @@ export default function App() {
             <Route
               path="/admin/blogs"
               element={
-                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin", "alumni"]}>
                   <BlogManager />
                 </ProtectedRoute>
               }
@@ -264,7 +261,7 @@ export default function App() {
             <Route
               path="/admin/blogs/add"
               element={
-                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin", "alumni"]}>
                   <AddBlog />
                 </ProtectedRoute>
               }
@@ -273,10 +270,20 @@ export default function App() {
             <Route
               path="/admin/blogs/edit/:id"
               element={
-                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin", "alumni"]}>
                   <EditBlog />
                 </ProtectedRoute>
               }
+            />
+
+            {/* Aliases for backwards compatibility */}
+            <Route
+              path="/admin/blogs/write"
+              element={<Navigate to="/admin/blogs/add" replace />}
+            />
+            <Route
+              path="/admin/blogs/my-articles"
+              element={<Navigate to="/admin/blogs" replace />}
             />
 
             {/* Media */}
@@ -470,6 +477,8 @@ export default function App() {
               }
             />
 
+
+
             {/* ================= PUBLIC ROUTES ================= */}
 
             <Route element={<Layout />}>
@@ -488,7 +497,10 @@ export default function App() {
               />
 
               <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/write" element={<AlumniWriteArticle />} />
+              <Route
+                path="/blog/write"
+                element={<Navigate to="/admin/blogs/add" replace />}
+              />
               <Route path="/blog/:slug" element={<BlogDetails />} />
 
               <Route

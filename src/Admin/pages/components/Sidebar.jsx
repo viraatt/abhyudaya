@@ -92,6 +92,11 @@ export default function Sidebar() {
       { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
       { name: "Media Library", path: "/admin/media", icon: "📁" },
     ],
+
+    [ROLES.ALUMNI]: [
+      { name: "Blogs", path: "/admin/blogs", icon: "📝" },
+      { name: "Write Article", path: "/admin/blogs/add", icon: "✍️" },
+    ],
   };
 
   const currentRole = normalizeRole(currentUser?.role);
@@ -101,6 +106,7 @@ export default function Sidebar() {
     [ROLES.SUPER_ADMIN]: "Super Admin",
     [ROLES.BLOG_ADMIN]: "Blog Admin",
     [ROLES.EVENT_ADMIN]: "Event Admin",
+    [ROLES.ALUMNI]: "Alumni Contributor",
   };
 
   return (

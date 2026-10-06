@@ -8,6 +8,7 @@ import {
   getDoc,
   getDocs,
   query,
+  where,
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
@@ -31,6 +32,7 @@ export const ALUMNI_CATEGORIES = [
 ];
 
 export const SUBMISSION_STATUSES = {
+  DRAFT: "draft",
   PENDING: "pending",
   CHANGES_REQUESTED: "changes_requested",
   RESUBMITTED: "resubmitted",
@@ -110,6 +112,7 @@ export async function submitAlumniArticle(formData) {
       profilePhoto: author.profilePhoto || "",
     },
 
+    authorUid: formData.authorUid || null,
     status: SUBMISSION_STATUSES.PENDING,
     isAlumniContribution: true,
 
@@ -177,6 +180,114 @@ export async function resubmitAlumniArticle(id, editToken, formData) {
 }
 
 /**
+ * Save an alumni article as draft (create or update).
+ * Used directly by the blog editor when role === 'alumni'.
+ */
+export async function saveAlumniArticleDraft(docId, formData, user) {
+  const { author, title, category, excerpt, content, featuredImage, slug: customSlug, tags } = formData;
+  const slug = customSlug ? customSlug.trim() : (title?.trim() ? await generateUniqueSlug(title) : "draft-" + Date.now());
+
+  const authorData = {
+    name: (author?.name || user?.name || user?.displayName || "Alumnus").trim(),
+    graduationYear: String(author?.graduationYear || user?.graduationYear || "").trim(),
+    branch: (author?.branch || user?.branch || "").trim(),
+    organization: (author?.organization || user?.organization || "").trim(),
+    designation: (author?.designation || user?.designation || "").trim(),
+    linkedin: (author?.linkedin || user?.linkedin || "").trim(),
+    email: (author?.email || user?.email || "").trim().toLowerCase(),
+    profilePhoto: author?.profilePhoto || user?.profilePhoto || "",
+  };
+
+  const payload = {
+    title: (title || "Untitled Draft").trim(),
+    slug,
+    category: (category || "Alumni Stories").trim(),
+    excerpt: (excerpt || "").trim(),
+    content: content || "",
+    featuredImage: featuredImage || "",
+    tags: Array.isArray(tags) ? tags : [],
+    author: authorData,
+    authorUid: user?.uid || null,
+    authorId: formData.authorId || user?.uid || null,
+    authorEmail: formData.authorEmail || user?.email || "",
+    authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || "",
+    status: SUBMISSION_STATUSES.DRAFT,
+    isAlumniContribution: true,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (docId) {
+    const ref = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, docId);
+    await updateDoc(ref, payload);
+    return { id: docId, slug };
+  } else {
+    payload.submittedAt = serverTimestamp();
+    payload.adminFeedback = null;
+    payload.rejectionReason = null;
+    payload.editToken = generateEditToken();
+    payload.publishedBlogId = null;
+    const docRef = await addDoc(alumniRef, payload);
+    return { id: docRef.id, slug, editToken: payload.editToken };
+  }
+}
+
+/**
+ * Submit an alumni article for approval (create or update).
+ * Validates requirements and sets status to SUBMISSION_STATUSES.PENDING.
+ */
+export async function submitAlumniArticleForApproval(docId, formData, user) {
+  const { author, title, category, excerpt, content, featuredImage, slug: customSlug, tags } = formData;
+
+  if (!title?.trim()) throw new Error("Article title is required.");
+  if (!content) throw new Error("Article content is required.");
+
+  const slug = customSlug ? customSlug.trim() : await generateUniqueSlug(title);
+
+  const authorData = {
+    name: (author?.name || user?.name || user?.displayName || "Alumnus").trim(),
+    graduationYear: String(author?.graduationYear || user?.graduationYear || "").trim(),
+    branch: (author?.branch || user?.branch || "").trim(),
+    organization: (author?.organization || user?.organization || "").trim(),
+    designation: (author?.designation || user?.designation || "").trim(),
+    linkedin: (author?.linkedin || user?.linkedin || "").trim(),
+    email: (author?.email || user?.email || "").trim().toLowerCase(),
+    profilePhoto: author?.profilePhoto || user?.profilePhoto || "",
+  };
+
+  const payload = {
+    title: title.trim(),
+    slug,
+    category: (category || "Alumni Stories").trim(),
+    excerpt: (excerpt || "").trim(),
+    content: content || "",
+    featuredImage: featuredImage || "",
+    tags: Array.isArray(tags) ? tags : [],
+    author: authorData,
+    authorUid: user?.uid || null,
+    authorId: formData.authorId || user?.uid || null,
+    authorEmail: formData.authorEmail || user?.email || "",
+    authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || "",
+    status: SUBMISSION_STATUSES.PENDING,
+    isAlumniContribution: true,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (docId) {
+    const ref = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, docId);
+    await updateDoc(ref, payload);
+    return { id: docId, slug, status: SUBMISSION_STATUSES.PENDING };
+  } else {
+    payload.submittedAt = serverTimestamp();
+    payload.adminFeedback = null;
+    payload.rejectionReason = null;
+    payload.editToken = generateEditToken();
+    payload.publishedBlogId = null;
+    const docRef = await addDoc(alumniRef, payload);
+    return { id: docRef.id, slug, status: SUBMISSION_STATUSES.PENDING };
+  }
+}
+
+/**
  * Fetch all alumni submissions for the admin dashboard.
  */
 export async function getAlumniSubmissions() {
@@ -189,6 +300,37 @@ export async function getAlumniSubmissions() {
     // Fallback if index on submittedAt isn't built yet
     const snapshot = await getDocs(alumniRef);
     return snapshot.docs.map(formatSubmissionDoc);
+  }
+}
+
+/**
+ * Fetch all alumni submissions authored by a specific logged-in alumni user.
+ */
+export async function getAlumniSubmissionsByAuthor(authorUid) {
+  if (!authorUid) return [];
+  try {
+    const q = query(
+      alumniRef,
+      where("authorUid", "==", authorUid),
+      orderBy("submittedAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(formatSubmissionDoc);
+  } catch (err) {
+    console.error("Error fetching author submissions with sort, trying fallback:", err);
+    try {
+      const q = query(alumniRef, where("authorUid", "==", authorUid));
+      const snapshot = await getDocs(q);
+      const items = snapshot.docs.map(formatSubmissionDoc);
+      return items.sort((a, b) => {
+        const timeA = a.submittedAt?.seconds || 0;
+        const timeB = b.submittedAt?.seconds || 0;
+        return timeB - timeA;
+      });
+    } catch (fallbackErr) {
+      console.error("Fallback author query failed:", fallbackErr);
+      return [];
+    }
   }
 }
 
