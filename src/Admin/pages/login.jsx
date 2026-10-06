@@ -4,7 +4,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 import { auth, db } from "../../Firebase/firebase";
-import { ROLES } from "../config/roles";
+import { ROLES, normalizeRole } from "../config/roles";
 
 import "./style/login.css";
 
@@ -39,7 +39,7 @@ export default function Login() {
         return;
       }
 
-      const { role } = userDoc.data();
+      const role = normalizeRole(userDoc.data()?.role);
 
       switch (role) {
         case ROLES.SUPER_ADMIN:
@@ -52,6 +52,10 @@ export default function Login() {
 
         case ROLES.EVENT_ADMIN:
           navigate("/admin/events", { replace: true });
+          break;
+
+        case ROLES.ALUMNI:
+          navigate("/admin/blogs", { replace: true });
           break;
 
         default:

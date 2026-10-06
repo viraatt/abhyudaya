@@ -70,13 +70,63 @@ service cloud.firestore {
     // ============================================================
     // BLOGS
     // Public: read published blogs only.
-    // Admins: read ALL + write.
+    // Super Admin: full create/update/delete including publishing alumni articles.
+    // Blog Admin: can manage standard blogs, but CANNOT publish alumni articles.
+    // Alumni: CANNOT write to blogs directly at all.
     // ============================================================
     match /blogs/{blogId} {
       allow read: if isAdmin(['super_admin', 'blog_admin'])
         || resource.data.status == 'Published';
 
-      allow create, update, delete: if isAdmin(['super_admin', 'blog_admin']);
+      // Only super_admin can create/update alumni contribution blogs
+      // Blog Admin can manage regular blogs only
+      allow create, update: if isAdmin(['super_admin'])
+        || (isAdmin(['blog_admin']) && request.resource.data.isAlumniContribution != true);
+
+      allow delete: if isAdmin(['super_admin', 'blog_admin']);
+    }
+
+    // ============================================================
+    // ALUMNI ARTICLE SUBMISSIONS
+    // Alumni can create/save Drafts and Submit for Approval (Pending).
+    // Alumni CANNOT set status to 'Approved' or 'Published'.
+    // Only Super Admin can approve, reject, or publish.
+    // ============================================================
+    match /alumniSubmissions/{submissionId} {
+      allow read: if true;
+
+      allow create: if (isAdmin(['super_admin', 'blog_admin']))
+        || (
+          request.auth != null
+          && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending')
+          && request.resource.data.status != 'published'
+          && request.resource.data.status != 'approved'
+        );
+
+      // Super Admin has full review/publish rights.
+      // Blog Admin cannot approve or publish alumni submissions.
+      // Alumni can only update their own drafts or when changes are requested.
+      allow update: if isAdmin(['super_admin'])
+        || (
+          isAdmin(['blog_admin'])
+          && request.resource.data.status != 'published'
+          && request.resource.data.status != 'approved'
+        )
+        || (
+          request.auth != null
+          && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid)
+          && (resource.data.status == 'draft' || resource.data.status == 'changes_requested')
+          && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending' || request.resource.data.status == 'resubmitted')
+          && request.resource.data.status != 'published'
+          && request.resource.data.status != 'approved'
+        );
+
+      allow delete: if isAdmin(['super_admin'])
+        || (
+          request.auth != null
+          && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid)
+          && resource.data.status == 'draft'
+        );
     }
 
     // ============================================================
@@ -114,13 +164,13 @@ service cloud.firestore {
     // ============================================================
     // GALLERY
     // Public: read published albums only.
-    // Admins (super_admin, event_admin, blog_admin): read ALL + write.
+    // Admins (super_admin, event_admin): read ALL + write.
     // ============================================================
     match /gallery/{itemId} {
-      allow read: if isAdmin(['super_admin', 'event_admin', 'blog_admin'])
+      allow read: if isAdmin(['super_admin', 'event_admin'])
         || resource.data.status == 'Published';
 
-      allow create, update, delete: if isAdmin(['super_admin', 'event_admin', 'blog_admin']);
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
     }
 
     // ============================================================
@@ -132,7 +182,7 @@ service cloud.firestore {
     // ============================================================
     match /gallery_meta/{metaId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin(['super_admin', 'event_admin', 'blog_admin']);
+      allow create, update, delete: if isAdmin(['super_admin', 'event_admin']);
     }
 
     // ============================================================

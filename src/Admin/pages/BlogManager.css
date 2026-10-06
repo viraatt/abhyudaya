@@ -276,6 +276,34 @@
   color: #475569;
 }
 
+/* Alumni Author Tag in Table */
+.alumni-author-tag-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.alumni-author-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.alumni-author-name {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 13.5px;
+}
+
 /* --- Action Buttons in Row --- */
 .action-buttons-group {
   display: flex;

@@ -103,6 +103,15 @@ const AdminTimeCapsules = lazyWithRetry(
   () => import("./Admin/pages/TimeCapsules.jsx"),
   "AdminTimeCapsules"
 );
+const AlumniArticles = lazyWithRetry(
+  () => import("./Admin/pages/AlumniArticles.jsx"),
+  "AlumniArticles"
+);
+const ReviewAlumniArticle = lazyWithRetry(
+  () => import("./Admin/pages/ReviewAlumniArticle.jsx"),
+  "ReviewAlumniArticle"
+);
+
 
 // ─────────────────────────────────────────────────────────────
 // NProgress Configuration
@@ -182,6 +191,15 @@ export default function App() {
               element={<Login />}
             />
 
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <Navigate to="/admin/dashboard" replace />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Dashboard */}
             <Route
               path="/admin/dashboard"
@@ -234,7 +252,7 @@ export default function App() {
             <Route
               path="/admin/blogs"
               element={
-                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin", "alumni"]}>
                   <BlogManager />
                 </ProtectedRoute>
               }
@@ -243,7 +261,7 @@ export default function App() {
             <Route
               path="/admin/blogs/add"
               element={
-                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin", "alumni"]}>
                   <AddBlog />
                 </ProtectedRoute>
               }
@@ -252,10 +270,20 @@ export default function App() {
             <Route
               path="/admin/blogs/edit/:id"
               element={
-                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin", "alumni"]}>
                   <EditBlog />
                 </ProtectedRoute>
               }
+            />
+
+            {/* Aliases for backwards compatibility */}
+            <Route
+              path="/admin/blogs/write"
+              element={<Navigate to="/admin/blogs/add" replace />}
+            />
+            <Route
+              path="/admin/blogs/my-articles"
+              element={<Navigate to="/admin/blogs" replace />}
             />
 
             {/* Media */}
@@ -265,11 +293,25 @@ export default function App() {
                 <ProtectedRoute
                   allowedRoles={[
                     "super_admin",
-                    "blog_admin",
                     "event_admin",
                   ]}
                 >
                   <MediaLibraryPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Media Library Alias */}
+            <Route
+              path="/admin/media-library"
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "super_admin",
+                    "event_admin",
+                  ]}
+                >
+                  <Navigate to="/admin/media" replace />
                 </ProtectedRoute>
               }
             />
@@ -292,7 +334,6 @@ export default function App() {
                   allowedRoles={[
                     "super_admin",
                     "event_admin",
-                    "blog_admin",
                   ]}
                 >
                   <AdminGallery />
@@ -407,6 +448,37 @@ export default function App() {
               }
             />
 
+            {/* Alumni Articles */}
+            <Route
+              path="/admin/alumni-articles"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                  <AlumniArticles />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/alumni-articles/review/:id"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "blog_admin"]}>
+                  <ReviewAlumniArticle />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Any other /admin routes - redirect non-super admins to their role home */}
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <Navigate to="/admin/dashboard" replace />
+                </ProtectedRoute>
+              }
+            />
+
+
+
             {/* ================= PUBLIC ROUTES ================= */}
 
             <Route element={<Layout />}>
@@ -425,6 +497,10 @@ export default function App() {
               />
 
               <Route path="/blog" element={<Blog />} />
+              <Route
+                path="/blog/write"
+                element={<Navigate to="/admin/blogs/add" replace />}
+              />
               <Route path="/blog/:slug" element={<BlogDetails />} />
 
               <Route

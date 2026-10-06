@@ -59,6 +59,29 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
+.blog-alumni-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(13, 18, 36, 0.88);
+  backdrop-filter: blur(4px);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.author-is-alumni {
+  color: #b45309;
+  font-weight: 600;
+}
+
 /* Card Body */
 .blog-card-body {
   flex: 1;

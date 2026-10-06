@@ -23,6 +23,11 @@ function BlogCard({ blog }) {
         <span className="blog-category">
           {blog.category || "General"}
         </span>
+        {blog.isAlumniContribution && (
+          <span className="blog-alumni-badge">
+            🎓 Alumni
+          </span>
+        )}
       </div>
 
       <div className="blog-card-body">
@@ -37,7 +42,7 @@ function BlogCard({ blog }) {
         <div className="blog-card-footer">
           <div className="blog-meta">
             {blog.author && (
-              <span>
+              <span className={blog.isAlumniContribution ? "author-is-alumni" : ""}>
                 <FiUser />
                 {blog.author}
               </span>

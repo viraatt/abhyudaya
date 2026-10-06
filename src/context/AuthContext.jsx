@@ -9,6 +9,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 import { auth, db } from "../Firebase/firebase";
+import { normalizeRole } from "../Admin/config/roles";
 
 const AuthContext = createContext();
 
@@ -62,10 +63,12 @@ export function AuthProvider({ children }) {
         }
 
         const data = userSnap.data();
+        const role = normalizeRole(data?.role);
         setCurrentUser({
           uid: user.uid,
           email: user.email,
           ...data,
+          role,
         });
       } catch (error) {
         console.error("[AuthContext] error:", error);

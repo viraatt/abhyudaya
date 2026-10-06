@@ -83,6 +83,8 @@ export default function BlogPostingSchema({ blog, canonicalUrl }) {
     author: {
       "@type": "Person",
       name: blog.author || "Abhyudaya Club",
+      ...(blog.alumniAuthor?.linkedin ? { sameAs: blog.alumniAuthor.linkedin } : {}),
+      ...(blog.alumniAuthor?.organization ? { worksFor: { "@type": "Organization", name: blog.alumniAuthor.organization } } : {}),
     },
     publisher: {
       "@type": "Organization",

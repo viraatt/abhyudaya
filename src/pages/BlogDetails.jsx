@@ -510,9 +510,12 @@ export default function BlogDetails() {
           <h1>{blog.title}</h1>
 
           <div className="details-meta">
-            <span>
+            <span className={blog.isAlumniContribution ? "alumni-author-span" : ""}>
               <FiUser aria-hidden="true" />
               {blog.author || "Admin"}
+              {blog.isAlumniContribution && (
+                <span className="alumni-author-pill">🎓 Alumni Contributor</span>
+              )}
             </span>
             <span>
               <FiCalendar aria-hidden="true" />
@@ -523,6 +526,63 @@ export default function BlogDetails() {
               {blog.readTime || "5 min read"}
             </span>
           </div>
+
+          {/* Alumni Contributor Spotlight Card */}
+          {blog.isAlumniContribution && (blog.alumniAuthor || blog.author) && (
+            <div className="alumni-author-spotlight">
+              <div className="alumni-spotlight-badge">
+                <span className="cap-icon">🎓</span>
+                <span>Alumni Contribution</span>
+              </div>
+              <div className="alumni-spotlight-content">
+                {blog.alumniAuthor?.profilePhoto ? (
+                  <img
+                    src={blog.alumniAuthor.profilePhoto}
+                    alt={blog.alumniAuthor?.name || blog.author}
+                    className="alumni-spotlight-avatar"
+                  />
+                ) : (
+                  <div className="alumni-spotlight-avatar-fallback">
+                    {(blog.alumniAuthor?.name || blog.author || "A").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="alumni-spotlight-text">
+                  <div className="alumni-spotlight-name-row">
+                    <h3 className="alumni-spotlight-name">
+                      {blog.alumniAuthor?.name || blog.author}
+                    </h3>
+                    {blog.alumniAuthor?.linkedin && (
+                      <a
+                        href={blog.alumniAuthor.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="alumni-linkedin-link"
+                        aria-label={`Visit ${blog.alumniAuthor?.name || blog.author}'s LinkedIn`}
+                      >
+                        <FaLinkedin aria-hidden="true" />
+                        <span>Connect</span>
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="alumni-spotlight-credentials">
+                    {[
+                      blog.alumniAuthor?.branch && `B.Tech ${blog.alumniAuthor.branch}`,
+                      blog.alumniAuthor?.graduationYear && `Class of ${blog.alumniAuthor.graduationYear}`,
+                    ].filter(Boolean).join(" • ")}
+                  </div>
+
+                  {(blog.alumniAuthor?.designation || blog.alumniAuthor?.organization) && (
+                    <div className="alumni-spotlight-role">
+                      {[blog.alumniAuthor.designation, blog.alumniAuthor.organization]
+                        .filter(Boolean)
+                        .join(" at ")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Featured Image — fetchpriority=high as it is the LCP element */}
           {blog.featuredImage && (
@@ -583,6 +643,56 @@ export default function BlogDetails() {
             className="details-content"
             dangerouslySetInnerHTML={{ __html: renderedContent }}
           />
+
+          {/* About the Alumni Author Box */}
+          {blog.isAlumniContribution && (blog.alumniAuthor || blog.author) && (
+            <div className="alumni-about-author-box">
+              <div className="alumni-box-header">
+                <span className="alumni-box-badge">🎓 Contributed by MPEC Alumni</span>
+              </div>
+              <div className="alumni-box-body">
+                {blog.alumniAuthor?.profilePhoto ? (
+                  <img
+                    src={blog.alumniAuthor.profilePhoto}
+                    alt={blog.alumniAuthor?.name || blog.author}
+                    className="alumni-box-avatar"
+                  />
+                ) : (
+                  <div className="alumni-box-avatar fallback">
+                    {(blog.alumniAuthor?.name || blog.author || "A").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="alumni-box-details">
+                  <h4>{blog.alumniAuthor?.name || blog.author}</h4>
+                  <p className="alumni-box-subtitle">
+                    {[
+                      blog.alumniAuthor?.branch && `B.Tech in ${blog.alumniAuthor.branch}`,
+                      blog.alumniAuthor?.graduationYear && `Batch of ${blog.alumniAuthor.graduationYear}`,
+                    ].filter(Boolean).join(" • ")}
+                  </p>
+                  {(blog.alumniAuthor?.designation || blog.alumniAuthor?.organization) && (
+                    <p className="alumni-box-company">
+                      {[blog.alumniAuthor.designation, blog.alumniAuthor.organization].filter(Boolean).join(" at ")}
+                    </p>
+                  )}
+                  <p className="alumni-box-desc">
+                    This article was contributed as part of the Abhyudaya Alumni Knowledge Sharing initiative to inspire and mentor students.
+                  </p>
+                  {blog.alumniAuthor?.linkedin && (
+                    <a
+                      href={blog.alumniAuthor.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="alumni-box-linkedin"
+                    >
+                      <FaLinkedin aria-hidden="true" />
+                      <span>Connect on LinkedIn ↗</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* COMMENTS SECTION */}
           <div className="comments-section">

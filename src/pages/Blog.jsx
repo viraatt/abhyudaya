@@ -133,6 +133,7 @@ const Blog = () => {
         </header>
 
         {/* ---------- CONTROLS SECTION ---------- */}
+
         <div className="blog-controls">
           <SearchBar
             value={search}

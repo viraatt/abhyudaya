@@ -172,6 +172,66 @@ body{
 
 }
 
+.sidebar-logout-btn{
+  width:100%;
+  background:transparent;
+  border:none;
+  font-family:inherit;
+  font-size:inherit;
+  cursor:pointer;
+  text-align:left;
+  margin-top:6px;
+}
+
+.sidebar-logout-btn:hover{
+  background:rgba(239, 68, 68, 0.16);
+  color:#fca5a5;
+}
+
+/* Sidebar Submenus */
+.sidebar-item-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding-left: 28px;
+}
+
+.sidebar-sublink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.sidebar-sublink:hover {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.08);
+}
+
+.sidebar-sublink.active {
+  color: #facc15;
+  font-weight: 700;
+  background: rgba(250, 204, 21, 0.14);
+}
+
+.sublink-bullet {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
 /*==============================*/
 
 .dashboard-main{

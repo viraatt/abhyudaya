@@ -9,6 +9,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
+import { ROLES, normalizeRole } from "../config/roles";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
@@ -24,7 +25,7 @@ export default function Users() {
     name: "",
     email: "",
     password: "",
-    role: "admin",
+    role: ROLES.BLOG_ADMIN,
   });
 
   const fetchUsers = async () => {
@@ -49,10 +50,11 @@ export default function Users() {
 
   async function changeRole(userId, currentRole) {
     try {
-      const newRole =
-        currentRole === "superadmin"
-          ? "admin"
-          : "superadmin";
+      const normalized = normalizeRole(currentRole);
+      let newRole = ROLES.SUPER_ADMIN;
+      if (normalized === ROLES.SUPER_ADMIN) newRole = ROLES.BLOG_ADMIN;
+      else if (normalized === ROLES.BLOG_ADMIN) newRole = ROLES.EVENT_ADMIN;
+      else newRole = ROLES.SUPER_ADMIN;
 
       await updateDoc(doc(db, "users", userId), {
         role: newRole,
@@ -105,7 +107,7 @@ export default function Users() {
 
       alert(`Admin account created for ${formData.name}!`);
       setShowModal(false);
-      setFormData({ name: "", email: "", password: "", role: "admin" });
+      setFormData({ name: "", email: "", password: "", role: ROLES.BLOG_ADMIN });
     } catch (error) {
       console.error(error);
       alert(error.message || "Failed to create user.");
@@ -169,9 +171,13 @@ export default function Users() {
                       <td>{user.email}</td>
 
                       <td>
-                        {user.role === "superadmin"
+                        {normalizeRole(user.role) === ROLES.SUPER_ADMIN
                           ? "Super Admin"
-                          : "Admin"}
+                          : normalizeRole(user.role) === ROLES.BLOG_ADMIN
+                          ? "Blog Admin"
+                          : normalizeRole(user.role) === ROLES.EVENT_ADMIN
+                          ? "Event Admin"
+                          : user.role || "Admin"}
                       </td>
 
                       <td>
@@ -260,8 +266,9 @@ export default function Users() {
                     onChange={handleInputChange}
                     style={{ padding: "10px", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "6px" }}
                   >
-                    <option value="admin">Admin</option>
-                    <option value="superadmin">Super Admin</option>
+                    <option value={ROLES.BLOG_ADMIN}>Blog Admin</option>
+                    <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
+                    <option value={ROLES.EVENT_ADMIN}>Event Admin</option>
                   </select>
 
                   <div className="modal-actions" style={{ marginTop: "12px" }}>

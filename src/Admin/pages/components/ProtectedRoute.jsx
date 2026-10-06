@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../../Firebase/firebase";
-import { ROLE_HOME } from "../../config/roles";
+import { ROLE_HOME, normalizeRole } from "../../config/roles";
 
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const [user, setUser] = useState(undefined);
@@ -26,7 +26,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
         const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          setRole(userSnap.data().role || null);
+          setRole(normalizeRole(userSnap.data().role) || null);
         } else {
           setRole(null);
         }
