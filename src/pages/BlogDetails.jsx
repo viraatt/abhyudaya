@@ -8,6 +8,7 @@ import "./BlogDetails.css";
 // ──────────────────────────────────────────────────────────────────────────
 import { db } from "../Firebase/firebase";
 import { getBlogBySlug } from "../Firebase/blogService";
+import { resolveAuthorName } from "../utils/authorHelper";
 
 import {
   collection,
@@ -441,6 +442,9 @@ export default function BlogDetails() {
     .filter(Boolean)
     .join(", ");
 
+  // Resolved author display name — never exposes email/UID, never falls back to "Alumnus"
+  const authorDisplayName = resolveAuthorName(blog?.alumniAuthor, blog?.author);
+
   const breadcrumbItems = [
     { name: "Home", url: SITE_URL },
     { name: "Blog", url: `${SITE_URL}/blog` },
@@ -454,7 +458,7 @@ export default function BlogDetails() {
         <title>{blog.title} | {ORG_NAME}</title>
         <meta name="description" content={metaDescription} />
         <meta name="keywords" content={keywords} />
-        <meta name="author" content={blog.author || "Abhyudaya Club"} />
+        <meta name="author" content={blog.isAlumniContribution ? authorDisplayName : (blog.author || "Abhyudaya Club")} />
         <link rel="canonical" href={canonicalUrl} />
         <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
 
@@ -470,7 +474,7 @@ export default function BlogDetails() {
         <meta property="og:locale" content="en_IN" />
         {blog.dateISO && <meta property="article:published_time" content={blog.dateISO} />}
         {blog.updatedDateISO && <meta property="article:modified_time" content={blog.updatedDateISO} />}
-        <meta property="article:author" content={blog.author || "Abhyudaya Club"} />
+        <meta property="article:author" content={blog.isAlumniContribution ? authorDisplayName : (blog.author || "Abhyudaya Club")} />
         <meta property="article:section" content={blog.category || "Blog"} />
         {tags.map((tag) => (
           <meta key={tag} property="article:tag" content={tag} />
@@ -512,7 +516,7 @@ export default function BlogDetails() {
           <div className="details-meta">
             <span className={blog.isAlumniContribution ? "alumni-author-span" : ""}>
               <FiUser aria-hidden="true" />
-              {blog.author || "Admin"}
+              {blog.isAlumniContribution ? authorDisplayName : (blog.author || "Admin")}
               {blog.isAlumniContribution && (
                 <span className="alumni-author-pill">🎓 Alumni Contributor</span>
               )}
@@ -543,13 +547,13 @@ export default function BlogDetails() {
                   />
                 ) : (
                   <div className="alumni-spotlight-avatar-fallback">
-                    {(blog.alumniAuthor?.name || blog.author || "A").charAt(0).toUpperCase()}
+                    {authorDisplayName.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="alumni-spotlight-text">
                   <div className="alumni-spotlight-name-row">
                     <h3 className="alumni-spotlight-name">
-                      {blog.alumniAuthor?.name || blog.author}
+                      {authorDisplayName}
                     </h3>
                     {blog.alumniAuthor?.linkedin && (
                       <a
@@ -557,7 +561,7 @@ export default function BlogDetails() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="alumni-linkedin-link"
-                        aria-label={`Visit ${blog.alumniAuthor?.name || blog.author}'s LinkedIn`}
+                        aria-label={`Visit ${authorDisplayName}'s LinkedIn`}
                       >
                         <FaLinkedin aria-hidden="true" />
                         <span>Connect</span>
@@ -644,55 +648,7 @@ export default function BlogDetails() {
             dangerouslySetInnerHTML={{ __html: renderedContent }}
           />
 
-          {/* About the Alumni Author Box */}
-          {blog.isAlumniContribution && (blog.alumniAuthor || blog.author) && (
-            <div className="alumni-about-author-box">
-              <div className="alumni-box-header">
-                <span className="alumni-box-badge">🎓 Contributed by MPEC Alumni</span>
-              </div>
-              <div className="alumni-box-body">
-                {blog.alumniAuthor?.profilePhoto ? (
-                  <img
-                    src={blog.alumniAuthor.profilePhoto}
-                    alt={blog.alumniAuthor?.name || blog.author}
-                    className="alumni-box-avatar"
-                  />
-                ) : (
-                  <div className="alumni-box-avatar fallback">
-                    {(blog.alumniAuthor?.name || blog.author || "A").charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="alumni-box-details">
-                  <h4>{blog.alumniAuthor?.name || blog.author}</h4>
-                  <p className="alumni-box-subtitle">
-                    {[
-                      blog.alumniAuthor?.branch && `B.Tech in ${blog.alumniAuthor.branch}`,
-                      blog.alumniAuthor?.graduationYear && `Batch of ${blog.alumniAuthor.graduationYear}`,
-                    ].filter(Boolean).join(" • ")}
-                  </p>
-                  {(blog.alumniAuthor?.designation || blog.alumniAuthor?.organization) && (
-                    <p className="alumni-box-company">
-                      {[blog.alumniAuthor.designation, blog.alumniAuthor.organization].filter(Boolean).join(" at ")}
-                    </p>
-                  )}
-                  <p className="alumni-box-desc">
-                    This article was contributed as part of the Abhyudaya Alumni Knowledge Sharing initiative to inspire and mentor students.
-                  </p>
-                  {blog.alumniAuthor?.linkedin && (
-                    <a
-                      href={blog.alumniAuthor.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="alumni-box-linkedin"
-                    >
-                      <FaLinkedin aria-hidden="true" />
-                      <span>Connect on LinkedIn ↗</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {/* COMMENTS SECTION */}
           <div className="comments-section">

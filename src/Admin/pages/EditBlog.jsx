@@ -27,6 +27,7 @@ import "./style/admin.css";
 import "./addBlog.css";
 import { uploadImage } from "./services/imageUpload";
 import { updateBlogService, updateBlogStatusService } from "./services/blogService";
+import { resolveAuthorName } from "../../utils/authorHelper";
 
 function EditBlog() {
   const { id } = useParams();
@@ -162,7 +163,7 @@ function EditBlog() {
       seo,
       publishDate,
       status,
-      author: isAlumniUser ? (currentUser?.name || currentUser?.displayName || "Alumnus") : "Admin",
+      author: isAlumniUser ? resolveAuthorName(null, currentUser) : "Admin",
       excerpt: contentExcerpt.trim().substring(0, 180),
       content: contentJson,
     };
@@ -628,7 +629,7 @@ function EditBlog() {
                   <div className="card">
                     <h3>Alumni Author</h3>
                     <div style={{ fontSize: "13px", color: "#e2e8f0", display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <strong>{currentUser?.name || currentUser?.displayName || "Alumnus"}</strong>
+                      <strong>{resolveAuthorName(null, currentUser)}</strong>
                       <span style={{ color: "#94a3b8" }}>
                         {currentUser?.branch || "Engineering"} • Class of {currentUser?.graduationYear || "Alumni"}
                       </span>
