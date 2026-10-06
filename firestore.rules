@@ -93,7 +93,10 @@ service cloud.firestore {
     // Only Super Admin can approve, reject, or publish.
     // ============================================================
     match /alumniSubmissions/{submissionId} {
-      allow read: if true;
+      allow read: if isAdmin(['super_admin', 'blog_admin'])
+        || (request.auth != null && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid))
+        || resource.data.status == 'published'
+        || resource.data.status == 'approved';
 
       allow create: if (isAdmin(['super_admin', 'blog_admin']))
         || (

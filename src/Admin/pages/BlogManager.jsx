@@ -164,7 +164,16 @@ function BlogManager() {
 
       if (isAlumniUser) {
         const normalized = normalizeAlumniStatus(blog.status);
-        matchesStatus = statusFilter === "All" || normalized.toLowerCase() === statusFilter.toLowerCase();
+        if (statusFilter === "All") {
+          matchesStatus = true;
+        } else if (statusFilter.toLowerCase() === "approved" || statusFilter.toLowerCase() === "published") {
+          matchesStatus =
+            blog.status === "approved" ||
+            blog.status === "published" ||
+            Boolean(blog.publishedBlogId);
+        } else {
+          matchesStatus = normalized.toLowerCase() === statusFilter.toLowerCase();
+        }
       } else {
         matchesStatus =
           statusFilter === "All" ||
@@ -300,7 +309,10 @@ function BlogManager() {
                     {filteredBlogs.map((article) => {
                       const normalizedStatus = normalizeAlumniStatus(article.status);
                       const isEditable = article.status === "draft" || article.status === "changes_requested";
-                      const isLive = article.status === "published";
+                      const isLive =
+                        article.status === "published" ||
+                        article.status === "approved" ||
+                        Boolean(article.publishedBlogId);
 
                       return (
                         <tr key={article.id}>

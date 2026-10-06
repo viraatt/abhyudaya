@@ -1,0 +1,316 @@
+/* ============================================================
+   Featured Image Upload - Premium Editorial Component
+   ============================================================ */
+
+.featured-image-uploader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* --- Dropzone State (No image) --- */
+.fiu-dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.fiu-dropzone:hover,
+.fiu-dropzone.drag-active {
+  border-color: #2563eb;
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
+}
+
+.fiu-dropzone.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.fiu-icon-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #2563eb;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  margin-bottom: 12px;
+  transition: all 0.25s ease;
+}
+
+.fiu-dropzone:hover .fiu-icon-circle,
+.fiu-dropzone.drag-active .fiu-icon-circle {
+  background: #2563eb;
+  color: #ffffff;
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+}
+
+.fiu-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.fiu-title span {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.fiu-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.fiu-meta-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #475569;
+  background: #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+
+.fiu-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 2px 0;
+}
+
+.fiu-divider::before,
+.fiu-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fiu-divider span {
+  padding: 0 10px;
+}
+
+/* Library Button */
+.fiu-library-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #ffffff;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.fiu-library-btn:hover {
+  background: #f8fafc;
+  border-color: #2563eb;
+  color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1);
+}
+
+/* --- Uploading State --- */
+.fiu-uploading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 36px 20px;
+  background: #f8fafc;
+  border: 2px dashed #93c5fd;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.fiu-spinner {
+  font-size: 26px;
+  color: #2563eb;
+  animation: fiu-spin 1s linear infinite;
+}
+
+.fiu-uploading-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.fiu-uploading-subtext {
+  font-size: 12px;
+  color: #64748b;
+}
+
+@keyframes fiu-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Preview State (Image loaded) --- */
+.fiu-preview-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #0f172a;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.fiu-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background: #1e293b;
+}
+
+.fiu-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.fiu-preview-card:hover .fiu-image-wrapper img {
+  transform: scale(1.02);
+}
+
+.fiu-live-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fiu-live-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.fiu-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.fiu-replace-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fiu-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.fiu-action-btn.replace-upload {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.fiu-action-btn.replace-upload:hover {
+  background: #dbeafe;
+  border-color: #2563eb;
+}
+
+.fiu-action-btn.replace-library {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.fiu-action-btn.replace-library:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.fiu-action-btn.btn-remove {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+  margin-left: auto;
+}
+
+.fiu-action-btn.btn-remove:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+@media (max-width: 640px) {
+  .fiu-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fiu-replace-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fiu-action-btn.btn-remove {
+    margin-left: 0;
+  }
+}

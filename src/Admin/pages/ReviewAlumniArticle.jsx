@@ -90,13 +90,13 @@ export default function ReviewAlumniArticle() {
     role: currentUser?.role || "admin",
   };
 
-  // Handle Approve
+  // Handle Approve (approves and publishes to live blog)
   const handleApprove = async () => {
     setActionLoading(true);
     try {
       await approveAlumniArticle(id, reviewerInfo);
       setShowApproveModal(false);
-      toast.success("Article approved successfully!");
+      toast.success("🚀 Article approved and published to Abhyudaya Blog!");
       await fetchArticle();
     } catch (err) {
       console.error(err);
@@ -124,18 +124,7 @@ export default function ReviewAlumniArticle() {
 
   // Handle Approve & Publish in one step (Super Admin only)
   const handleApproveAndPublish = async () => {
-    setActionLoading(true);
-    try {
-      await approveAlumniArticle(id, reviewerInfo);
-      await publishAlumniArticleToBlog(id, reviewerInfo);
-      toast.success("🚀 Article approved and published to Abhyudaya Blog!");
-      await fetchArticle();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Failed to approve and publish article.");
-    } finally {
-      setActionLoading(false);
-    }
+    return handleApprove();
   };
 
   // Handle Request Changes
@@ -384,8 +373,18 @@ export default function ReviewAlumniArticle() {
                     {/* Approve & Publish actions: SUPER ADMIN ONLY */}
                     {isSuper ? (
                       <>
-                        {/* Approve button */}
-                        {!isApproved && !isPublished && (
+                        {(isApproved || isPublished) ? (
+                          <a
+                            href={`/blog/${article.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="action-btn publish"
+                            style={{ textDecoration: "none" }}
+                          >
+                            <FaRocket />
+                            <span>View Live Post →</span>
+                          </a>
+                        ) : (
                           <button
                             type="button"
                             className="action-btn approve"
@@ -393,33 +392,7 @@ export default function ReviewAlumniArticle() {
                             disabled={actionLoading}
                           >
                             {actionLoading ? <FaSpinner className="spin" /> : <FaCheck />}
-                            <span>Approve Article</span>
-                          </button>
-                        )}
-
-                        {/* Publish button — for approved articles */}
-                        {isApproved && !isPublished && (
-                          <button
-                            type="button"
-                            className="action-btn publish"
-                            onClick={() => setShowPublishModal(true)}
-                            disabled={actionLoading}
-                          >
-                            {actionLoading ? <FaSpinner className="spin" /> : <FaRocket />}
-                            <span>Publish to Blog</span>
-                          </button>
-                        )}
-
-                        {/* Convenient 1-Click Approve & Publish for pending articles */}
-                        {!isApproved && !isPublished && (
-                          <button
-                            type="button"
-                            className="action-btn publish"
-                            onClick={handleApproveAndPublish}
-                            disabled={actionLoading}
-                          >
-                            {actionLoading ? <FaSpinner className="spin" /> : <FaRocket />}
-                            <span>Approve &amp; Publish</span>
+                            <span>Approve &amp; Publish Article</span>
                           </button>
                         )}
                       </>
@@ -657,7 +630,7 @@ export default function ReviewAlumniArticle() {
                   Are you sure you want to approve <strong>"{article.title}"</strong> submitted by <strong>{article.author?.name}</strong>?
                 </p>
                 <p style={{ color: "#cbd5e1", fontSize: "13px" }}>
-                  Once approved, the article will be ready for final publishing to the live Abhyudaya Blog.
+                  Once approved, this article will immediately be published live to the public Abhyudaya Blog and will appear in the alumni author&apos;s dashboard.
                 </p>
                 <div className="modal-actions-row">
                   <button

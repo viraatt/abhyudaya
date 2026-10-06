@@ -20,11 +20,42 @@ import { blogs as staticBlogs } from "../data/blogs";
 const BLOGS_COLLECTION = "blogs";
 const blogsRef = collection(db, BLOGS_COLLECTION);
 
+export function sanitizeAlumniAuthor(author) {
+  if (!author || typeof author !== "object") return null;
+  return {
+    name: (author.name || author.displayName || "").trim(),
+    graduationYear: author.graduationYear ? String(author.graduationYear).trim() : "",
+    branch: (author.branch || "").trim(),
+    organization: (author.organization || "").trim(),
+    designation: (author.designation || "").trim(),
+    linkedin: (author.linkedin || "").trim(),
+    profilePhoto: author.profilePhoto || author.photoURL || "",
+  };
+}
+
 function formatBlogDoc(snapshotDoc) {
   const data = snapshotDoc.data();
+  // Strip sensitive author email and authentication metadata from public objects
+  const {
+    email: _rootEmail,
+    authorEmail: _authorEmail,
+    alumniEmail: _alumniEmail,
+    authorUid: _authorUid,
+    authorId: _authorId,
+    reviewedBy: _reviewedBy,
+    publishedBy: _publishedBy,
+    editToken: _editToken,
+    ...safeData
+  } = data;
+
+  const alumniAuthor = data.alumniAuthor
+    ? sanitizeAlumniAuthor(data.alumniAuthor)
+    : null;
+
   return {
     id: snapshotDoc.id,
-    ...data,
+    ...safeData,
+    alumniAuthor,
     date: data.createdAt?.toDate
       ? data.createdAt.toDate().toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -180,6 +211,7 @@ export const publishBlog = async (blog) => {
   }
 
   const finalSlug = await generateUniqueSlug(blog.slug || blog.title);
+  const sanitizedAuthor = sanitizeAlumniAuthor(blog.alumniAuthor);
 
   const payload = {
     title: (blog.title || "").trim(),
@@ -190,11 +222,11 @@ export const publishBlog = async (blog) => {
     seo: blog.seo || "",
     publishDate: blog.publishDate || "",
     status: blog.status || "Draft",
-    author: blog.author || "Admin",
+    author: blog.author || (sanitizedAuthor && sanitizedAuthor.name) || "Admin",
     isAlumniContribution: Boolean(blog.isAlumniContribution),
-    alumniAuthor: blog.alumniAuthor || null,
-    reviewedBy: blog.reviewedBy || null,
-    publishedBy: blog.publishedBy || null,
+    alumniAuthor: sanitizedAuthor,
+    authorUid: blog.authorUid || null,
+    authorId: blog.authorId || null,
     submissionId: blog.submissionId || null,
     excerpt: blog.excerpt || "",
     content: blog.content || null,
@@ -234,6 +266,9 @@ export const updateBlogService = async (id, blogData) => {
     publishedAt = serverTimestamp();
   }
 
+  const rawAuthor = blogData.alumniAuthor !== undefined ? blogData.alumniAuthor : (currentData.alumniAuthor || null);
+  const sanitizedAuthor = sanitizeAlumniAuthor(rawAuthor);
+
   const payload = {
     title: (blogData.title || "").trim(),
     slug: finalSlug,
@@ -243,14 +278,14 @@ export const updateBlogService = async (id, blogData) => {
     seo: blogData.seo || "",
     publishDate: blogData.publishDate || "",
     status: blogData.status || "Draft",
-    author: blogData.author || currentData.author || "Admin",
+    author: blogData.author || (sanitizedAuthor && sanitizedAuthor.name) || currentData.author || "Admin",
     isAlumniContribution:
       blogData.isAlumniContribution !== undefined
         ? Boolean(blogData.isAlumniContribution)
         : Boolean(currentData.isAlumniContribution),
-    alumniAuthor: blogData.alumniAuthor !== undefined ? blogData.alumniAuthor : (currentData.alumniAuthor || null),
-    reviewedBy: blogData.reviewedBy !== undefined ? blogData.reviewedBy : (currentData.reviewedBy || null),
-    publishedBy: blogData.publishedBy !== undefined ? blogData.publishedBy : (currentData.publishedBy || null),
+    alumniAuthor: sanitizedAuthor,
+    authorUid: blogData.authorUid || currentData.authorUid || null,
+    authorId: blogData.authorId || currentData.authorId || null,
     submissionId: blogData.submissionId !== undefined ? blogData.submissionId : (currentData.submissionId || null),
     excerpt: blogData.excerpt || "",
     content: blogData.content || null,

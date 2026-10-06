@@ -9,6 +9,7 @@ import SlugInput from "../components/SlugInput";
 import AutosaveIndicator from "../components/AutosaveIndicator";
 import MediaLibrary from "../components/media/MediaLibrary";
 import ErrorBoundary from "../components/ErrorBoundary";
+import FeaturedImageUpload from "../components/FeaturedImageUpload";
 import { useToast } from "../components/Toast";
 import { useAutosave } from "../hooks/useAutosave";
 import { useAuth } from "../../context/AuthContext";
@@ -207,15 +208,17 @@ function AddBlog() {
   }, []);
 
   // Upload Featured Image from device
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = async (fileOrEvent) => {
+    const file = fileOrEvent?.target?.files
+      ? fileOrEvent.target.files[0]
+      : fileOrEvent;
     if (!file) return;
 
     try {
       setUploadingImage(true);
       const url = await uploadImage(file);
       setFeaturedImage(url);
-      toast.success("Image uploaded successfully!");
+      toast.success("Featured image uploaded successfully!");
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Failed to upload image.");
@@ -477,45 +480,13 @@ function AddBlog() {
                 <div className="card">
                   <h3>Featured Image</h3>
 
-                  {uploadingImage ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#2563eb", fontSize: "14px", fontWeight: 600, padding: "10px 0" }}>
-                      <FaSpinner className="spin" /> Uploading image...
-                    </div>
-                  ) : featuredImage ? (
-                    <div className="featured-image-preview">
-                      <img
-                        src={featuredImage}
-                        alt="Featured post visual"
-                      />
-
-                      <button
-                        type="button"
-                        className="remove-image-btn"
-                        onClick={removeImage}
-                      >
-                        <FaTrash /> Remove Image
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="featured-image-box">
-                      <label className="upload-btn-primary" style={{ cursor: "pointer" }}>
-                        <FaCloudUploadAlt style={{ fontSize: "18px" }} /> Upload Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          style={{ display: "none" }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="media-library-btn"
-                        onClick={() => setShowMediaModal(true)}
-                      >
-                        <FaImages /> Choose from Library
-                      </button>
-                    </div>
-                  )}
+                  <FeaturedImageUpload
+                    imageUrl={featuredImage}
+                    onImageChange={handleImageUpload}
+                    onRemove={removeImage}
+                    onOpenMediaLibrary={() => setShowMediaModal(true)}
+                    uploading={uploadingImage}
+                  />
                 </div>
 
                 <div className="card">
@@ -580,9 +551,6 @@ function AddBlog() {
                             {alumniProfile.designation ? `${alumniProfile.designation} at ` : ""}{alumniProfile.organization}
                           </span>
                         )}
-                        <span style={{ color: "#64748b", fontSize: "12px", marginTop: "2px" }}>
-                          {alumniProfile.email}
-                        </span>
                       </div>
                     )}
                   </div>

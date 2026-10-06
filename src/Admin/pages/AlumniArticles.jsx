@@ -97,13 +97,17 @@ export default function AlumniArticles() {
       (s) => s.status === SUBMISSION_STATUSES.CHANGES_REQUESTED
     ).length;
     const approved = submissions.filter(
-      (s) => s.status === SUBMISSION_STATUSES.APPROVED
+      (s) =>
+        s.status === SUBMISSION_STATUSES.APPROVED ||
+        s.status === SUBMISSION_STATUSES.PUBLISHED
     ).length;
     const rejected = submissions.filter(
       (s) => s.status === SUBMISSION_STATUSES.REJECTED
     ).length;
     const published = submissions.filter(
-      (s) => s.status === SUBMISSION_STATUSES.PUBLISHED
+      (s) =>
+        s.status === SUBMISSION_STATUSES.PUBLISHED ||
+        s.status === SUBMISSION_STATUSES.APPROVED
     ).length;
 
     return { total, pending, changesRequested, approved, rejected, published };
@@ -119,11 +123,15 @@ export default function AlumniArticles() {
           sub.status === SUBMISSION_STATUSES.PENDING ||
           sub.status === SUBMISSION_STATUSES.RESUBMITTED;
       } else if (activeTab === "approved") {
-        matchesStatus = sub.status === SUBMISSION_STATUSES.APPROVED;
+        matchesStatus =
+          sub.status === SUBMISSION_STATUSES.APPROVED ||
+          sub.status === SUBMISSION_STATUSES.PUBLISHED;
       } else if (activeTab === "rejected") {
         matchesStatus = sub.status === SUBMISSION_STATUSES.REJECTED;
       } else if (activeTab === "published") {
-        matchesStatus = sub.status === SUBMISSION_STATUSES.PUBLISHED;
+        matchesStatus =
+          sub.status === SUBMISSION_STATUSES.PUBLISHED ||
+          sub.status === SUBMISSION_STATUSES.APPROVED;
       } else if (activeTab === "changes_requested") {
         matchesStatus = sub.status === SUBMISSION_STATUSES.CHANGES_REQUESTED;
       }
