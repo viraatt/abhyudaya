@@ -312,7 +312,8 @@ function AddBlog() {
           seo,
           excerpt: contentExcerpt.trim().substring(0, 180),
           content: contentJson,
-          // Top-level fields for the submission document
+          author: authorUser,
+          authorUid: currentUser?.uid || null,
           authorId: currentUser?.uid || null,
           authorEmail: currentUser?.email || "",
           authorProfilePhoto: authorUser?.profilePhoto || "",
@@ -384,7 +385,8 @@ function AddBlog() {
         seo,
         excerpt: contentExcerpt.trim().substring(0, 180),
         content: contentJson,
-        // Top-level fields attached to the submission document
+        author: authorUser,
+        authorUid: currentUser?.uid || null,
         authorId: currentUser?.uid || null,
         authorEmail: currentUser?.email || "",
         authorProfilePhoto: authorUser?.profilePhoto || "",

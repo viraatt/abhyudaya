@@ -381,22 +381,59 @@ export async function approveAlumniArticle(id, reviewer) {
     role: reviewer?.role || "admin",
   };
 
-  // Build clean, sanitized alumni author object (NO email!)
-  const safeAlumniAuthor = submission.author
-    ? {
-        name: resolveAuthorName(submission.author),
-        graduationYear: submission.author.graduationYear
-          ? String(submission.author.graduationYear).trim()
-          : "",
-        branch: (submission.author.branch || "").trim(),
-        organization: (submission.author.organization || "").trim(),
-        designation: (submission.author.designation || "").trim(),
-        linkedin: (submission.author.linkedin || "").trim(),
-        profilePhoto: submission.author.profilePhoto || "",
+  // Attempt to load author's Firestore user document if authorUid exists
+  let authorProfileFromUsers = null;
+  const authorUid = submission.authorUid || submission.authorId;
+  if (authorUid) {
+    try {
+      const uSnap = await getDoc(doc(db, "users", authorUid));
+      if (uSnap.exists()) {
+        authorProfileFromUsers = uSnap.data();
       }
-    : {
-        name: "Abhyudaya Alumni",
-      };
+    } catch (e) {
+      console.warn("Could not fetch author profile from users collection during approval:", e);
+    }
+  }
+
+  // Resolve author name using submission.author and authorProfileFromUsers
+  const resolvedName = resolveAuthorName(
+    submission.author,
+    authorProfileFromUsers
+  );
+
+  // Build clean, sanitized alumni author object (NO email!)
+  const safeAlumniAuthor = {
+    name: resolvedName,
+    graduationYear: submission.author?.graduationYear
+      ? String(submission.author.graduationYear).trim()
+      : (authorProfileFromUsers?.graduationYear ? String(authorProfileFromUsers.graduationYear).trim() : ""),
+    branch: (
+      submission.author?.branch ||
+      authorProfileFromUsers?.branch ||
+      authorProfileFromUsers?.department ||
+      ""
+    ).trim(),
+    organization: (
+      submission.author?.organization ||
+      authorProfileFromUsers?.organization ||
+      ""
+    ).trim(),
+    designation: (
+      submission.author?.designation ||
+      authorProfileFromUsers?.designation ||
+      ""
+    ).trim(),
+    linkedin: (
+      submission.author?.linkedin ||
+      authorProfileFromUsers?.linkedin ||
+      ""
+    ).trim(),
+    profilePhoto:
+      submission.author?.profilePhoto ||
+      authorProfileFromUsers?.profilePhoto ||
+      authorProfileFromUsers?.photoURL ||
+      "",
+  };
 
   const finalSlug = submission.slug || (await generateUniqueSlug(submission.title));
 
@@ -418,7 +455,7 @@ export async function approveAlumniArticle(id, reviewer) {
     tags:
       Array.isArray(submission.tags) && submission.tags.length > 0
         ? submission.tags
-        : ["Alumni Contribution", submission.category || "Alumni Stories"].filter(Boolean),
+        : [submission.category || "Alumni Stories"].filter(Boolean),
   };
 
   let publishedBlogId = submission.publishedBlogId;

@@ -334,6 +334,11 @@ function EditBlog() {
         seo,
         excerpt: contentExcerpt.trim().substring(0, 180),
         content: contentJson,
+        author: currentUser,
+        authorUid: currentUser?.uid || null,
+        authorId: currentUser?.uid || null,
+        authorEmail: currentUser?.email || "",
+        authorProfilePhoto: currentUser?.profilePhoto || currentUser?.photoURL || "",
       };
 
       await submitAlumniArticleForApproval(id, articleData, currentUser);
