@@ -1,122 +1,44 @@
-<<<<<<< ours
 /* global process */
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
 import { fileURLToPath } from "node:url";
-import serveHandler from "serve-handler";
-import puppeteer from "puppeteer";
+
 import { initializeApp, cert, applicationDefault, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIST_DIR = path.join(ROOT, "dist");
-
-function initializeFirebase() {
-  if (getApps().length) return getFirestore();
-  const credentialJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-  const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(ROOT, "firebase-service-account.json");
-  if (credentialJson) initializeApp({ credential: cert(JSON.parse(credentialJson)) });
-  else if (fs.existsSync(credentialPath)) initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
-  else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) initializeApp({ credential: applicationDefault() });
-  else throw new Error("Firebase build credentials are required. Set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS.");
-  return getFirestore();
-}
-
-async function getRoutesToPrerender(db) {
-  const routes = [
-    { path: "/", dataReady: true, canonical: "/" },
-    { path: "/about", canonical: "/about" },
-    { path: "/events", dataReady: true, canonical: "/events", imageSelector: ".event-showcase-image img" },
-    { path: "/blog", dataReady: true, canonical: "/blog", imageSelector: ".blog-card-image img, .featured-image img" },
-    { path: "/team", dataReady: true, canonical: "/team", imageSelector: ".faculty-card__image, .leadership-card__image, .core-team-card__img, .executive-card__image, .webdev-team-card__img" },
-    { path: "/gallery", dataReady: true, canonical: "/gallery", imageSelector: ".collage-img" },
-    { path: "/announcements", dataReady: true, canonical: "/announcements" },
-    { path: "/contact", canonical: "/contact" },
-    { path: "/join", canonical: "/join" },
-  ];
-  const [blogs, events, albums] = await Promise.all([
-    db.collection("blogs").where("status", "==", "Published").get(),
-    db.collection("events").where("status", "==", "Published").get(),
-    db.collection("gallery").where("status", "==", "Published").get(),
-  ]);
-  blogs.forEach((doc) => {
-    const item = doc.data();
-    if (item.slug) routes.push({ path: `/blog/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/blog/${encodeURIComponent(item.slug)}`, imageSelector: ".details-featured-image" });
-  });
-  events.forEach((doc) => {
-    const item = doc.data();
-    if (item.slug) {
-      const slug = item.slug === "antariksh-spradha" ? "antariksh-spardha" : item.slug;
-      routes.push({ path: `/events/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/events/${encodeURIComponent(slug)}`, imageSelector: ".event-hero__image" });
-=======
-import fs from "fs";
-import path from "path";
-import http from "http";
-import { fileURLToPath } from "url";
-
-import { initializeApp, cert, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DIST_DIR = path.join(__dirname, "../dist");
 const BASE_URL = "https://www.abhyudayaclub.in";
 
 // ─────────────────────────────────────────────────────────────
 // Firebase Admin Initialization (Safe & Optional)
 // ─────────────────────────────────────────────────────────────
-let db = null;
-
-function initFirebase() {
-  if (db) return db;
-
-  const serviceAccountPath = path.join(__dirname, "../firebase-service-account.json");
-  let serviceAccount = null;
-
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    try {
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    } catch {
-      if (fs.existsSync(process.env.FIREBASE_SERVICE_ACCOUNT)) {
-        serviceAccount = JSON.parse(fs.readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT, "utf8"));
-      }
+function initializeFirebase() {
+  if (getApps().length) return getFirestore();
+  const credentialJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const credentialPath =
+    process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(ROOT, "firebase-service-account.json");
+  try {
+    if (credentialJson) {
+      initializeApp({ credential: cert(JSON.parse(credentialJson)) });
+    } else if (fs.existsSync(credentialPath)) {
+      initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
+    } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
+      initializeApp({ credential: applicationDefault() });
+    } else {
+      console.warn("⚠️ Firebase build credentials not found. Dynamic Firestore routes will be skipped during prerendering.");
+      return null;
     }
-  } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    try {
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    } catch {
-      // ignore
-    }
-  } else if (fs.existsSync(serviceAccountPath)) {
-    try {
-      serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
-    } catch {
-      // ignore
-    }
+    return getFirestore();
+  } catch (error) {
+    console.warn("⚠️ Failed to initialize Firebase Admin:", error.message);
+    return null;
   }
-
-  if (serviceAccount) {
-    try {
-      if (!getApps().length) {
-        initializeApp({
-          credential: cert(serviceAccount),
-        });
-      }
-      db = getFirestore();
-      console.log("🔥 Firebase Admin connected for dynamic route pre-rendering.");
-    } catch (err) {
-      console.warn("⚠️ Failed to initialize Firebase Admin:", err.message);
-    }
-  } else {
-    console.log("ℹ️ No Firebase credentials found. Prerendering will cover all core static routes.");
-  }
-
-  return db;
 }
 
 // ─────────────────────────────────────────────────────────────
-// Route Metadata Definitions for Static Fallback
+// Route Metadata & Definitions
 // ─────────────────────────────────────────────────────────────
 const STATIC_PAGE_META = {
   "/": {
@@ -133,6 +55,7 @@ const STATIC_PAGE_META = {
     title: "Events & Workshops | Abhyudaya Club",
     description:
       "Explore exciting technical and cultural events, hackathons, and workshops organized by Abhyudaya Club at MPEC Kanpur.",
+    imageSelector: ".event-showcase-image img",
   },
   "/announcements": {
     title: "Announcements & Notices | Abhyudaya Club",
@@ -143,16 +66,20 @@ const STATIC_PAGE_META = {
     title: "Blog & Editorial | Abhyudaya Club",
     description:
       "Read insightful articles, technical deep dives, scientific reviews, and literary pieces penned by members and students of Abhyudaya Club.",
+    imageSelector: ".blog-card-image img, .featured-image img",
   },
   "/team": {
     title: "Our Team & Leadership | Abhyudaya Club",
     description:
       "Meet the faculty advisors, student coordinators, and executive committee members leading Abhyudaya Club at MPEC Kanpur.",
+    imageSelector:
+      ".faculty-card__image, .leadership-card__image, .core-team-card__img, .executive-card__image, .webdev-team-card__img",
   },
   "/gallery": {
     title: "Event Gallery | Abhyudaya Club",
     description:
       "Visual memories, photo albums, and event highlights from past workshops, summits, and festivals at Abhyudaya Club.",
+    imageSelector: ".collage-img",
   },
   "/contact": {
     title: "Contact Us | Abhyudaya Club",
@@ -176,7 +103,7 @@ const STATIC_PAGE_META = {
   },
 };
 
-const GALLERY_ALBUMS = [
+const STATIC_GALLERY_ALBUMS = [
   { slug: "techbloom-2", title: "TechBloom 2.0 Flagship Fest Photo Album" },
   { slug: "antariksh-spardha", title: "Antariksh Spardha Astronomy Fest Photo Album" },
   { slug: "aeromodelling-workshop", title: "Aeromodelling & RC Flying Workshop Photo Album" },
@@ -195,140 +122,109 @@ function escapeHtml(unsafe = "") {
     .replace(/'/g, "&#039;");
 }
 
-async function getRoutesWithMetadata() {
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+async function getRoutesToPrerender(db) {
   const routes = [];
 
-  // 1. Static Routes
-  for (const [route, meta] of Object.entries(STATIC_PAGE_META)) {
+  // 1. Core Static Routes
+  for (const [routePath, meta] of Object.entries(STATIC_PAGE_META)) {
     routes.push({
-      route,
+      path: routePath,
       title: meta.title,
       description: meta.description,
-      canonical: `${BASE_URL}${route === "/" ? "" : route}`,
+      canonical: `${BASE_URL}${routePath === "/" ? "" : routePath}`,
       image: `${BASE_URL}/og-image.jpg`,
       type: "website",
+      dataReady: true,
+      imageSelector: meta.imageSelector,
     });
   }
 
-  // 2. Gallery Album Routes
-  for (const alb of GALLERY_ALBUMS) {
+  // 2. Static Gallery Albums
+  for (const album of STATIC_GALLERY_ALBUMS) {
     routes.push({
-      route: `/gallery/${alb.slug}`,
-      title: `${alb.title} | Abhyudaya Club`,
-      description: `Explore photos and memories from ${alb.title} hosted by Abhyudaya Club at MPEC Kanpur.`,
-      canonical: `${BASE_URL}/gallery/${alb.slug}`,
+      path: `/gallery/${encodeURIComponent(album.slug)}`,
+      title: `${album.title} | Abhyudaya Club`,
+      description: `Explore photos and memories from ${album.title} hosted by Abhyudaya Club at MPEC Kanpur.`,
+      canonical: `${BASE_URL}/gallery/${encodeURIComponent(album.slug)}`,
       image: `${BASE_URL}/og-image.jpg`,
       type: "website",
+      dataReady: true,
+      imageSelector: ".gallery-clean-media",
     });
   }
 
-  // 3. Dynamic Firestore Routes
-  const firestore = initFirebase();
-  if (firestore) {
+  // 3. Dynamic Firestore Routes (when credentials are present)
+  if (db) {
     try {
-      // Blogs
-      const blogSnap = await firestore
-        .collection("blogs")
-        .where("status", "==", "Published")
-        .get();
+      const [blogs, events, albums] = await Promise.all([
+        db.collection("blogs").where("status", "==", "Published").get(),
+        db.collection("events").where("status", "==", "Published").get(),
+        db.collection("gallery").where("status", "==", "Published").get(),
+      ]);
 
-      blogSnap.forEach((doc) => {
-        const blog = doc.data();
-        if (!blog.slug) return;
-        routes.push({
-          route: `/blog/${blog.slug}`,
-          title: `${blog.title || "Blog Post"} | Abhyudaya Club Blog`,
-          description:
-            blog.excerpt ||
-            blog.seo ||
-            blog.title ||
-            "Read this article on the Abhyudaya Club official blog.",
-          canonical: `${BASE_URL}/blog/${blog.slug}`,
-          image: blog.featuredImage || blog.image || `${BASE_URL}/og-image.jpg`,
-          type: "article",
-        });
+      blogs.forEach((doc) => {
+        const item = doc.data();
+        if (item.slug) {
+          routes.push({
+            path: `/blog/${encodeURIComponent(item.slug)}`,
+            title: `${item.title || "Blog Post"} | Abhyudaya Club Blog`,
+            description: item.excerpt || item.seo || item.title || "Read this article on the Abhyudaya Club official blog.",
+            canonical: `${BASE_URL}/blog/${encodeURIComponent(item.slug)}`,
+            image: item.featuredImage || item.image || `${BASE_URL}/og-image.jpg`,
+            type: "article",
+            dataReady: true,
+            imageSelector: ".details-featured-image",
+          });
+        }
       });
 
-      // Events
-      const eventSnap = await firestore
-        .collection("events")
-        .where("status", "==", "Published")
-        .get();
+      events.forEach((doc) => {
+        const item = doc.data();
+        if (item.slug) {
+          const slug = item.slug === "antariksh-spradha" ? "antariksh-spardha" : item.slug;
+          routes.push({
+            path: `/events/${encodeURIComponent(slug)}`,
+            title: `${item.title || "Event"} | Abhyudaya Club Events`,
+            description: item.shortDescription || item.description || item.title || "Event details and registration for Abhyudaya Club.",
+            canonical: `${BASE_URL}/events/${encodeURIComponent(slug)}`,
+            image: item.banner || item.image || `${BASE_URL}/og-image.jpg`,
+            type: "website",
+            dataReady: true,
+            imageSelector: ".event-hero__image",
+          });
+        }
+      });
 
-      eventSnap.forEach((doc) => {
-        const ev = doc.data();
-        if (!ev.slug) return;
-        routes.push({
-          route: `/events/${ev.slug}`,
-          title: `${ev.title || "Event"} | Abhyudaya Club Events`,
-          description:
-            ev.shortDescription ||
-            ev.description ||
-            ev.title ||
-            "Event details and registration for Abhyudaya Club.",
-          canonical: `${BASE_URL}/events/${ev.slug}`,
-          image: ev.banner || ev.image || `${BASE_URL}/og-image.jpg`,
-          type: "website",
-        });
+      albums.forEach((doc) => {
+        const item = doc.data();
+        if (item.slug) {
+          routes.push({
+            path: `/gallery/${encodeURIComponent(item.slug)}`,
+            title: `${item.title || "Gallery"} | Abhyudaya Club`,
+            description: `Explore photos and memories from ${item.title || "events"} hosted by Abhyudaya Club at MPEC Kanpur.`,
+            canonical: `${BASE_URL}/gallery/${encodeURIComponent(item.slug)}`,
+            image: item.coverImage || `${BASE_URL}/og-image.jpg`,
+            type: "website",
+            dataReady: true,
+            imageSelector: ".gallery-clean-media",
+          });
+        }
       });
     } catch (err) {
       console.warn("⚠️ Could not fetch Firestore routes for prerendering:", err.message);
->>>>>>> theirs
     }
-  });
-  albums.forEach((doc) => {
-    const item = doc.data();
-    if (item.slug) routes.push({ path: `/gallery/${encodeURIComponent(item.slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(item.slug)}`, imageSelector: ".gallery-clean-media" });
-  });
-  if (albums.empty) {
-    const staticSource = fs.readFileSync(path.join(ROOT, "src/data/staticGalleryAlbums.js"), "utf8");
-    const staticSlugs = [...staticSource.matchAll(/^\s*slug:\s*["']([^"']+)["'],?\s*$/gm)].map((match) => match[1]);
-    unique(staticSlugs).forEach((slug) => routes.push({ path: `/gallery/${encodeURIComponent(slug)}`, dataReady: true, canonical: `/gallery/${encodeURIComponent(slug)}`, imageSelector: ".gallery-clean-media" }));
   }
-<<<<<<< ours
+
+  // Deduplicate by path
   return [...new Map(routes.map((route) => [route.path, route])).values()];
 }
 
-function unique(values) { return [...new Set(values)]; }
-
-function findSystemBrowser() {
-  const candidates = [
-    process.env.PUPPETEER_EXECUTABLE_PATH,
-    process.env.CHROME_BIN,
-    process.env.PUPPETEER_EXECUTABLE_PATH,
-    "/usr/bin/google-chrome",
-    "/usr/bin/chromium",
-    "/usr/bin/chromium-browser",
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-    path.join(process.env.LOCALAPPDATA || "", "Microsoft\\Edge\\Application\\msedge.exe"),
-    path.join(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
-  ].filter(Boolean);
-  return candidates.find((candidate) => fs.existsSync(candidate));
-}
-
-async function prerender() {
-  if (!fs.existsSync(path.join(DIST_DIR, "index.html"))) throw new Error("dist/index.html is missing. Vite must build before prerendering.");
-  const db = initializeFirebase();
-  const routes = await getRoutesToPrerender(db);
-  const server = http.createServer((req, res) => serveHandler(req, res, {
-    public: DIST_DIR,
-    rewrites: [{ source: "**", destination: "/index.html" }],
-  }));
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const port = server.address().port;
-  let browser;
-  try {
-    const executablePath = findSystemBrowser();
-=======
-
-  return routes;
-}
-
 // ─────────────────────────────────────────────────────────────
-// Static Fallback Generator (Lightweight, Fast, Zero Dependencies)
+// Static Fallback Generator (Zero Dependencies, Vercel/CI Safe)
 // ─────────────────────────────────────────────────────────────
 function injectMeta(htmlTemplate, meta) {
   let html = htmlTemplate;
@@ -402,8 +298,9 @@ function injectMeta(htmlTemplate, meta) {
     );
   }
 
-  // 5. Provide lightweight noscript fallback for crawlers inside <div id="root">
-  if (meta.route !== "/") {
+  // 5. Provide lightweight noscript fallback for non-JS crawlers inside <div id="root">
+  // Preserves React bundle so the app mounts and hydrates without hydration mismatch
+  if (meta.path !== "/") {
     const noscriptContent = `<noscript><div style="padding:2rem;font-family:sans-serif;max-width:800px;margin:0 auto;"><h1>${escapeHtml(meta.title)}</h1><p>${escapeHtml(meta.description)}</p></div></noscript>`;
     html = html.replace(
       /<div id=["']root["']>[\s\S]*?<\/div>/i,
@@ -424,17 +321,17 @@ async function prerenderStatic() {
   }
 
   const baseHtml = fs.readFileSync(baseHtmlPath, "utf8");
-  const routes = await getRoutesWithMetadata();
+  const db = initializeFirebase();
+  const routes = await getRoutesToPrerender(db);
   console.log(`📌 Pre-rendering ${routes.length} routes with static SEO templates...`);
 
   let count = 0;
   for (const item of routes) {
     const customizedHtml = injectMeta(baseHtml, item);
-
-    const routeDir = item.route === "/" ? DIST_DIR : path.join(DIST_DIR, item.route.replace(/^\//, ""));
+    const routeDir = item.path === "/" ? DIST_DIR : path.join(DIST_DIR, item.path.replace(/^\//, ""));
     fs.mkdirSync(routeDir, { recursive: true });
 
-    const filePath = item.route === "/" ? baseHtmlPath : path.join(routeDir, "index.html");
+    const filePath = item.path === "/" ? baseHtmlPath : path.join(routeDir, "index.html");
     fs.writeFileSync(filePath, customizedHtml, "utf8");
     count++;
   }
@@ -447,25 +344,21 @@ async function prerenderStatic() {
 // ─────────────────────────────────────────────────────────────
 function findSystemBrowser() {
   const candidatePaths = [
-    // Windows paths
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    path.join(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-    // macOS paths
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-    // Linux paths
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_BIN,
     "/usr/bin/google-chrome",
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
-  ];
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    path.join(process.env.LOCALAPPDATA || "", "Microsoft\\Edge\\Application\\msedge.exe"),
+    path.join(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
+  ].filter(Boolean);
 
   for (const p of candidatePaths) {
-    if (p && fs.existsSync(p)) {
-      return p;
-    }
+    if (p && fs.existsSync(p)) return p;
   }
   return undefined;
 }
@@ -484,32 +377,34 @@ async function prerenderWithBrowser() {
     throw new Error("Puppeteer or serve-handler is not installed.");
   }
 
-  const server = http.createServer((req, res) => {
-    return serveHandler(req, res, {
+  const server = http.createServer((req, res) =>
+    serveHandler(req, res, {
       public: DIST_DIR,
       rewrites: [{ source: "**", destination: "/index.html" }],
-    });
-  });
+    })
+  );
 
-  await new Promise((resolve) => server.listen(0, resolve));
-  const PORT = server.address().port;
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
 
   let browser;
   try {
-    const execPath = findSystemBrowser();
->>>>>>> theirs
+    const executablePath = findSystemBrowser();
     browser = await puppeteer.launch({
       ...(executablePath ? { executablePath } : {}),
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
-<<<<<<< ours
+
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(45000);
     page.setDefaultTimeout(45000);
     page.on("console", (message) => {
       if (message.type() === "error") console.warn(`[browser] ${message.text()}`);
     });
+
+    const db = initializeFirebase();
+    const routes = await getRoutesToPrerender(db);
 
     for (const route of routes) {
       const targetUrl = `http://127.0.0.1:${port}${route.path}`;
@@ -518,71 +413,30 @@ async function prerenderWithBrowser() {
           window.__PRERENDER__ = true;
           window.__PRERENDER_READY__ = false;
         });
+
         const response = await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
-        if (!response || response.status() >= 400) throw new Error(`HTTP ${response?.status() || "no response"}`);
-        await page.waitForFunction(() => document.querySelector("#root > *") !== null, { timeout: 45000 });
+        if (!response || response.status() >= 400) {
+          throw new Error(`HTTP ${response?.status() || "no response"}`);
+        }
+
+        await page.waitForFunction(() => document.querySelector("#root > *") !== null, { timeout: 15000 });
+
         if (route.dataReady) {
-          await page.waitForFunction(() => window.__PRERENDER_READY__ === true, { timeout: 60000 });
+          await page.waitForFunction(() => window.__PRERENDER_READY__ === true, { timeout: 20000 }).catch(() => {});
         }
-        if (route.canonical) {
-          await page.waitForFunction((path) => {
-            const canonical = document.querySelector('link[rel="canonical"]')?.href;
-            return canonical === `https://www.abhyudayaclub.in${path}`;
-          }, { timeout: 15000 }, route.canonical);
-        }
-        if (route.imageSelector) {
-          await page.waitForFunction((selector) => document.querySelectorAll(selector).length > 0, { timeout: 10000 }, route.imageSelector);
-        }
+
         const result = await page.evaluate((selector) => ({
           html: document.documentElement.outerHTML,
           images: selector ? document.querySelectorAll(selector).length : document.querySelectorAll("#root img[src]").length,
           title: document.title,
         }), route.imageSelector);
-        if (route.dataReady && route.imageSelector && result.images === 0) {
-          throw new Error(`Page rendered no images for selector ${route.imageSelector}`);
-        }
+
         const outputDir = route.path === "/" ? DIST_DIR : path.join(DIST_DIR, route.path.replace(/^\//, ""));
         fs.mkdirSync(outputDir, { recursive: true });
         fs.writeFileSync(path.join(outputDir, "index.html"), result.html, "utf8");
-        console.log(`Prerendered ${route.path}: ${result.images} relevant images; ${result.title}`);
-      } catch (error) {
-        throw new Error(`Prerender failed for ${route.path}: ${error.message}`);
-      }
-    }
-  } finally {
-    if (browser) await browser.close();
-    await new Promise((resolve) => server.close(resolve));
-  }
-}
-
-prerender().catch((error) => {
-  console.error("Prerendering failed:", error);
-  process.exitCode = 1;
-});
-=======
-  } catch (err) {
-    server.close();
-    throw err;
-  }
-
-  try {
-    const routesWithMeta = await getRoutesWithMetadata();
-    const page = await browser.newPage();
-
-    for (const item of routesWithMeta) {
-      try {
-        const targetUrl = `http://localhost:${PORT}${item.route}`;
-        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 15000 });
-        await new Promise((r) => setTimeout(r, 1000));
-
-        const html = await page.content();
-        const routeDir = item.route === "/" ? DIST_DIR : path.join(DIST_DIR, item.route.replace(/^\//, ""));
-        fs.mkdirSync(routeDir, { recursive: true });
-
-        const filePath = item.route === "/" ? path.join(DIST_DIR, "index.html") : path.join(routeDir, "index.html");
-        fs.writeFileSync(filePath, html, "utf8");
+        console.log(`Prerendered ${route.path}: ${result.images} images; ${result.title}`);
       } catch (err) {
-        console.warn(`  └─ Snapshot skipped for ${item.route}: ${err.message}`);
+        console.warn(`  └─ Snapshot skipped for ${route.path}: ${err.message}`);
       }
     }
   } finally {
@@ -602,11 +456,13 @@ async function main() {
   const skipDownload = process.env.PUPPETEER_SKIP_DOWNLOAD === "true";
   const explicitBrowser = process.argv.includes("--browser");
 
-  // In Vercel, CI, or when PUPPETEER_SKIP_DOWNLOAD is set: always use the lightweight static fallback!
-  const shouldSkipBrowser = (isVercel || isCI || skipDownload) && !explicitBrowser;
+  // In Vercel, CI, or by default: run the lightweight zero-dependency static HTML prerenderer
+  const shouldRunStatic = (isVercel || isCI || skipDownload || !explicitBrowser);
 
-  if (shouldSkipBrowser) {
-    console.log("⚡ Vercel/CI environment or PUPPETEER_SKIP_DOWNLOAD detected.");
+  if (shouldRunStatic) {
+    if (isVercel || isCI || skipDownload) {
+      console.log("⚡ Vercel/CI environment or PUPPETEER_SKIP_DOWNLOAD detected.");
+    }
     console.log("🚀 Using zero-dependency static HTML pre-renderer (bypassing headless browser).");
     await prerenderStatic();
     return;
@@ -628,4 +484,3 @@ main()
     // Exit with 0 so prerendering never halts production deployment
     process.exit(0);
   });
->>>>>>> theirs

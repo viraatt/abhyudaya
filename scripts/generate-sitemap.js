@@ -13,16 +13,22 @@ function initializeFirebase() {
   if (getApps().length) return getFirestore();
   const credentialJson = process.env.FIREBASE_SERVICE_ACCOUNT;
   const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(ROOT, "firebase-service-account.json");
-  if (credentialJson) {
-    initializeApp({ credential: cert(JSON.parse(credentialJson)) });
-  } else if (fs.existsSync(credentialPath)) {
-    initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
-  } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
-    initializeApp({ credential: applicationDefault() });
-  } else {
-    throw new Error("Firebase build credentials are required. Set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS.");
+  try {
+    if (credentialJson) {
+      initializeApp({ credential: cert(JSON.parse(credentialJson)) });
+    } else if (fs.existsSync(credentialPath)) {
+      initializeApp({ credential: cert(JSON.parse(fs.readFileSync(credentialPath, "utf8"))) });
+    } else if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT) {
+      initializeApp({ credential: applicationDefault() });
+    } else {
+      console.warn("⚠️ Firebase build credentials not found. Dynamic Firestore collections will be skipped during sitemap generation.");
+      return null;
+    }
+    return getFirestore();
+  } catch (error) {
+    console.warn("⚠️ Failed to initialize Firebase Admin:", error.message);
+    return null;
   }
-  return getFirestore();
 }
 
 function escapeXml(value = "") {
@@ -91,14 +97,16 @@ async function generate() {
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(DIST_DIR, ".vite/manifest.json"), "utf8"));
   const db = initializeFirebase();
-  const [blogSnapshot, eventSnapshot, gallerySnapshot, teamSnapshot, galleryMeta, announcementSnapshot] = await Promise.all([
-    db.collection("blogs").where("status", "==", "Published").get(),
-    db.collection("events").where("status", "==", "Published").get(),
-    db.collection("gallery").where("status", "==", "Published").get(),
-    db.collection("team").get(),
-    db.doc("gallery_meta/deleted_static_albums").get(),
-    db.collection("announcements").get(),
-  ]);
+  const [blogSnapshot, eventSnapshot, gallerySnapshot, teamSnapshot, galleryMeta, announcementSnapshot] = db
+    ? await Promise.all([
+        db.collection("blogs").where("status", "==", "Published").get(),
+        db.collection("events").where("status", "==", "Published").get(),
+        db.collection("gallery").where("status", "==", "Published").get(),
+        db.collection("team").get(),
+        db.doc("gallery_meta/deleted_static_albums").get(),
+        db.collection("announcements").get(),
+      ])
+    : [{ docs: [] }, { docs: [] }, { docs: [] }, { docs: [], empty: true }, { exists: false }, { docs: [] }];
 
   const byCreatedDate = (a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
   const blogs = blogSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
