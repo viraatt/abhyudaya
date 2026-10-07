@@ -10,9 +10,12 @@ const GENERIC_NAMES = new Set([
   "admin",
   "abhyudaya alumni",
   "name not set",
+  "name not found",
+  "name not found — please contact admin",
+  "unknown",
 ]);
 
-function isValidName(val) {
+export function isValidName(val) {
   if (!val || typeof val !== "string") return false;
   const trimmed = val.trim();
   if (!trimmed) return false;
@@ -24,53 +27,84 @@ function isValidName(val) {
 }
 
 /**
- * Resolves the author's actual name from any combination of author and user objects/strings.
- * Priority:
- * 1. author string (if valid) or author object candidate fields (name, authorName, fullName, displayName)
- * 2. user string (if valid) or user object candidate fields (name, authorName, fullName, displayName)
- * 3. Default legacy fallback: "Abhyudaya Alumni" (only when no actual name is available)
+ * Extracts a candidate human name from any string or object.
+ * Priority order within an object:
+ * 1. name
+ * 2. displayName
+ * 3. fullName
+ * 4. alumniName
+ * 5. firstName + lastName
+ * 6. authorName, writerName
+ * and safely unpacks nested author/profile objects.
  */
-export function resolveAuthorName(author, user = null) {
-  // Direct string check on author
-  if (typeof author === "string" && isValidName(author)) {
-    return author.trim();
+function extractCandidateName(item, depth = 0) {
+  if (!item || depth > 3) return null;
+  if (typeof item === "string") {
+    return isValidName(item) ? item.trim() : null;
   }
+  if (typeof item !== "object") return null;
 
-  // Object checks on author
-  if (author && typeof author === "object") {
-    const candidates = [
-      author.name,
-      author.authorName,
-      author.fullName,
-      author.displayName,
-    ];
-    for (const cand of candidates) {
-      if (isValidName(cand)) {
-        return cand.trim();
-      }
+  // 1. Direct candidate string fields (exact requirement order)
+  const fields = [
+    item.name,
+    item.displayName,
+    item.fullName,
+    item.alumniName,
+    item.authorName,
+    item.writerName,
+  ];
+  for (const f of fields) {
+    if (typeof f === "string" && isValidName(f)) {
+      return f.trim();
     }
   }
 
-  // Direct string check on user
-  if (typeof user === "string" && isValidName(user)) {
-    return user.trim();
-  }
-
-  // Object checks on user / profile
-  if (user && typeof user === "object") {
-    const candidates = [
-      user.name,
-      user.authorName,
-      user.fullName,
-      user.displayName,
-    ];
-    for (const cand of candidates) {
-      if (isValidName(cand)) {
-        return cand.trim();
-      }
+  // 2. Combined first + last name
+  if (item.firstName || item.lastName) {
+    const combined = [item.firstName, item.lastName].filter(Boolean).join(" ").trim();
+    if (isValidName(combined)) {
+      return combined;
     }
   }
 
-  return "Abhyudaya Alumni";
+  // 3. Nested author / profile structures
+  const nested = [
+    item.author,
+    item.alumniAuthor,
+    item.alumniProfile,
+    item.authorUser,
+    item.user,
+    item.profile,
+  ];
+  for (const sub of nested) {
+    if (sub && sub !== item) {
+      const res = extractCandidateName(sub, depth + 1);
+      if (res) return res;
+    }
+  }
+
+  return null;
 }
+
+/**
+ * Extracts the real author name from any combination of author/user objects or strings.
+ * Returns null if no valid human name is found (does NOT use generic fallback).
+ */
+export function extractAuthorName(...sources) {
+  for (const src of sources) {
+    const name = extractCandidateName(src);
+    if (name) return name;
+  }
+  return null;
+}
+
+/**
+ * Resolves the author's actual name from any combination of author and user objects/strings.
+ * Priority: checks all passed sources in order.
+ * Default legacy fallback: "Abhyudaya Alumni" (only when no actual name is available).
+ */
+export function resolveAuthorName(...sources) {
+  return extractAuthorName(...sources) || "Abhyudaya Alumni";
+}
+
 

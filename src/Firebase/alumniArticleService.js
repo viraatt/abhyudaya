@@ -57,9 +57,18 @@ function generateEditToken() {
  */
 function formatSubmissionDoc(snap) {
   const data = snap.data();
+  const resolvedName = resolveAuthorName(data.author, data);
+  const author = data.author
+    ? {
+        ...data.author,
+        name: resolvedName !== "Abhyudaya Alumni" ? resolvedName : (data.author.name || ""),
+      }
+    : data.author;
+
   return {
     id: snap.id,
     ...data,
+    author,
     submittedDateFormatted: data.submittedAt?.toDate
       ? data.submittedAt.toDate().toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -188,30 +197,47 @@ export async function saveAlumniArticleDraft(docId, formData, user) {
   const { author, title, category, excerpt, content, featuredImage, slug: customSlug, tags } = formData;
   const slug = customSlug ? customSlug.trim() : (title?.trim() ? await generateUniqueSlug(title) : "draft-" + Date.now());
 
+  let existing = null;
+  if (docId) {
+    try {
+      const existingSnap = await getDoc(doc(db, ALUMNI_SUBMISSIONS_COLLECTION, docId));
+      if (existingSnap.exists()) {
+        existing = existingSnap.data();
+      }
+    } catch (e) {
+      console.warn("Could not read existing submission draft:", e);
+    }
+  }
+
+  const authorUid = user?.uid || formData.authorUid || formData.authorId || existing?.authorUid || existing?.authorId || null;
+  const resolvedName = resolveAuthorName(author, existing?.author, existing, user);
+
   const authorData = {
-    name: resolveAuthorName(author, user),
-    graduationYear: String(author?.graduationYear || user?.graduationYear || "").trim(),
-    branch: (author?.branch || user?.branch || "").trim(),
-    organization: (author?.organization || user?.organization || "").trim(),
-    designation: (author?.designation || user?.designation || "").trim(),
-    linkedin: (author?.linkedin || user?.linkedin || "").trim(),
-    email: (author?.email || user?.email || "").trim().toLowerCase(),
-    profilePhoto: author?.profilePhoto || user?.profilePhoto || "",
+    uid: authorUid,
+    name: resolvedName !== "Abhyudaya Alumni" ? resolvedName : (author?.name || existing?.author?.name || user?.name || "").trim(),
+    graduationYear: String(author?.graduationYear || existing?.author?.graduationYear || user?.graduationYear || "").trim(),
+    branch: (author?.branch || existing?.author?.branch || user?.branch || "").trim(),
+    organization: (author?.organization || existing?.author?.organization || user?.organization || "").trim(),
+    designation: (author?.designation || existing?.author?.designation || user?.designation || "").trim(),
+    linkedin: (author?.linkedin || existing?.author?.linkedin || user?.linkedin || "").trim(),
+    email: (author?.email || existing?.author?.email || user?.email || "").trim().toLowerCase(),
+    profilePhoto: author?.profilePhoto || existing?.author?.profilePhoto || user?.profilePhoto || user?.photoURL || "",
   };
 
   const payload = {
-    title: (title || "Untitled Draft").trim(),
+    title: (title || existing?.title || "Untitled Draft").trim(),
     slug,
-    category: (category || "Alumni Stories").trim(),
-    excerpt: (excerpt || "").trim(),
-    content: content || "",
-    featuredImage: featuredImage || "",
-    tags: Array.isArray(tags) ? tags : [],
+    category: (category || existing?.category || "Alumni Stories").trim(),
+    excerpt: (excerpt || existing?.excerpt || "").trim(),
+    content: content || existing?.content || "",
+    featuredImage: featuredImage !== undefined ? featuredImage : (existing?.featuredImage || ""),
+    tags: Array.isArray(tags) ? tags : (existing?.tags || []),
     author: authorData,
-    authorUid: user?.uid || formData.authorId || null,
-    authorId: user?.uid || formData.authorId || null,
-    authorEmail: formData.authorEmail || user?.email || "",
-    authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || "",
+    alumniAuthor: authorData,
+    authorUid: authorUid,
+    authorId: authorUid,
+    authorEmail: formData.authorEmail || user?.email || existing?.authorEmail || "",
+    authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || existing?.authorProfilePhoto || "",
     status: SUBMISSION_STATUSES.DRAFT,
     isAlumniContribution: true,
     updatedAt: serverTimestamp(),
@@ -244,30 +270,47 @@ export async function submitAlumniArticleForApproval(docId, formData, user) {
 
   const slug = customSlug ? customSlug.trim() : await generateUniqueSlug(title);
 
+  let existing = null;
+  if (docId) {
+    try {
+      const existingSnap = await getDoc(doc(db, ALUMNI_SUBMISSIONS_COLLECTION, docId));
+      if (existingSnap.exists()) {
+        existing = existingSnap.data();
+      }
+    } catch (e) {
+      console.warn("Could not read existing submission for approval:", e);
+    }
+  }
+
+  const authorUid = user?.uid || formData.authorUid || formData.authorId || existing?.authorUid || existing?.authorId || null;
+  const resolvedName = resolveAuthorName(author, existing?.author, existing, user);
+
   const authorData = {
-    name: resolveAuthorName(author, user),
-    graduationYear: String(author?.graduationYear || user?.graduationYear || "").trim(),
-    branch: (author?.branch || user?.branch || "").trim(),
-    organization: (author?.organization || user?.organization || "").trim(),
-    designation: (author?.designation || user?.designation || "").trim(),
-    linkedin: (author?.linkedin || user?.linkedin || "").trim(),
-    email: (author?.email || user?.email || "").trim().toLowerCase(),
-    profilePhoto: author?.profilePhoto || user?.profilePhoto || "",
+    uid: authorUid,
+    name: resolvedName !== "Abhyudaya Alumni" ? resolvedName : (author?.name || existing?.author?.name || user?.name || "").trim(),
+    graduationYear: String(author?.graduationYear || existing?.author?.graduationYear || user?.graduationYear || "").trim(),
+    branch: (author?.branch || existing?.author?.branch || user?.branch || "").trim(),
+    organization: (author?.organization || existing?.author?.organization || user?.organization || "").trim(),
+    designation: (author?.designation || existing?.author?.designation || user?.designation || "").trim(),
+    linkedin: (author?.linkedin || existing?.author?.linkedin || user?.linkedin || "").trim(),
+    email: (author?.email || existing?.author?.email || user?.email || "").trim().toLowerCase(),
+    profilePhoto: author?.profilePhoto || existing?.author?.profilePhoto || user?.profilePhoto || user?.photoURL || "",
   };
 
   const payload = {
     title: title.trim(),
     slug,
-    category: (category || "Alumni Stories").trim(),
-    excerpt: (excerpt || "").trim(),
+    category: (category || existing?.category || "Alumni Stories").trim(),
+    excerpt: (excerpt || existing?.excerpt || "").trim(),
     content: content || "",
-    featuredImage: featuredImage || "",
-    tags: Array.isArray(tags) ? tags : [],
+    featuredImage: featuredImage !== undefined ? featuredImage : (existing?.featuredImage || ""),
+    tags: Array.isArray(tags) ? tags : (existing?.tags || []),
     author: authorData,
-    authorUid: user?.uid || formData.authorId || null,
-    authorId: user?.uid || formData.authorId || null,
-    authorEmail: formData.authorEmail || user?.email || "",
-    authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || "",
+    alumniAuthor: authorData,
+    authorUid: authorUid,
+    authorId: authorUid,
+    authorEmail: formData.authorEmail || user?.email || existing?.authorEmail || "",
+    authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || existing?.authorProfilePhoto || "",
     status: SUBMISSION_STATUSES.PENDING,
     isAlumniContribution: true,
     updatedAt: serverTimestamp(),
@@ -383,7 +426,15 @@ export async function approveAlumniArticle(id, reviewer) {
 
   // Attempt to load author's Firestore user document if authorUid exists
   let authorProfileFromUsers = null;
-  const authorUid = submission.authorUid || submission.authorId;
+  const authorUid =
+    submission.authorUid ||
+    submission.authorId ||
+    submission.uid ||
+    submission.userId ||
+    submission.createdBy ||
+    submission.author?.uid ||
+    submission.author?.id;
+
   if (authorUid) {
     try {
       const uSnap = await getDoc(doc(db, "users", authorUid));
@@ -395,41 +446,50 @@ export async function approveAlumniArticle(id, reviewer) {
     }
   }
 
-  // Resolve author name using submission.author and authorProfileFromUsers
+  // Resolve author name using submission.author, submission, and authorProfileFromUsers
   const resolvedName = resolveAuthorName(
     submission.author,
+    submission,
     authorProfileFromUsers
   );
 
   // Build clean, sanitized alumni author object (NO email!)
   const safeAlumniAuthor = {
     name: resolvedName,
-    graduationYear: submission.author?.graduationYear
-      ? String(submission.author.graduationYear).trim()
-      : (authorProfileFromUsers?.graduationYear ? String(authorProfileFromUsers.graduationYear).trim() : ""),
+    graduationYear: (
+      submission.author?.graduationYear ||
+      submission.graduationYear ||
+      authorProfileFromUsers?.graduationYear ||
+      ""
+    ).toString().trim(),
     branch: (
       submission.author?.branch ||
+      submission.branch ||
       authorProfileFromUsers?.branch ||
       authorProfileFromUsers?.department ||
       ""
     ).trim(),
     organization: (
       submission.author?.organization ||
+      submission.organization ||
       authorProfileFromUsers?.organization ||
       ""
     ).trim(),
     designation: (
       submission.author?.designation ||
+      submission.designation ||
       authorProfileFromUsers?.designation ||
       ""
     ).trim(),
     linkedin: (
       submission.author?.linkedin ||
+      submission.linkedin ||
       authorProfileFromUsers?.linkedin ||
       ""
     ).trim(),
     profilePhoto:
       submission.author?.profilePhoto ||
+      submission.profilePhoto ||
       authorProfileFromUsers?.profilePhoto ||
       authorProfileFromUsers?.photoURL ||
       "",
@@ -446,11 +506,11 @@ export async function approveAlumniArticle(id, reviewer) {
     excerpt: (submission.excerpt || "").trim(),
     content: submission.content || "",
     status: "Published",
-    author: safeAlumniAuthor.name,
+    author: resolvedName,
     isAlumniContribution: true,
     alumniAuthor: safeAlumniAuthor,
-    authorUid: submission.authorUid || submission.authorId || null,
-    authorId: submission.authorId || submission.authorUid || null,
+    authorUid: authorUid || null,
+    authorId: authorUid || null,
     submissionId: id,
     tags:
       Array.isArray(submission.tags) && submission.tags.length > 0
@@ -490,6 +550,10 @@ export async function approveAlumniArticle(id, reviewer) {
     rejectionReason: null,
     updatedAt: serverTimestamp(),
   };
+
+  if (resolvedName && resolvedName !== "Abhyudaya Alumni") {
+    submissionUpdate["author.name"] = resolvedName;
+  }
 
   await updateDoc(submissionRef, submissionUpdate);
 
