@@ -5,21 +5,22 @@ import { FiCalendar, FiClock, FiArrowRight, FiUser } from "react-icons/fi";
 
 function BlogCard({ blog }) {
   const blogPath = `/blog/${blog.slug || blog.id}`;
+  const hasFeaturedImage =
+    typeof blog.featuredImage === "string" && Boolean(blog.featuredImage.trim());
 
   return (
     <article className="blog-card">
       <div className="blog-card-image">
-        <img
-          src={
-            blog.featuredImage ||
-            "https://placehold.co/600x400?text=No+Image"
-          }
-          alt={blog.title}
-          width="600"
-          height="400"
-          loading="lazy"
-          decoding="async"
-        />
+        {hasFeaturedImage && (
+          <img
+            src={blog.featuredImage}
+            alt={blog.title}
+            width="600"
+            height="400"
+            loading="lazy"
+            decoding="async"
+          />
+        )}
         <span className="blog-category">
           {blog.category || "General"}
         </span>

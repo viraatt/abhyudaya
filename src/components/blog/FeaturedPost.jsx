@@ -10,25 +10,24 @@ import {
 
 export default function FeaturedPost({ blog }) {
   if (!blog) return null;
+  const hasFeaturedImage =
+    typeof blog.featuredImage === "string" && Boolean(blog.featuredImage.trim());
 
   return (
     <section className="featured-post">
 
-      <div className="featured-image">
-
-        <img
-          src={
-            blog.featuredImage
-              ? blog.featuredImage.replace(
-                  "/upload/",
-                  "/upload/c_fill,w_1600,h_850,q_auto,f_auto/"
-                )
-              : "https://placehold.co/1600x850?text=No+Image"
-          }
-          alt={blog.title}
-          width="1600"
-          height="850"
-        />
+      <div className={`featured-image${hasFeaturedImage ? "" : " featured-image--empty"}`}>
+        {hasFeaturedImage && (
+          <img
+            src={blog.featuredImage.replace(
+              "/upload/",
+              "/upload/c_fill,w_1600,h_850,q_auto,f_auto/"
+            )}
+            alt={blog.title}
+            width="1600"
+            height="850"
+          />
+        )}
 
         <div className="featured-overlay"></div>
 

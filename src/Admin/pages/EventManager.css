@@ -609,3 +609,21 @@
   }
 }
 
+/* Abhyudaya gold and navy controls, aligned with the shared admin panel. */
+.admin-event-header h1 { color: var(--night, #0d1224); }
+.admin-event-header p { color: var(--ink-soft, #4a4f6b); }
+.event-sub-tab-btn.active { color: #8b6412; border-bottom-color: var(--sun, #eeb84a); }
+.evt-filter-tab-btn.active { color: #8b6412; background: #fff; box-shadow: none; }
+.evt-search-input:focus,
+.evt-category-select:focus { border-color: var(--sun, #eeb84a); box-shadow: 0 0 0 3px rgba(238, 184, 74, 0.18); }
+.evt-refresh-btn { color: var(--night, #0d1224); border-color: var(--border); box-shadow: none; }
+.evt-refresh-btn:hover { background: #fbf4e8; border-color: var(--sun, #eeb84a); transform: none; }
+.evt-add-btn { background: var(--sun, #eeb84a); color: var(--night, #0d1224); border-radius: 7px; box-shadow: none; }
+.evt-add-btn:hover { background: var(--sun-soft, #f7d189); color: var(--night, #0d1224); box-shadow: none; }
+.evt-table-container { border-radius: 9px; border-color: var(--border); box-shadow: var(--shadow); }
+.evt-table thead { background: var(--night, #0d1224); }
+.evt-action-btn.btn-edit { background: #fbf4e8; color: var(--night, #0d1224); border-color: #ead8ae; }
+.evt-action-btn.btn-edit:hover { background: var(--night, #0d1224); color: #fff; border-color: var(--night, #0d1224); }
+.evt-action-btn.btn-duplicate { background: #f6f5f1; color: var(--ink-soft, #4a4f6b); border-color: var(--border); }
+.evt-action-btn.btn-duplicate:hover { background: #eae8df; color: var(--night, #0d1224); border-color: #d8d3c4; }
+

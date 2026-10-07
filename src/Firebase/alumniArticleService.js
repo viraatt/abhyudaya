@@ -58,10 +58,35 @@ function generateEditToken() {
 function formatSubmissionDoc(snap) {
   const data = snap.data();
   const resolvedName = resolveAuthorName(data.author, data);
+  const textValue = (value, depth = 0) => {
+    if (depth > 3 || value == null) return "";
+    if (typeof value === "string") return value.trim();
+    if (typeof value === "number") return String(value);
+    if (Array.isArray(value)) {
+      return value.map((entry) => textValue(entry, depth + 1)).filter(Boolean).join(", ");
+    }
+    if (typeof value === "object") {
+      for (const key of ["name", "displayName", "fullName", "label", "title", "value", "url"]) {
+        const text = textValue(value[key], depth + 1);
+        if (text) return text;
+      }
+    }
+    return "";
+  };
+  const authorData = data.author && typeof data.author === "object" ? data.author : {};
   const author = data.author
     ? {
-        ...data.author,
-        name: resolvedName !== "Abhyudaya Alumni" ? resolvedName : (data.author.name || ""),
+        ...authorData,
+        name: resolvedName !== "Abhyudaya Alumni"
+          ? resolvedName
+          : textValue(authorData.name || data.author),
+        branch: textValue(authorData.branch),
+        graduationYear: textValue(authorData.graduationYear),
+        organization: textValue(authorData.organization),
+        designation: textValue(authorData.designation),
+        linkedin: textValue(authorData.linkedin),
+        profilePhoto: textValue(authorData.profilePhoto || authorData.photoURL),
+        email: textValue(authorData.email),
       }
     : data.author;
 

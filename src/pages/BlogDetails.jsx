@@ -752,14 +752,16 @@ export default function BlogDetails() {
                     className="related-card"
                     aria-label={`Read related article: ${item.title}`}
                   >
-                    <img
-                      src={item.featuredImage || "https://placehold.co/400x250?text=No+Image"}
-                      alt={`${item.title} featured image`}
-                      width="400"
-                      height="250"
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    {item.featuredImage && (
+                      <img
+                        src={item.featuredImage}
+                        alt={`${item.title} featured image`}
+                        width="400"
+                        height="250"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
                     <div className="related-body">
                       <span>{item.category}</span>
                       <h3>{item.title}</h3>

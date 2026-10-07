@@ -6,7 +6,6 @@ import {
   FiSend,
   FiUploadCloud,
   FiFeather,
-  FiLinkedin,
   FiClock,
   FiTag,
   FiFolder,
@@ -14,7 +13,6 @@ import {
   FiImage,
   FiCompass,
   FiShield,
-  FiUser,
 } from "react-icons/fi";
 import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore";
 import Sidebar from "./components/Sidebar";
@@ -52,7 +50,6 @@ function AddBlog() {
   // â”€â”€ Alumni profile fetched live from Firestore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // null = loading, false = error, object = loaded profile
   const [alumniProfile, setAlumniProfile] = useState(null);
-  const [alumniProfileLoading, setAlumniProfileLoading] = useState(false);
 
   const cleanAuthorName = (value) => {
     if (typeof value !== "string") return "";
@@ -65,6 +62,22 @@ function AddBlog() {
     return generic.includes(name.toLowerCase()) ? "" : name;
   };
 
+  const profileText = (value, depth = 0) => {
+    if (depth > 3 || value == null) return "";
+    if (typeof value === "string") return value.trim();
+    if (typeof value === "number") return String(value);
+    if (Array.isArray(value)) {
+      return value.map((item) => profileText(item, depth + 1)).filter(Boolean).join(", ");
+    }
+    if (typeof value === "object") {
+      for (const key of ["name", "displayName", "fullName", "label", "title", "value", "url"]) {
+        const text = profileText(value[key], depth + 1);
+        if (text) return text;
+      }
+    }
+    return "";
+  };
+
   const findAuthorName = (source, depth = 0) => {
     if (!source || depth > 5) return "";
     if (typeof source === "string") return cleanAuthorName(source);
@@ -72,7 +85,8 @@ function AddBlog() {
 
     for (const field of [
       "name", "fullName", "displayName", "authorName", "alumniName",
-      "writerName", "realName", "studentName", "contributorName", "profileName"
+      "writerName", "realName", "studentName", "contributorName", "profileName",
+      "value", "label"
     ]) {
       const value = cleanAuthorName(source[field]);
       if (value) return value;
@@ -84,7 +98,7 @@ function AddBlog() {
     if (first) return first;
 
     for (const field of [
-      "author", "alumniAuthor", "profile", "user", "alumni",
+      "name", "author", "alumniAuthor", "profile", "user", "alumni",
       "authorProfile", "userProfile", "personalInfo"
     ]) {
       const value = findAuthorName(source[field], depth + 1);
@@ -97,7 +111,6 @@ function AddBlog() {
     if (!isAlumniUser || !currentUser?.uid) return;
 
     let cancelled = false;
-    setAlumniProfileLoading(true);
 
     const loadAuthor = async () => {
       try {
@@ -110,12 +123,12 @@ function AddBlog() {
           uid,
           name: resolvedName,
           email: currentUser.email || auth.currentUser?.email || "",
-          graduationYear: currentUser.graduationYear || currentUser.passingYear || "",
-          branch: currentUser.branch || currentUser.department || currentUser.course || currentUser.program || "",
-          organization: currentUser.organization || currentUser.company || "",
-          designation: currentUser.designation || currentUser.jobTitle || "",
-          linkedin: currentUser.linkedin || currentUser.linkedinUrl || "",
-          profilePhoto: currentUser.profilePhoto || currentUser.photoURL || auth.currentUser?.photoURL || "",
+          graduationYear: profileText(currentUser.graduationYear || currentUser.passingYear),
+          branch: profileText(currentUser.branch || currentUser.department || currentUser.course || currentUser.program),
+          organization: profileText(currentUser.organization || currentUser.company),
+          designation: profileText(currentUser.designation || currentUser.jobTitle),
+          linkedin: profileText(currentUser.linkedin || currentUser.linkedinUrl),
+          profilePhoto: profileText(currentUser.profilePhoto || currentUser.photoURL || auth.currentUser?.photoURL),
         });
 
         // First source: users/{uid}
@@ -167,28 +180,32 @@ function AddBlog() {
           uid,
           name: resolvedName,
           email: currentUser.email || auth.currentUser?.email || userData.email || "",
-          graduationYear:
+          graduationYear: profileText(
             userData.graduationYear || userData.passingYear || userData.batchYear ||
-            currentUser.graduationYear || currentUser.passingYear || "",
-          branch:
+            currentUser.graduationYear || currentUser.passingYear
+          ),
+          branch: profileText(
             userData.branch || userData.department || userData.course || userData.program ||
-            currentUser.branch || currentUser.department || "",
-          organization:
-            userData.organization || userData.company || currentUser.organization || currentUser.company || "",
-          designation:
-            userData.designation || userData.jobTitle || currentUser.designation || currentUser.jobTitle || "",
-          linkedin:
-            userData.linkedin || userData.linkedinUrl || currentUser.linkedin || currentUser.linkedinUrl || "",
-          profilePhoto:
+            currentUser.branch || currentUser.department
+          ),
+          organization: profileText(
+            userData.organization || userData.company || currentUser.organization || currentUser.company
+          ),
+          designation: profileText(
+            userData.designation || userData.jobTitle || currentUser.designation || currentUser.jobTitle
+          ),
+          linkedin: profileText(
+            userData.linkedin || userData.linkedinUrl || currentUser.linkedin || currentUser.linkedinUrl
+          ),
+          profilePhoto: profileText(
             userData.profilePhoto || userData.photoURL || currentUser.profilePhoto ||
-            currentUser.photoURL || auth.currentUser?.photoURL || "",
+            currentUser.photoURL || auth.currentUser?.photoURL
+          ),
         });
 
         console.log("[AddBlog] FINAL AUTHOR NAME:", resolvedName);
       } catch (error) {
         console.error("[AddBlog] Author resolution failed:", error);
-      } finally {
-        if (!cancelled) setAlumniProfileLoading(false);
       }
     };
 
@@ -198,6 +215,7 @@ function AddBlog() {
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(isAlumniUser ? "Alumni Stories" : "Club News");
+  const categoryValue = isAlumniUser && category === "Club News" ? "Alumni Stories" : category;
   const [tags, setTags] = useState("");
   const [slug, setSlug] = useState("");
   const [seo, setSeo] = useState("");
@@ -221,18 +239,11 @@ function AddBlog() {
   // Created Doc Ref for Autosave & Manual Saves
   const createdDocIdRef = useRef(null);
 
-  // Update default category when role is detected
-  useEffect(() => {
-    if (isAlumniUser && category === "Club News") {
-      setCategory("Alumni Stories");
-    }
-  }, [isAlumniUser, category]);
-
   // Callback to compute blog data payload for autosave hook
   const getAutosaveData = useCallback(() => {
     return {
       title: title.trim(),
-      category,
+      category: categoryValue,
       featuredImage,
       tags: tags
         .split(",")
@@ -250,7 +261,7 @@ function AddBlog() {
       excerpt: contentExcerpt.trim().substring(0, 180),
       content: contentJson,
     };
-  }, [title, category, featuredImage, tags, slug, seo, publishDate, contentExcerpt, contentJson, isAlumniUser, alumniProfile, currentUser]);
+  }, [title, categoryValue, featuredImage, tags, slug, seo, publishDate, contentExcerpt, contentJson, isAlumniUser, alumniProfile, currentUser]);
 
   // Handle autosave callback from custom hook
   const handleAutosave = useCallback(async (blogData) => {
@@ -259,7 +270,7 @@ function AddBlog() {
       const authorUser = (alumniProfile && alumniProfile !== false) ? alumniProfile : currentUser;
       const res = await saveAlumniArticleDraft(createdDocIdRef.current, {
         title,
-        category,
+        category: categoryValue,
         featuredImage,
         tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
         slug,
@@ -283,7 +294,7 @@ function AddBlog() {
         return result.id;
       }
     }
-  }, [isAlumniUser, title, category, featuredImage, tags, slug, seo, contentExcerpt, contentJson, currentUser, alumniProfile]);
+  }, [isAlumniUser, title, categoryValue, featuredImage, tags, slug, seo, contentExcerpt, contentJson, currentUser, alumniProfile]);
 
   // Use Autosave Hook (30 sec interval)
   // NOTE: useAutosave expects a single options object {data, onSave, interval, enabled}
@@ -348,7 +359,7 @@ function AddBlog() {
         const authorUser = (alumniProfile && alumniProfile !== false) ? alumniProfile : currentUser;
         const articleData = {
           title: title.trim(),
-          category,
+          category: categoryValue,
           featuredImage,
           tags: tags
             .split(",")
@@ -371,7 +382,7 @@ function AddBlog() {
       } else {
         const blogData = {
           title: title.trim(),
-          category,
+          category: categoryValue,
           featuredImage,
           tags: tags
             .split(",")
@@ -421,7 +432,7 @@ function AddBlog() {
       const authorUser = (alumniProfile && alumniProfile !== false) ? alumniProfile : currentUser;
       const articleData = {
         title: title.trim(),
-        category,
+        category: categoryValue,
         featuredImage,
         tags: tags
           .split(",")
@@ -461,7 +472,7 @@ function AddBlog() {
       const targetStatus = status === "Archived" ? "Archived" : "Published";
       const blogData = {
         title: title.trim(),
-        category,
+        category: categoryValue,
         featuredImage,
         tags: tags
           .split(",")
@@ -495,12 +506,6 @@ function AddBlog() {
       setPublishing(false);
     }
   };
-
-  const authorDisplayName =
-    alumniProfile?.name ||
-    findAuthorName(currentUser) ||
-    findAuthorName(auth.currentUser) ||
-    "Alumni Contributor";
 
   return (
     <div className="dashboard-layout">
@@ -660,86 +665,7 @@ function AddBlog() {
                   </div>
                 )}
 
-                {/* 2. Alumni Author Card (Section 5 - VERY IMPORTANT) */}
-                {isAlumniUser && (
-                  <div className="card author-card">
-                    <div className="card-header-row">
-                      <div className="card-title-wrap">
-                        <FiUser className="card-icon" />
-                        <h3>Alumni Author</h3>
-                      </div>
-                      <span className="author-status-pill">Contributor</span>
-                    </div>
-
-                    {alumniProfileLoading ? (
-                      <div className="author-loading-skeleton">
-                        <div className="skeleton-avatar" />
-                        <div className="skeleton-info">
-                          <div className="skeleton-line skeleton-name" />
-                          <div className="skeleton-line skeleton-sub" />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="author-profile-box">
-                        <div className="author-profile-header">
-                          <div className="author-avatar-container">
-                            {alumniProfile?.profilePhoto ? (
-                              <img
-                                src={alumniProfile.profilePhoto}
-                                alt={authorDisplayName}
-                                className="author-avatar-img"
-                              />
-                            ) : (
-                              <div className="author-avatar-fallback">
-                                {authorDisplayName.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="author-meta-info">
-                            <h4 className="author-real-name">{authorDisplayName}</h4>
-                            <span className="author-role-indicator">Alumni Contributor</span>
-                          </div>
-                        </div>
-
-                        {(alumniProfile?.branch || alumniProfile?.graduationYear) && (
-                          <div className="author-education-pill">
-                            {[
-                              alumniProfile?.branch,
-                              alumniProfile?.graduationYear
-                                ? `Class of ${alumniProfile.graduationYear}`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" • ")}
-                          </div>
-                        )}
-
-                        {(alumniProfile?.designation || alumniProfile?.organization) && (
-                          <div className="author-work-info">
-                            {[alumniProfile?.designation, alumniProfile?.organization]
-                              .filter(Boolean)
-                              .join(" at ")}
-                          </div>
-                        )}
-
-                        {alumniProfile?.linkedin && (
-                          <a
-                            href={alumniProfile.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="author-linkedin-btn"
-                          >
-                            <FiLinkedin />
-                            <span>LinkedIn Profile</span>
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* 3. Featured Image */}
+                {/* Featured Image */}
                 <div className="card">
                   <div className="card-header-row">
                     <div className="card-title-wrap">
@@ -757,7 +683,7 @@ function AddBlog() {
                   />
                 </div>
 
-                {/* 4. Category */}
+                {/* Category */}
                 <div className="card">
                   <div className="card-header-row">
                     <div className="card-title-wrap">
@@ -767,7 +693,7 @@ function AddBlog() {
                   </div>
 
                   <select
-                    value={category}
+                    value={categoryValue}
                     onChange={(e) => setCategory(e.target.value)}
                     aria-label="Category"
                   >
@@ -788,7 +714,7 @@ function AddBlog() {
                   </select>
                 </div>
 
-                {/* 5. Tags */}
+                {/* Tags */}
                 <div className="card">
                   <div className="card-header-row">
                     <div className="card-title-wrap">
@@ -807,7 +733,7 @@ function AddBlog() {
                   <span className="card-input-help">Separate keywords with commas</span>
                 </div>
 
-                {/* 6. Slug / Permalink */}
+                {/* Slug / Permalink */}
                 <div className="card">
                   <div className="card-header-row">
                     <div className="card-title-wrap">
@@ -823,7 +749,7 @@ function AddBlog() {
                   />
                 </div>
 
-                {/* 7. Short Excerpt */}
+                {/* Short Excerpt */}
                 <div className="card">
                   <div className="card-header-row">
                     <div className="card-title-wrap">
@@ -842,7 +768,7 @@ function AddBlog() {
                   <span className="card-input-help">Summarize your article in 1–2 sentences</span>
                 </div>
 
-                {/* 8. SEO Description */}
+                {/* SEO Description */}
                 <div className="card">
                   <div className="card-header-row">
                     <div className="card-title-wrap">
@@ -860,7 +786,7 @@ function AddBlog() {
                   />
                 </div>
 
-                {/* 9. Publish Date (admin only) */}
+                {/* Publish Date (admin only) */}
                 {!isAlumniUser && (
                   <div className="card">
                     <div className="card-header-row">

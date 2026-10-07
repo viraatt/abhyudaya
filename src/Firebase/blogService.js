@@ -186,7 +186,7 @@ export const validatePublishRequirements = (blog) => {
     return { isValid: false, error: "Cannot publish: Blog Content cannot be empty." };
   }
 
-  if (!blog.featuredImage || !blog.featuredImage.trim()) {
+  if (!blog.isAlumniContribution && (!blog.featuredImage || !blog.featuredImage.trim())) {
     return {
       isValid: false,
       error: "Cannot publish: Featured Image is required.",

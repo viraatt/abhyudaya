@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../../../Firebase/firebase";
 import { useAuth } from "../../../context/AuthContext";
+import { extractAuthorName } from "../../../utils/authorHelper";
 import { ROLES, normalizeRole } from "../../config/roles";
 import {
   FiGrid,
@@ -46,10 +47,8 @@ export default function Sidebar() {
   }[currentRole] || "Contributor";
 
   const userName =
-    currentUser?.name ||
-    currentUser?.displayName ||
-    currentUser?.fullName ||
-    currentUser?.email?.split("@")[0] ||
+    extractAuthorName(currentUser) ||
+    (typeof currentUser?.email === "string" ? currentUser.email.split("@")[0] : "") ||
     "Contributor";
 
   const userInitial = userName.charAt(0).toUpperCase();
