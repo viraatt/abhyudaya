@@ -3,6 +3,24 @@ import { signOut } from "firebase/auth";
 import { auth } from "../../../Firebase/firebase";
 import { useAuth } from "../../../context/AuthContext";
 import { ROLES, normalizeRole } from "../../config/roles";
+import {
+  FiGrid,
+  FiCalendar,
+  FiAward,
+  FiFileText,
+  FiArchive,
+  FiBell,
+  FiUsers,
+  FiSend,
+  FiFeather,
+  FiFolder,
+  FiImage,
+  FiMail,
+  FiStar,
+  FiUser,
+  FiLogOut,
+  FiBookOpen,
+} from "react-icons/fi";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -18,20 +36,38 @@ export default function Sidebar() {
     }
   };
 
+  const currentRole = normalizeRole(currentUser?.role);
+
+  const roleLabel = {
+    [ROLES.SUPER_ADMIN]: "Super Admin",
+    [ROLES.BLOG_ADMIN]: "Blog Admin",
+    [ROLES.EVENT_ADMIN]: "Event Admin",
+    [ROLES.ALUMNI]: "Alumni Contributor",
+  }[currentRole] || "Contributor";
+
+  const userName =
+    currentUser?.name ||
+    currentUser?.displayName ||
+    currentUser?.fullName ||
+    currentUser?.email?.split("@")[0] ||
+    "Contributor";
+
+  const userInitial = userName.charAt(0).toUpperCase();
+
   const menus = {
     [ROLES.SUPER_ADMIN]: [
-      { name: "Dashboard", path: "/admin/dashboard", icon: "📊" },
-      { name: "Events", path: "/admin/events", icon: "📅" },
-      { name: "Certificates", path: "/admin/certificates", icon: "📜" },
-      { name: "Registrations", path: "/admin/registrations", icon: "📋" },
-      { name: "Time Capsules", path: "/admin/time-capsules", icon: "📦" },
-      { name: "Announcements", path: "/admin/announcements", icon: "📢" },
-      { name: "Students", path: "/admin/students", icon: "👨‍🎓" },
-      { name: "Registration Outreach", path: "/admin/registration-outreach", icon: "📧" },
+      { name: "Dashboard", path: "/admin/dashboard", icon: <FiGrid /> },
+      { name: "Events", path: "/admin/events", icon: <FiCalendar /> },
+      { name: "Certificates", path: "/admin/certificates", icon: <FiAward /> },
+      { name: "Registrations", path: "/admin/registrations", icon: <FiFileText /> },
+      { name: "Time Capsules", path: "/admin/time-capsules", icon: <FiArchive /> },
+      { name: "Announcements", path: "/admin/announcements", icon: <FiBell /> },
+      { name: "Students", path: "/admin/students", icon: <FiUsers /> },
+      { name: "Registration Outreach", path: "/admin/registration-outreach", icon: <FiSend /> },
       {
         name: "Blogs",
         path: "/admin/blogs",
-        icon: "📝",
+        icon: <FiBookOpen />,
         subItems: [
           { name: "All Posts", path: "/admin/blogs" },
           { name: "Published", path: "/admin/blogs?status=Published" },
@@ -42,26 +78,26 @@ export default function Sidebar() {
       {
         name: "Alumni Articles",
         path: "/admin/alumni-articles",
-        icon: "🎓",
+        icon: <FiFeather />,
         subItems: [
           { name: "Pending", path: "/admin/alumni-articles?status=pending" },
           { name: "Approved", path: "/admin/alumni-articles?status=approved" },
           { name: "Rejected", path: "/admin/alumni-articles?status=rejected" },
         ],
       },
-      { name: "Media Library", path: "/admin/media", icon: "📁" },
-      { name: "Team", path: "/admin/team", icon: "👥" },
-      { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
-      { name: "Contact", path: "/admin/contact", icon: "📩" },
-      { name: "Reviews", path: "/admin/reviews", icon: "⭐" },
-      { name: "Users", path: "/admin/users", icon: "👤" },
+      { name: "Media Library", path: "/admin/media", icon: <FiFolder /> },
+      { name: "Team", path: "/admin/team", icon: <FiUsers /> },
+      { name: "Gallery", path: "/admin/gallery", icon: <FiImage /> },
+      { name: "Contact", path: "/admin/contact", icon: <FiMail /> },
+      { name: "Reviews", path: "/admin/reviews", icon: <FiStar /> },
+      { name: "Users", path: "/admin/users", icon: <FiUser /> },
     ],
 
     [ROLES.BLOG_ADMIN]: [
       {
         name: "Blogs",
         path: "/admin/blogs",
-        icon: "📝",
+        icon: <FiBookOpen />,
         subItems: [
           { name: "All Posts", path: "/admin/blogs" },
           { name: "Published", path: "/admin/blogs?status=Published" },
@@ -72,7 +108,7 @@ export default function Sidebar() {
       {
         name: "Alumni Articles",
         path: "/admin/alumni-articles",
-        icon: "🎓",
+        icon: <FiFeather />,
         subItems: [
           { name: "Pending", path: "/admin/alumni-articles?status=pending" },
           { name: "Approved", path: "/admin/alumni-articles?status=approved" },
@@ -82,49 +118,44 @@ export default function Sidebar() {
     ],
 
     [ROLES.EVENT_ADMIN]: [
-      { name: "Events", path: "/admin/events", icon: "📅" },
-      { name: "Certificates", path: "/admin/certificates", icon: "📜" },
-      { name: "Registrations", path: "/admin/registrations", icon: "📋" },
-      { name: "Time Capsules", path: "/admin/time-capsules", icon: "📦" },
-      { name: "Announcements", path: "/admin/announcements", icon: "📢" },
-      { name: "Students", path: "/admin/students", icon: "👨‍🎓" },
-      { name: "Registration Outreach", path: "/admin/registration-outreach", icon: "📧" },
-      { name: "Gallery", path: "/admin/gallery", icon: "🖼️" },
-      { name: "Media Library", path: "/admin/media", icon: "📁" },
+      { name: "Events", path: "/admin/events", icon: <FiCalendar /> },
+      { name: "Certificates", path: "/admin/certificates", icon: <FiAward /> },
+      { name: "Registrations", path: "/admin/registrations", icon: <FiFileText /> },
+      { name: "Time Capsules", path: "/admin/time-capsules", icon: <FiArchive /> },
+      { name: "Announcements", path: "/admin/announcements", icon: <FiBell /> },
+      { name: "Students", path: "/admin/students", icon: <FiUsers /> },
+      { name: "Registration Outreach", path: "/admin/registration-outreach", icon: <FiSend /> },
+      { name: "Gallery", path: "/admin/gallery", icon: <FiImage /> },
+      { name: "Media Library", path: "/admin/media", icon: <FiFolder /> },
     ],
 
     [ROLES.ALUMNI]: [
-      { name: "Blogs", path: "/admin/blogs", icon: "📝" },
-      { name: "Write Article", path: "/admin/blogs/add", icon: "✍️" },
+      { name: "Blogs", path: "/admin/blogs", icon: <FiBookOpen /> },
+      { name: "Write Article", path: "/admin/blogs/add", icon: <FiFeather /> },
     ],
   };
 
-  const currentRole = normalizeRole(currentUser?.role);
   const menu = menus[currentRole] || [];
 
-  const roleLabel = {
-    [ROLES.SUPER_ADMIN]: "Super Admin",
-    [ROLES.BLOG_ADMIN]: "Blog Admin",
-    [ROLES.EVENT_ADMIN]: "Event Admin",
-    [ROLES.ALUMNI]: "Alumni Contributor",
-  };
-
   return (
-    <aside className="sidebar">
-
-      <div className="sidebar-header">
-
-        <h2 className="sidebar-title">
-          Abhyudaya
-        </h2>
-
-        <p className="sidebar-role">
-          {roleLabel[currentRole] || "Admin"}
-        </p>
+    <aside className="sidebar" aria-label="CMS Navigation">
+      <div className="sidebar-brand-wrapper">
+        <Link to="/admin/blogs" className="sidebar-brand-link">
+          <div className="sidebar-brand-icon">
+            <span>A</span>
+          </div>
+          <div className="sidebar-brand-text">
+            <h2 className="sidebar-title">
+              Abhyudaya<span className="brand-accent">.</span>
+            </h2>
+            <span className="sidebar-brand-sub">Editorial Studio</span>
+          </div>
+        </Link>
 
       </div>
 
-      <nav className="sidebar-menu" aria-label="Admin Menu">
+      <nav className="sidebar-menu" aria-label="Main Navigation">
+        <div className="sidebar-menu-label">Menu</div>
         {menu.map((item) => {
           const isActive =
             location.pathname === item.path ||
@@ -138,8 +169,9 @@ export default function Sidebar() {
                 className={`sidebar-link ${isActive ? "active" : ""}`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <span>{item.icon}</span>
-                <span>{item.name}</span>
+                <span className="sidebar-icon-wrap">{item.icon}</span>
+                <span className="sidebar-link-text">{item.name}</span>
+                {isActive && <span className="sidebar-active-indicator" />}
               </Link>
 
               {item.subItems && (
@@ -167,18 +199,39 @@ export default function Sidebar() {
             </div>
           );
         })}
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="sidebar-link sidebar-logout-btn"
-          aria-label="Logout"
-        >
-          <span>🚪</span>
-          <span>Logout</span>
-        </button>
       </nav>
 
+      {/* Premium Account Card Footer */}
+      <div className="sidebar-footer">
+        <div className="sidebar-user-card">
+          <div className="sidebar-user-avatar">
+            {currentUser?.profilePhoto || currentUser?.photoURL ? (
+              <img
+                src={currentUser.profilePhoto || currentUser.photoURL}
+                alt={userName}
+                className="sidebar-avatar-img"
+              />
+            ) : (
+              <span className="sidebar-avatar-initials">{userInitial}</span>
+            )}
+          </div>
+          <div className="sidebar-user-meta">
+            <span className="sidebar-user-name" title={userName}>
+              {userName}
+            </span>
+            <span className="sidebar-user-role-label">{roleLabel}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="sidebar-quick-logout"
+            title="Log out"
+            aria-label="Logout"
+          >
+            <FiLogOut />
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }

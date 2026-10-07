@@ -1,7 +1,22 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaCloudUploadAlt, FaImages, FaTrash, FaSpinner } from "react-icons/fa";
-import { doc, getDoc } from "firebase/firestore";
+import { FaSpinner } from "react-icons/fa";
+import {
+  FiSave,
+  FiSend,
+  FiUploadCloud,
+  FiFeather,
+  FiLinkedin,
+  FiClock,
+  FiTag,
+  FiFolder,
+  FiFileText,
+  FiImage,
+  FiCompass,
+  FiShield,
+  FiUser,
+} from "react-icons/fi";
+import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import RichEditor from "../components/editor/RichEditor";
@@ -19,14 +34,14 @@ import {
   submitAlumniArticleForApproval,
   ALUMNI_CATEGORIES,
 } from "../../Firebase/alumniArticleService";
-import { db } from "../../Firebase/firebase";
+import { auth, db } from "../../Firebase/firebase";
 
 import "./style/admin.css";
 import "./addBlog.css";
 
 import { publishBlog, updateBlogService } from "./services/blogService";
 import { uploadImage } from "./services/imageUpload";
-import { resolveAuthorName } from "../../utils/authorHelper";
+
 
 function AddBlog() {
   const navigate = useNavigate();
@@ -34,10 +49,49 @@ function AddBlog() {
   const { currentUser } = useAuth();
   const isAlumniUser = normalizeRole(currentUser?.role) === ROLES.ALUMNI;
 
-  // ── Alumni profile fetched live from Firestore ──────────────────────────
+  // â”€â”€ Alumni profile fetched live from Firestore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // null = loading, false = error, object = loaded profile
   const [alumniProfile, setAlumniProfile] = useState(null);
   const [alumniProfileLoading, setAlumniProfileLoading] = useState(false);
+
+  const cleanAuthorName = (value) => {
+    if (typeof value !== "string") return "";
+    const name = value.trim();
+    if (!name || name.includes("@")) return "";
+    const generic = [
+      "admin", "alumni", "abhyudaya alumni", "anonymous",
+      "unknown", "user", "name not found", "name not set"
+    ];
+    return generic.includes(name.toLowerCase()) ? "" : name;
+  };
+
+  const findAuthorName = (source, depth = 0) => {
+    if (!source || depth > 5) return "";
+    if (typeof source === "string") return cleanAuthorName(source);
+    if (typeof source !== "object") return "";
+
+    for (const field of [
+      "name", "fullName", "displayName", "authorName", "alumniName",
+      "writerName", "realName", "studentName", "contributorName", "profileName"
+    ]) {
+      const value = cleanAuthorName(source[field]);
+      if (value) return value;
+    }
+
+    const first = cleanAuthorName(source.firstName || source.first_name);
+    const last = cleanAuthorName(source.lastName || source.last_name);
+    if (first && last) return `${first} ${last}`;
+    if (first) return first;
+
+    for (const field of [
+      "author", "alumniAuthor", "profile", "user", "alumni",
+      "authorProfile", "userProfile", "personalInfo"
+    ]) {
+      const value = findAuthorName(source[field], depth + 1);
+      if (value) return value;
+    }
+    return "";
+  };
 
   useEffect(() => {
     if (!isAlumniUser || !currentUser?.uid) return;
@@ -45,113 +99,102 @@ function AddBlog() {
     let cancelled = false;
     setAlumniProfileLoading(true);
 
-    // ── Immediately seed the card with whatever AuthContext already has.
-    //    AuthContext already spread the Firestore users/{uid} doc into
-    //    currentUser, so currentUser.name is available right away without
-    //    waiting for a second Firestore round-trip.
-    const immediateProfile = {
-      uid: currentUser.uid,
-      name:
-        currentUser.name ||
-        currentUser.fullName ||
-        currentUser.displayName ||
-        currentUser.authorName ||
-        "",
-      email: currentUser.email || "",
-      graduationYear: currentUser.graduationYear || "",
-      branch:
-        currentUser.branch ||
-        currentUser.department ||
-        currentUser.course ||
-        currentUser.program ||
-        "",
-      organization: currentUser.organization || "",
-      designation: currentUser.designation || "",
-      linkedin: currentUser.linkedin || "",
-      profilePhoto: currentUser.profilePhoto || currentUser.photoURL || "",
-    };
-    setAlumniProfile(immediateProfile);
-
-    // ── Still refetch from Firestore in case the Firestore doc has fields
-    //    that differ from the AuthContext snapshot (e.g. profile was updated
-    //    after login).  This also acts as a definitive "doc exists" check.
-    (async () => {
+    const loadAuthor = async () => {
       try {
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
+        const uid = currentUser.uid;
+        let userData = {};
+        let resolvedName =
+          findAuthorName(currentUser) || findAuthorName(auth.currentUser);
+
+        setAlumniProfile({
+          uid,
+          name: resolvedName,
+          email: currentUser.email || auth.currentUser?.email || "",
+          graduationYear: currentUser.graduationYear || currentUser.passingYear || "",
+          branch: currentUser.branch || currentUser.department || currentUser.course || currentUser.program || "",
+          organization: currentUser.organization || currentUser.company || "",
+          designation: currentUser.designation || currentUser.jobTitle || "",
+          linkedin: currentUser.linkedin || currentUser.linkedinUrl || "",
+          profilePhoto: currentUser.profilePhoto || currentUser.photoURL || auth.currentUser?.photoURL || "",
+        });
+
+        // First source: users/{uid}
+        try {
+          const userSnap = await getDoc(doc(db, "users", uid));
+          if (userSnap.exists()) {
+            userData = userSnap.data() || {};
+            resolvedName = findAuthorName(userData) || resolvedName;
+            console.log("[AddBlog] users/{uid}:", userData);
+          }
+        } catch (error) {
+          console.warn("[AddBlog] users lookup failed:", error);
+        }
+
+        // Second source: an existing alumni submission.
+        if (!resolvedName) {
+          try {
+            const submissions = collection(db, "alumniSubmissions");
+            const queries = [
+              query(submissions, where("authorUid", "==", uid), limit(5)),
+              query(submissions, where("authorId", "==", uid), limit(5)),
+            ];
+
+            for (const submissionQuery of queries) {
+              try {
+                const snapshot = await getDocs(submissionQuery);
+                for (const submissionDoc of snapshot.docs) {
+                  const submission = submissionDoc.data() || {};
+                  const name = findAuthorName(submission);
+                  if (name) {
+                    resolvedName = name;
+                    console.log("[AddBlog] Name resolved from alumni submission:", name);
+                    break;
+                  }
+                }
+                if (resolvedName) break;
+              } catch (error) {
+                console.warn("[AddBlog] submission lookup failed:", error);
+              }
+            }
+          } catch (error) {
+            console.warn("[AddBlog] alumniSubmissions lookup failed:", error);
+          }
+        }
 
         if (cancelled) return;
 
-        if (!userSnap.exists()) {
-          // If there is already a name from AuthContext keep it; only mark
-          // error when we have nothing at all.
-          if (!immediateProfile.name) setAlumniProfile(false);
-          return;
-        }
-
-        const data = userSnap.data();
-
-        // Diagnostic log — remove after confirming the correct field.
-        console.log("[AddBlog] Firestore users doc fields:", {
-          uid: currentUser.uid,
-          name: data.name,
-          displayName: data.displayName,
-          fullName: data.fullName,
-          authorName: data.authorName,
-          graduationYear: data.graduationYear,
-          branch: data.branch,
-          role: data.role,
+        setAlumniProfile({
+          uid,
+          name: resolvedName,
+          email: currentUser.email || auth.currentUser?.email || userData.email || "",
+          graduationYear:
+            userData.graduationYear || userData.passingYear || userData.batchYear ||
+            currentUser.graduationYear || currentUser.passingYear || "",
+          branch:
+            userData.branch || userData.department || userData.course || userData.program ||
+            currentUser.branch || currentUser.department || "",
+          organization:
+            userData.organization || userData.company || currentUser.organization || currentUser.company || "",
+          designation:
+            userData.designation || userData.jobTitle || currentUser.designation || currentUser.jobTitle || "",
+          linkedin:
+            userData.linkedin || userData.linkedinUrl || currentUser.linkedin || currentUser.linkedinUrl || "",
+          profilePhoto:
+            userData.profilePhoto || userData.photoURL || currentUser.profilePhoto ||
+            currentUser.photoURL || auth.currentUser?.photoURL || "",
         });
 
-        // Resolve display name: prefer Firestore fields → AuthContext fields
-        const resolvedName =
-          data.name ||
-          data.displayName ||
-          data.fullName ||
-          data.authorName ||
-          currentUser.name ||
-          currentUser.displayName ||
-          currentUser.fullName ||
-          "";
-
-        // Resolve branch: try multiple common field names
-        const resolvedBranch =
-          data.branch ||
-          data.department ||
-          data.course ||
-          data.program ||
-          currentUser.branch ||
-          "";
-
-        if (!cancelled) {
-          setAlumniProfile({
-            uid: currentUser.uid,
-            name: resolvedName,
-            email: currentUser.email || data.email || "",
-            graduationYear: data.graduationYear || currentUser.graduationYear || "",
-            branch: resolvedBranch,
-            organization: data.organization || currentUser.organization || "",
-            designation: data.designation || currentUser.designation || "",
-            linkedin: data.linkedin || currentUser.linkedin || "",
-            profilePhoto: data.profilePhoto || data.photoURL || currentUser.photoURL || "",
-          });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("[AddBlog] Failed to load alumni profile:", err);
-          // Keep the immediate profile seeded from AuthContext rather than
-          // wiping it to false — the user can still write their article.
-          if (!immediateProfile.name) setAlumniProfile(false);
-        }
+        console.log("[AddBlog] FINAL AUTHOR NAME:", resolvedName);
+      } catch (error) {
+        console.error("[AddBlog] Author resolution failed:", error);
       } finally {
         if (!cancelled) setAlumniProfileLoading(false);
       }
-    })();
+    };
 
+    loadAuthor();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAlumniUser, currentUser?.uid]);
-  // ────────────────────────────────────────────────────────────────────────
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(isAlumniUser ? "Alumni Stories" : "Club News");
@@ -201,8 +244,8 @@ function AddBlog() {
       status: "Draft",
       author: isAlumniUser
         ? (alumniProfile && alumniProfile !== false
-            ? (alumniProfile.name || currentUser?.name || currentUser?.fullName || currentUser?.displayName || "")
-            : (currentUser?.name || currentUser?.fullName || currentUser?.displayName || ""))
+          ? (alumniProfile.name || currentUser?.name || currentUser?.fullName || currentUser?.displayName || "")
+          : (currentUser?.name || currentUser?.fullName || currentUser?.displayName || ""))
         : "Admin",
       excerpt: contentExcerpt.trim().substring(0, 180),
       content: contentJson,
@@ -243,13 +286,16 @@ function AddBlog() {
   }, [isAlumniUser, title, category, featuredImage, tags, slug, seo, contentExcerpt, contentJson, currentUser, alumniProfile]);
 
   // Use Autosave Hook (30 sec interval)
+  // NOTE: useAutosave expects a single options object {data, onSave, interval, enabled}
   const {
-    autosaveStatus,
+    status: autosaveStatus,
     lastSavedTime,
-    autosaveError,
+    errorMessage: autosaveError,
     hasUnsavedChanges,
     retrySave,
-  } = useAutosave(getAutosaveData, handleAutosave, {
+  } = useAutosave({
+    data: getAutosaveData(),
+    onSave: handleAutosave,
     enabled: true,
     interval: 30000,
   });
@@ -298,7 +344,7 @@ function AddBlog() {
     try {
       setSavingDraft(true);
       if (isAlumniUser) {
-        // Use the dynamically loaded Firestore profile as source of truth
+        // Use the dynamically loaded Firestore profile as source of truth      
         const authorUser = (alumniProfile && alumniProfile !== false) ? alumniProfile : currentUser;
         const articleData = {
           title: title.trim(),
@@ -320,7 +366,7 @@ function AddBlog() {
         };
         const result = await saveAlumniArticleDraft(createdDocIdRef.current, articleData, authorUser);
         createdDocIdRef.current = result.id;
-        toast.success("💾 Draft Saved Successfully!");
+        toast.success("Draft saved successfully!");
         navigate(`/admin/blogs/edit/${result.id}`);
       } else {
         const blogData = {
@@ -342,11 +388,11 @@ function AddBlog() {
 
         if (createdDocIdRef.current) {
           await updateBlogService(createdDocIdRef.current, blogData);
-          toast.success("💾 Draft Saved Successfully!");
+          toast.success("Draft saved successfully!");
           navigate(`/admin/blogs/edit/${createdDocIdRef.current}`);
         } else {
           const result = await publishBlog(blogData);
-          toast.success("💾 Draft Saved Successfully!");
+          toast.success("Draft saved successfully!");
           navigate(`/admin/blogs/edit/${result.id}`);
         }
       }
@@ -371,7 +417,7 @@ function AddBlog() {
 
     try {
       setSubmittingApproval(true);
-      // Use the dynamically loaded Firestore profile as source of truth
+      // Use the dynamically loaded Firestore profile as source of truth        
       const authorUser = (alumniProfile && alumniProfile !== false) ? alumniProfile : currentUser;
       const articleData = {
         title: title.trim(),
@@ -393,7 +439,7 @@ function AddBlog() {
       };
 
       await submitAlumniArticleForApproval(createdDocIdRef.current, articleData, authorUser);
-      toast.success("📨 Article submitted for approval! Super Admin will review it.");
+      toast.success("Article submitted for approval! Super Admin will review it.");
       navigate("/admin/blogs");
     } catch (err) {
       console.error(err);
@@ -438,8 +484,8 @@ function AddBlog() {
 
       toast.success(
         targetStatus === "Published"
-          ? "🚀 Blog Published Successfully!"
-          : "📦 Blog Post Saved!"
+          ? "Blog published successfully!"
+          : "Blog post saved!"
       );
       navigate("/admin/blogs");
     } catch (err) {
@@ -449,6 +495,12 @@ function AddBlog() {
       setPublishing(false);
     }
   };
+
+  const authorDisplayName =
+    alumniProfile?.name ||
+    findAuthorName(currentUser) ||
+    findAuthorName(auth.currentUser) ||
+    "Alumni Contributor";
 
   return (
     <div className="dashboard-layout">
@@ -461,8 +513,11 @@ function AddBlog() {
           <div className="create-post">
             <div className="create-header">
               <div className="header-left">
-                <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-                  <h1>{isAlumniUser ? "Write Article" : "Create Blog"}</h1>
+                <div className="editorial-badge-row">
+                  <span className="editorial-eyebrow">
+                    <FiFeather className="eyebrow-icon" />
+                    <span>{isAlumniUser ? "Alumni Editorial" : "Club Editorial"}</span>
+                  </span>
                   <AutosaveIndicator
                     status={autosaveStatus}
                     lastSavedTime={lastSavedTime}
@@ -471,9 +526,12 @@ function AddBlog() {
                     onRetry={retrySave}
                   />
                 </div>
-                <p>
+                <h1 className="editorial-main-title">
+                  {isAlumniUser ? "Write Article" : "Create Blog"}
+                </h1>
+                <p className="editorial-subtitle">
                   {isAlumniUser
-                    ? "Share your journey and insights with the Abhyudaya community. Save a draft or submit for Super Admin approval."
+                    ? "Share your experience, knowledge and journey with the Abhyudaya community."
                     : "Write and manage blog posts for Abhyudaya Club."}
                 </p>
               </div>
@@ -481,31 +539,63 @@ function AddBlog() {
               <div className="header-buttons">
                 <button
                   type="button"
-                  className="draft-btn"
+                  className="editorial-draft-btn"
                   onClick={handleSaveDraft}
                   disabled={savingDraft || publishing || submittingApproval}
+                  title="Save your progress as a draft"
                 >
-                  {savingDraft ? "Saving Draft..." : "💾 Save Draft"}
+                  {savingDraft ? (
+                    <>
+                      <FaSpinner className="spin" />
+                      <span>Saving Draft...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiSave />
+                      <span>Save Draft</span>
+                    </>
+                  )}
                 </button>
 
                 {isAlumniUser ? (
                   <button
                     type="button"
-                    className="publish-btn"
-                    style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
+                    className="editorial-submit-btn"
                     onClick={handleSubmitForApproval}
                     disabled={submittingApproval || savingDraft}
+                    title="Submit this article for Super Admin review"
                   >
-                    {submittingApproval ? "Submitting..." : "📨 Submit for Approval"}
+                    {submittingApproval ? (
+                      <>
+                        <FaSpinner className="spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiSend />
+                        <span>Submit for Approval</span>
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button
                     type="button"
-                    className="publish-btn"
+                    className="editorial-publish-btn"
                     onClick={handlePublish}
                     disabled={publishing || savingDraft}
+                    title="Publish directly to public blog"
                   >
-                    {publishing ? "Publishing..." : "🚀 Publish Post"}
+                    {publishing ? (
+                      <>
+                        <FaSpinner className="spin" />
+                        <span>Publishing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiUploadCloud />
+                        <span>Publish Post</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>
@@ -513,27 +603,150 @@ function AddBlog() {
 
             <div className="editor-layout">
               <section className="editor-section">
-                <input
-                  type="text"
-                  className="title-input"
-                  placeholder="Enter Blog Title..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  aria-label="Blog title"
-                />
-
-                <ErrorBoundary>
-                  <RichEditor
-                    value={contentJson}
-                    onChange={handleEditorChange}
-                    placeholder="Write your story here with rich formatting..."
+                <div className="title-input-wrapper">
+                  <input
+                    type="text"
+                    className="title-input"
+                    placeholder="Article title..."
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    aria-label="Article title"
                   />
-                </ErrorBoundary>
+                </div>
+
+                <div className="rich-editor-wrapper">
+                  <ErrorBoundary>
+                    <RichEditor
+                      value={contentJson}
+                      onChange={handleEditorChange}
+                      placeholder="Write your story here with rich formatting..."
+                    />
+                  </ErrorBoundary>
+                </div>
               </section>
 
-              <aside className="blog-sidebar" aria-label="Blog post settings">
+              <aside className="blog-sidebar" aria-label="Article settings">
+                {/* 1. Workflow / Publishing Status Card */}
+                {isAlumniUser ? (
+                  <div className="card workflow-card">
+                    <div className="card-header-row">
+                      <div className="card-title-wrap">
+                        <FiShield className="card-icon" />
+                        <h3>Approval Workflow</h3>
+                      </div>
+                      <span className="workflow-badge">Review Required</span>
+                    </div>
+                    <p className="workflow-description">
+                      Your article will be saved as <strong>Draft</strong> or submitted to Super Admin for editorial review and approval before being published.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="card">
+                    <div className="card-header-row">
+                      <div className="card-title-wrap">
+                        <FiCompass className="card-icon" />
+                        <h3>Publish Status</h3>
+                      </div>
+                    </div>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      aria-label="Post Status"
+                    >
+                      <option value="Draft">Draft</option>
+                      <option value="Published">Published</option>
+                      <option value="Archived">Archived</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* 2. Alumni Author Card (Section 5 - VERY IMPORTANT) */}
+                {isAlumniUser && (
+                  <div className="card author-card">
+                    <div className="card-header-row">
+                      <div className="card-title-wrap">
+                        <FiUser className="card-icon" />
+                        <h3>Alumni Author</h3>
+                      </div>
+                      <span className="author-status-pill">Contributor</span>
+                    </div>
+
+                    {alumniProfileLoading ? (
+                      <div className="author-loading-skeleton">
+                        <div className="skeleton-avatar" />
+                        <div className="skeleton-info">
+                          <div className="skeleton-line skeleton-name" />
+                          <div className="skeleton-line skeleton-sub" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="author-profile-box">
+                        <div className="author-profile-header">
+                          <div className="author-avatar-container">
+                            {alumniProfile?.profilePhoto ? (
+                              <img
+                                src={alumniProfile.profilePhoto}
+                                alt={authorDisplayName}
+                                className="author-avatar-img"
+                              />
+                            ) : (
+                              <div className="author-avatar-fallback">
+                                {authorDisplayName.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="author-meta-info">
+                            <h4 className="author-real-name">{authorDisplayName}</h4>
+                            <span className="author-role-indicator">Alumni Contributor</span>
+                          </div>
+                        </div>
+
+                        {(alumniProfile?.branch || alumniProfile?.graduationYear) && (
+                          <div className="author-education-pill">
+                            {[
+                              alumniProfile?.branch,
+                              alumniProfile?.graduationYear
+                                ? `Class of ${alumniProfile.graduationYear}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" • ")}
+                          </div>
+                        )}
+
+                        {(alumniProfile?.designation || alumniProfile?.organization) && (
+                          <div className="author-work-info">
+                            {[alumniProfile?.designation, alumniProfile?.organization]
+                              .filter(Boolean)
+                              .join(" at ")}
+                          </div>
+                        )}
+
+                        {alumniProfile?.linkedin && (
+                          <a
+                            href={alumniProfile.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="author-linkedin-btn"
+                          >
+                            <FiLinkedin />
+                            <span>LinkedIn Profile</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. Featured Image */}
                 <div className="card">
-                  <h3>Featured Image</h3>
+                  <div className="card-header-row">
+                    <div className="card-title-wrap">
+                      <FiImage className="card-icon" />
+                      <h3>Featured Image</h3>
+                    </div>
+                  </div>
 
                   <FeaturedImageUpload
                     imageUrl={featuredImage}
@@ -544,8 +757,14 @@ function AddBlog() {
                   />
                 </div>
 
+                {/* 4. Category */}
                 <div className="card">
-                  <h3>Category</h3>
+                  <div className="card-header-row">
+                    <div className="card-title-wrap">
+                      <FiFolder className="card-icon" />
+                      <h3>Category</h3>
+                    </div>
+                  </div>
 
                   <select
                     value={category}
@@ -569,57 +788,14 @@ function AddBlog() {
                   </select>
                 </div>
 
-                {isAlumniUser && (
-                  <div className="card">
-                    <h3>Alumni Author</h3>
-
-                    {/* ── Loading state ── */}
-                    {alumniProfileLoading && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#94a3b8", padding: "4px 0" }}>
-                        <FaSpinner className="spin" style={{ flexShrink: 0 }} />
-                        Loading author information…
-                      </div>
-                    )}
-
-                    {/* ── Error / doc missing ── */}
-                    {!alumniProfileLoading && alumniProfile === false && (
-                      <p style={{ fontSize: "13px", color: "#f87171", margin: 0, lineHeight: 1.45 }}>
-                        Unable to load alumni profile. Please contact the administrator.
-                      </p>
-                    )}
-
-                     {/* ── Loaded successfully ── */}
-                    {!alumniProfileLoading && alumniProfile && alumniProfile !== false && (
-                      <div style={{ fontSize: "13px", color: "#e2e8f0", display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <strong>
-                          {/* Prefer loaded profile name; fall back to AuthContext currentUser */}
-                          {alumniProfile.name ||
-                            currentUser?.name ||
-                            currentUser?.fullName ||
-                            currentUser?.displayName ||
-                            <em style={{ color: "#f87171" }}>Name not found — please contact admin</em>}
-                        </strong>
-                        {(alumniProfile.branch || alumniProfile.graduationYear) && (
-                          <span style={{ color: "#94a3b8" }}>
-                            {alumniProfile.branch
-                              ? alumniProfile.graduationYear
-                                ? `${alumniProfile.branch} • Class of ${alumniProfile.graduationYear}`
-                                : alumniProfile.branch
-                              : `Class of ${alumniProfile.graduationYear}`}
-                          </span>
-                        )}
-                        {alumniProfile.organization && (
-                          <span style={{ color: "#94a3b8" }}>
-                            {alumniProfile.designation ? `${alumniProfile.designation} at ` : ""}{alumniProfile.organization}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
+                {/* 5. Tags */}
                 <div className="card">
-                  <h3>Tags</h3>
+                  <div className="card-header-row">
+                    <div className="card-title-wrap">
+                      <FiTag className="card-icon" />
+                      <h3>Tags</h3>
+                    </div>
+                  </div>
 
                   <input
                     type="text"
@@ -628,10 +804,18 @@ function AddBlog() {
                     onChange={(e) => setTags(e.target.value)}
                     aria-label="Tags separated by comma"
                   />
+                  <span className="card-input-help">Separate keywords with commas</span>
                 </div>
 
-                {/* Slug Generator Component */}
+                {/* 6. Slug / Permalink */}
                 <div className="card">
+                  <div className="card-header-row">
+                    <div className="card-title-wrap">
+                      <FiCompass className="card-icon" />
+                      <h3>Permalink</h3>
+                    </div>
+                  </div>
+
                   <SlugInput
                     title={title}
                     slug={slug}
@@ -639,20 +823,33 @@ function AddBlog() {
                   />
                 </div>
 
+                {/* 7. Short Excerpt */}
                 <div className="card">
-                  <h3>Short Excerpt</h3>
+                  <div className="card-header-row">
+                    <div className="card-title-wrap">
+                      <FiFileText className="card-icon" />
+                      <h3>Short Excerpt</h3>
+                    </div>
+                  </div>
 
                   <textarea
                     rows="3"
-                    placeholder="Brief description for blog card..."
+                    placeholder="Brief description for article card..."
                     value={contentExcerpt}
                     onChange={(e) => setContentExcerpt(e.target.value)}
                     aria-label="Article excerpt"
                   />
+                  <span className="card-input-help">Summarize your article in 1–2 sentences</span>
                 </div>
 
+                {/* 8. SEO Description */}
                 <div className="card">
-                  <h3>SEO Description</h3>
+                  <div className="card-header-row">
+                    <div className="card-title-wrap">
+                      <FiCompass className="card-icon" />
+                      <h3>SEO Meta</h3>
+                    </div>
+                  </div>
 
                   <textarea
                     rows="3"
@@ -663,9 +860,15 @@ function AddBlog() {
                   />
                 </div>
 
+                {/* 9. Publish Date (admin only) */}
                 {!isAlumniUser && (
                   <div className="card">
-                    <h3>Publish Date</h3>
+                    <div className="card-header-row">
+                      <div className="card-title-wrap">
+                        <FiClock className="card-icon" />
+                        <h3>Publish Date</h3>
+                      </div>
+                    </div>
 
                     <input
                       type="date"
@@ -673,29 +876,6 @@ function AddBlog() {
                       onChange={(e) => setPublishDate(e.target.value)}
                       aria-label="Publish Date"
                     />
-                  </div>
-                )}
-
-                {!isAlumniUser ? (
-                  <div className="card">
-                    <h3>Status</h3>
-
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      aria-label="Post Status"
-                    >
-                      <option value="Draft">Draft</option>
-                      <option value="Published">Published</option>
-                      <option value="Archived">Archived</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div className="card" style={{ borderLeft: "3px solid #3b82f6" }}>
-                    <h3 style={{ color: "#60a5fa" }}>Approval Workflow</h3>
-                    <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: 1.5, margin: "6px 0 0" }}>
-                      Your article will be saved as <strong>Draft</strong> or sent to <strong>Pending Approval</strong>. Only Super Admin has authority to approve and publish to the public blog.
-                    </p>
                   </div>
                 )}
               </aside>

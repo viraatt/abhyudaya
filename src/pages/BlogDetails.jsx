@@ -12,6 +12,8 @@ import { resolveAuthorName } from "../utils/authorHelper";
 
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   addDoc,
   query,
@@ -254,64 +256,77 @@ export default function BlogDetails() {
 
         // If this is an alumni contribution, ensure author profile is resolved with real user data
         if (currentBlog.isAlumniContribution) {
-          const authorUid =
+          let authorUid =
             currentBlog.authorUid ||
             currentBlog.authorId ||
             currentBlog.alumniAuthor?.uid ||
             currentBlog.createdBy;
 
-          const currentAuthorName = resolveAuthorName(
+          let currentAuthorName = resolveAuthorName(
             currentBlog.alumniAuthor,
-            currentBlog.author
+            currentBlog.author,
+            currentBlog
           );
 
-          // If name is legacy fallback / generic and authorUid exists, fetch actual profile
-          if (
-            authorUid &&
-            (!currentAuthorName || currentAuthorName === "Abhyudaya Alumni")
-          ) {
+          // If author name is generic or missing, try resolving from submission doc or users doc
+          if (!currentAuthorName || currentAuthorName === "Abhyudaya Alumni") {
             try {
-              const userRef = doc(db, "users", authorUid);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists()) {
-                const userData = userSnap.data();
-                const actualName = resolveAuthorName(userData);
-                if (actualName && actualName !== "Abhyudaya Alumni") {
-                  currentBlog.alumniAuthor = {
-                    ...currentBlog.alumniAuthor,
-                    name: actualName,
-                    graduationYear:
-                      currentBlog.alumniAuthor?.graduationYear ||
-                      userData.graduationYear ||
-                      "",
-                    branch:
-                      currentBlog.alumniAuthor?.branch ||
-                      userData.branch ||
-                      userData.department ||
-                      "",
-                    designation:
-                      currentBlog.alumniAuthor?.designation ||
-                      userData.designation ||
-                      "",
-                    organization:
-                      currentBlog.alumniAuthor?.organization ||
-                      userData.organization ||
-                      "",
-                    linkedin:
-                      currentBlog.alumniAuthor?.linkedin ||
-                      userData.linkedin ||
-                      "",
-                    profilePhoto:
-                      currentBlog.alumniAuthor?.profilePhoto ||
-                      userData.profilePhoto ||
-                      userData.photoURL ||
-                      "",
-                  };
-                  currentBlog.author = actualName;
+              // 1. If submissionId exists, fetch submission doc to resolve author name or authorUid
+              if (currentBlog.submissionId) {
+                try {
+                  const subSnap = await getDoc(
+                    doc(db, "alumniSubmissions", currentBlog.submissionId)
+                  );
+                  if (subSnap.exists()) {
+                    const subData = subSnap.data();
+                    if (!authorUid) {
+                      authorUid =
+                        subData.authorUid ||
+                        subData.authorId ||
+                        subData.uid ||
+                        subData.userId ||
+                        subData.createdBy ||
+                        subData.author?.uid;
+                    }
+                    const nameFromSub = resolveAuthorName(
+                      subData.author,
+                      subData
+                    );
+                    if (nameFromSub && nameFromSub !== "Abhyudaya Alumni") {
+                      currentAuthorName = nameFromSub;
+                    }
+                  }
+                } catch (subErr) {
+                  console.warn("Could not fetch submission for alumni author:", subErr);
+                }
+              }
+
+              // 2. If authorUid exists, fetch users/{authorUid}
+              if (authorUid) {
+                const userRef = doc(db, "users", authorUid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                  const userData = userSnap.data();
+                  const actualName = resolveAuthorName(userData);
+                  if (actualName && actualName !== "Abhyudaya Alumni") {
+                    currentAuthorName = actualName;
+                  }
                 }
               }
             } catch (err) {
               console.warn("Could not fetch user profile for alumni article author:", err);
+            }
+          }
+
+          if (currentAuthorName && currentAuthorName !== "Abhyudaya Alumni") {
+            currentBlog.author = currentAuthorName;
+            if (currentBlog.alumniAuthor) {
+              currentBlog.alumniAuthor = {
+                ...currentBlog.alumniAuthor,
+                name: currentAuthorName,
+              };
+            } else {
+              currentBlog.alumniAuthor = { name: currentAuthorName };
             }
           }
         }
@@ -592,58 +607,7 @@ export default function BlogDetails() {
             </span>
           </div>
 
-          {/* Alumni Contributor Spotlight Card */}
-          {blog.isAlumniContribution && (blog.alumniAuthor || blog.author) && (
-            <div className="alumni-author-spotlight">
-              <div className="alumni-spotlight-content">
-                {blog.alumniAuthor?.profilePhoto ? (
-                  <img
-                    src={blog.alumniAuthor.profilePhoto}
-                    alt={blog.alumniAuthor?.name || blog.author}
-                    className="alumni-spotlight-avatar"
-                  />
-                ) : (
-                  <div className="alumni-spotlight-avatar-fallback">
-                    {authorDisplayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="alumni-spotlight-text">
-                  <div className="alumni-spotlight-name-row">
-                    <h3 className="alumni-spotlight-name">
-                      {authorDisplayName}
-                    </h3>
-                    {blog.alumniAuthor?.linkedin && (
-                      <a
-                        href={blog.alumniAuthor.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="alumni-linkedin-link"
-                        aria-label={`Visit ${authorDisplayName}'s LinkedIn`}
-                      >
-                        <FaLinkedin aria-hidden="true" />
-                        <span>Connect</span>
-                      </a>
-                    )}
-                  </div>
-
-                  <div className="alumni-spotlight-credentials">
-                    {[
-                      blog.alumniAuthor?.branch && `B.Tech ${blog.alumniAuthor.branch}`,
-                      blog.alumniAuthor?.graduationYear && `Class of ${blog.alumniAuthor.graduationYear}`,
-                    ].filter(Boolean).join(" • ")}
-                  </div>
-
-                  {(blog.alumniAuthor?.designation || blog.alumniAuthor?.organization) && (
-                    <div className="alumni-spotlight-role">
-                      {[blog.alumniAuthor.designation, blog.alumniAuthor.organization]
-                        .filter(Boolean)
-                        .join(" at ")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Alumni Contributor Spotlight Card — removed per design decision */}
 
           {/* Featured Image — fetchpriority=high as it is the LCP element */}
           {blog.featuredImage && (

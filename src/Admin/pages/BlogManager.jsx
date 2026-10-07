@@ -318,7 +318,7 @@ function BlogManager() {
                         <tr key={article.id}>
                           <td>
                             <div className="admin-blog-title-cell">
-                              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px", color: "#38bdf8", marginBottom: "2px" }}>
+                              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--horizon-soft)", marginBottom: "2px" }}>
                                 {article.category || "Alumni Stories"}
                               </span>
                               <strong className="admin-blog-title-text">

@@ -16,14 +16,16 @@ import {
 } from "firebase/firestore";
 import { generateUniqueSlug, normalizeRouteSlug } from "../utils/slug";
 import { blogs as staticBlogs } from "../data/blogs";
+import { resolveAuthorName } from "../utils/authorHelper";
 
 const BLOGS_COLLECTION = "blogs";
 const blogsRef = collection(db, BLOGS_COLLECTION);
 
 export function sanitizeAlumniAuthor(author) {
   if (!author || typeof author !== "object") return null;
+  const resolved = resolveAuthorName(author);
   return {
-    name: (author.name || author.displayName || "").trim(),
+    name: resolved !== "Abhyudaya Alumni" ? resolved : (author.name || author.displayName || "").trim(),
     graduationYear: author.graduationYear ? String(author.graduationYear).trim() : "",
     branch: (author.branch || "").trim(),
     organization: (author.organization || "").trim(),
@@ -40,8 +42,6 @@ function formatBlogDoc(snapshotDoc) {
     email: _rootEmail,
     authorEmail: _authorEmail,
     alumniEmail: _alumniEmail,
-    authorUid: _authorUid,
-    authorId: _authorId,
     reviewedBy: _reviewedBy,
     publishedBy: _publishedBy,
     editToken: _editToken,
@@ -55,6 +55,9 @@ function formatBlogDoc(snapshotDoc) {
   return {
     id: snapshotDoc.id,
     ...safeData,
+    authorUid: data.authorUid || data.authorId || null,
+    authorId: data.authorId || data.authorUid || null,
+    submissionId: data.submissionId || null,
     alumniAuthor,
     date: data.createdAt?.toDate
       ? data.createdAt.toDate().toLocaleDateString("en-IN", {
@@ -147,7 +150,7 @@ function hasActualContent(content) {
   // If it's a TipTap JSON doc object
   if (typeof content === "object") {
     // Walk the content array to find any text nodes
-    function hasText(node) {
+    const hasText = (node) => {
       if (!node) return false;
       if (node.text && node.text.trim().length > 0) return true;
       if (node.type === "image") return true; // images count as content
@@ -155,7 +158,7 @@ function hasActualContent(content) {
         return node.content.some(hasText);
       }
       return false;
-    }
+    };
     return hasText(content);
   }
 
@@ -222,7 +225,11 @@ export const publishBlog = async (blog) => {
     seo: blog.seo || "",
     publishDate: blog.publishDate || "",
     status: blog.status || "Draft",
-    author: blog.author || (sanitizedAuthor && sanitizedAuthor.name) || "Admin",
+    author: blog.isAlumniContribution
+      ? (resolveAuthorName(blog.author, sanitizedAuthor, blog) !== "Abhyudaya Alumni"
+          ? resolveAuthorName(blog.author, sanitizedAuthor, blog)
+          : (blog.author || (sanitizedAuthor && sanitizedAuthor.name) || "Abhyudaya Alumni"))
+      : (blog.author || "Admin"),
     isAlumniContribution: Boolean(blog.isAlumniContribution),
     alumniAuthor: sanitizedAuthor,
     authorUid: blog.authorUid || null,
@@ -278,7 +285,11 @@ export const updateBlogService = async (id, blogData) => {
     seo: blogData.seo || "",
     publishDate: blogData.publishDate || "",
     status: blogData.status || "Draft",
-    author: blogData.author || (sanitizedAuthor && sanitizedAuthor.name) || currentData.author || "Admin",
+    author: (blogData.isAlumniContribution ?? currentData.isAlumniContribution)
+      ? (resolveAuthorName(blogData.author, sanitizedAuthor, blogData, currentData) !== "Abhyudaya Alumni"
+          ? resolveAuthorName(blogData.author, sanitizedAuthor, blogData, currentData)
+          : (blogData.author || (sanitizedAuthor && sanitizedAuthor.name) || currentData.author || "Abhyudaya Alumni"))
+      : (blogData.author || currentData.author || "Admin"),
     isAlumniContribution:
       blogData.isAlumniContribution !== undefined
         ? Boolean(blogData.isAlumniContribution)
