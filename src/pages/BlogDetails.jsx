@@ -39,7 +39,6 @@ import { FaXTwitter } from "react-icons/fa6";
 
 import BlogPostingSchema from "../components/seo/schemas/BlogPostingSchema";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema";
-import OrganizationSchema from "../components/seo/schemas/OrganizationSchema";
 import LatestBlogsSidebar from "../components/blog/LatestBlogsSidebar";
 import { markPrerenderReady } from "../utils/prerender.js";
 
@@ -507,7 +506,7 @@ export default function BlogDetails() {
     blog.excerpt ||
     (blog.content || "").replace(/<[^>]+>/g, "").slice(0, 160);
 
-  const ogImage = blog.featuredImage || `${SITE_URL}/og-image.jpg`;
+  const ogImage = blog.featuredImage || `${SITE_URL}/abhyudaya-logo.png`;
 
   const tags = Array.isArray(blog.tags) ? blog.tags : [];
   const keywords = [
@@ -569,7 +568,6 @@ export default function BlogDetails() {
       {/* JSON-LD Structured Data */}
       <BlogPostingSchema blog={blog} canonicalUrl={canonicalUrl} />
       <BreadcrumbSchema items={breadcrumbItems} />
-      <OrganizationSchema />
 
       <section className="blog-details">
 

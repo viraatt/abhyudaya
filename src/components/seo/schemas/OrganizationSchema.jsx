@@ -19,11 +19,11 @@ const organizationSchema = {
   url: SITE_URL,
   logo: {
     "@type": "ImageObject",
-    url: `${SITE_URL}/favicon.png`,
+    url: `${SITE_URL}/abhyudaya-logo.png`,
     width: 512,
     height: 512,
   },
-  image: `${SITE_URL}/og-image.jpg`,
+  image: `${SITE_URL}/abhyudaya-logo.png`,
   email: "abhyudayaclubmpec@gmail.com",
   foundingLocation: {
     "@type": "Place",

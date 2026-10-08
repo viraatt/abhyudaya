@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { club, events } from '../data/club.js'
 import logo from '../assets/logo-512.png'
-import OrganizationSchema from '../components/seo/schemas/OrganizationSchema.jsx'
 import WebSiteSchema from '../components/seo/schemas/WebSiteSchema.jsx'
 import { getPublishedAnnouncements } from '../Firebase/announcementService.js'
 import { getEventById } from '../Firebase/eventService.js'
@@ -105,20 +104,19 @@ export default function Home() {
         <meta property="og:title" content="Abhyudaya Club | Science & Literary Club of MPEC Kanpur" />
         <meta property="og:description" content="Abhyudaya Club — fostering curiosity, creativity, innovation and leadership at MPEC Kanpur." />
         <meta property="og:url" content={`${SITE_URL}/`} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
-        <meta property="og:image:width" content="1024" />
-        <meta property="og:image:height" content="1024" />
+        <meta property="og:image" content={`${SITE_URL}/abhyudaya-logo.png`} />
+        <meta property="og:image:width" content="512" />
+        <meta property="og:image:height" content="512" />
         <meta property="og:locale" content="en_IN" />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Abhyudaya Club | Science & Literary Club of MPEC Kanpur" />
         <meta name="twitter:description" content="Abhyudaya Club — fostering curiosity, creativity, innovation and leadership at MPEC Kanpur." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
+        <meta name="twitter:image" content={`${SITE_URL}/abhyudaya-logo.png`} />
       </Helmet>
 
       {/* Global Schemas — rendered on home page */}
-      <OrganizationSchema />
       <WebSiteSchema />
 
       <section className="hero">
