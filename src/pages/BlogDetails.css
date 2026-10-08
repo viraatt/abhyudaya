@@ -113,6 +113,21 @@
 .details-meta svg{
     color:#2563eb;
 }
+
+.details-featured-image-wrapper{
+    width:100%;
+    max-width:100%;
+    margin:0 0 2rem;
+    overflow:hidden;
+    border-radius:12px;
+}
+
+.details-featured-image{
+    display:block;
+    width:100%;
+    height:auto;
+    border-radius:inherit;
+}
 /* ==========================================
    SHARE SECTION
 ========================================== */
@@ -815,6 +830,21 @@
     border-radius:18px;
 }
 
+.details-featured-image-wrapper{
+    height:clamp(240px, 60vw, 360px);
+    margin:24px 0 28px;
+    border-radius:16px;
+    background:#f4f5f7;
+    box-shadow:0 10px 30px rgba(15,23,42,.10);
+}
+
+.details-featured-image{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    object-position:center;
+}
+
 .blog-details h1{
     font-size:32px;
 }
@@ -889,6 +919,11 @@
 }
 
 @media (max-width:520px){
+
+.details-featured-image-wrapper{
+    height:250px;
+    border-radius:14px;
+}
 
 .share-section{
     align-items:flex-start;

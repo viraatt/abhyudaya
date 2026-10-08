@@ -633,17 +633,18 @@ export default function BlogDetails() {
 
           {/* Featured Image — fetchpriority=high as it is the LCP element */}
           {blog.featuredImage && (
-            <img
-              src={blog.featuredImage}
-              alt={`${blog.title} — featured image`}
-              className="details-featured-image"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              width="1200"
-              height="630"
-              style={{ width: "100%", borderRadius: "12px", marginBottom: "2rem" }}
-            />
+            <div className="details-featured-image-wrapper">
+              <img
+                src={blog.featuredImage}
+                alt={`${blog.title} — featured image`}
+                className="details-featured-image"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                width="1200"
+                height="630"
+              />
+            </div>
           )}
 
           {/* Share Buttons */}
