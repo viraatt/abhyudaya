@@ -515,6 +515,33 @@
 .empty-state-box h2 { color: var(--night, #0d1224); }
 .empty-state-box p { max-width: 520px; margin: 0 auto; line-height: 1.65; }
 
+.admin-blog-manager-alumni .admin-blog-table {
+  min-width: 820px;
+}
+
+.admin-blog-manager-alumni .action-buttons-group {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+
+.admin-blog-manager-alumni .action-btn-pill.btn-publish {
+  background: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+  border-color: var(--sun, #eeb84a);
+}
+
+.admin-blog-manager-alumni .action-btn-pill.btn-publish:hover {
+  background: var(--sun-soft, #f7d189);
+  border-color: var(--sun-soft, #f7d189);
+  box-shadow: none;
+}
+
+.admin-blog-manager-alumni .action-btn-pill.btn-unpublish {
+  background: #fffdfa;
+  color: var(--night, #0d1224);
+  border-color: var(--line-on-light, rgba(20, 23, 43, 0.16));
+}
+
 @media (max-width: 640px) {
   .admin-blog-header { align-items: stretch; }
   .header-actions { flex-wrap: wrap; }

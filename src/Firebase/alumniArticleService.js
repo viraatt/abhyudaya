@@ -1,16 +1,16 @@
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
 import {
   collection,
   addDoc,
   doc,
-  updateDoc,
-  deleteDoc,
-  getDoc,
   getDocs,
+  updateDoc,
+  getDoc,
   query,
   where,
   orderBy,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 import { generateUniqueSlug } from "../utils/slug";
 import { publishBlog, updateBlogService } from "./blogService";
@@ -249,6 +249,14 @@ export async function saveAlumniArticleDraft(docId, formData, user) {
     profilePhoto: author?.profilePhoto || existing?.author?.profilePhoto || user?.profilePhoto || user?.photoURL || "",
   };
 
+  const linkedBlog = existing
+    ? await resolveLinkedAlumniBlog(docId, existing)
+    : null;
+  if (existing?.status === SUBMISSION_STATUSES.PUBLISHED && !linkedBlog) {
+    throw new Error("Cannot edit published alumni article: linked blog document could not be resolved.");
+  }
+  const hasLinkedBlog = Boolean(linkedBlog);
+  const keepPublished = existing?.status === SUBMISSION_STATUSES.PUBLISHED && hasLinkedBlog;
   const payload = {
     title: (title || existing?.title || "Untitled Draft").trim(),
     slug,
@@ -263,14 +271,27 @@ export async function saveAlumniArticleDraft(docId, formData, user) {
     authorId: authorUid,
     authorEmail: formData.authorEmail || user?.email || existing?.authorEmail || "",
     authorProfilePhoto: formData.authorProfilePhoto || user?.profilePhoto || existing?.authorProfilePhoto || "",
-    status: SUBMISSION_STATUSES.DRAFT,
+    status: keepPublished ? SUBMISSION_STATUSES.PUBLISHED : SUBMISSION_STATUSES.DRAFT,
     isAlumniContribution: true,
     updatedAt: serverTimestamp(),
   };
+  if (linkedBlog) payload.publishedBlogId = linkedBlog.blogId;
 
   if (docId) {
     const ref = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, docId);
     await updateDoc(ref, payload);
+    if (hasLinkedBlog) {
+      await updateBlogService(linkedBlog.blogId, {
+        ...payload,
+        status: keepPublished ? "Published" : "Draft",
+        isAlumniContribution: true,
+        author: authorData.name,
+        authorUid,
+        authorId: authorUid,
+        submissionId: docId,
+        alumniAuthor: authorData,
+      });
+    }
     return { id: docId, slug };
   } else {
     payload.submittedAt = serverTimestamp();
@@ -389,7 +410,17 @@ export async function getAlumniSubmissionsByAuthor(authorUid) {
       const snap1 = await getDocs(q1);
       snap1.docs.forEach((d) => docsMap.set(d.id, formatSubmissionDoc(d)));
     } catch (err1) {
-      console.warn("Author query by authorUid failed, trying secondary:", err1);
+      console.warn("[alumniArticleService] authorUid query failed; trying legacy authorId query", {
+        errorCode: err1?.code || "unknown",
+        errorMessage: err1?.message || String(err1),
+        articleId: null,
+        submissionId: null,
+        blogId: null,
+        currentUserUid: authorUid,
+        currentUserRole: "alumni",
+        collection: ALUMNI_SUBMISSIONS_COLLECTION,
+        queryField: "authorUid",
+      });
     }
 
     // Query 2: by authorId (fallback for any older records)
@@ -402,7 +433,17 @@ export async function getAlumniSubmissionsByAuthor(authorUid) {
         }
       });
     } catch (err2) {
-      console.warn("Author query by authorId failed:", err2);
+      console.warn("[alumniArticleService] authorId query failed", {
+        errorCode: err2?.code || "unknown",
+        errorMessage: err2?.message || String(err2),
+        articleId: null,
+        submissionId: null,
+        blogId: null,
+        currentUserUid: authorUid,
+        currentUserRole: "alumni",
+        collection: ALUMNI_SUBMISSIONS_COLLECTION,
+        queryField: "authorId",
+      });
     }
 
     const items = Array.from(docsMap.values());
@@ -543,31 +584,31 @@ export async function approveAlumniArticle(id, reviewer) {
         : [submission.category || "Alumni Stories"].filter(Boolean),
   };
 
-  let publishedBlogId = submission.publishedBlogId;
+  const existingLinkedBlog = await resolveLinkedAlumniBlog(id, submission);
+  const publishBatch = writeBatch(db);
+  let publishedBlogId;
+  let publishedSlug;
 
-  if (publishedBlogId) {
-    try {
-      const blogDocRef = doc(db, "blogs", publishedBlogId);
-      const blogSnap = await getDoc(blogDocRef);
-      if (blogSnap.exists()) {
-        await updateBlogService(publishedBlogId, blogPayload);
-      } else {
-        const created = await publishBlog(blogPayload);
-        publishedBlogId = created.id;
-      }
-    } catch {
-      const created = await publishBlog(blogPayload);
-      publishedBlogId = created.id;
-    }
+  if (existingLinkedBlog) {
+    publishedBlogId = existingLinkedBlog.blogId;
+    const updated = await updateBlogService(publishedBlogId, blogPayload, { batch: publishBatch });
+    publishedSlug = updated.slug;
   } else {
-    const created = await publishBlog(blogPayload);
+    const newBlogRef = doc(blogCollection);
+    const created = await publishBlog(blogPayload, {
+      batch: publishBatch,
+      documentId: newBlogRef.id,
+    });
     publishedBlogId = created.id;
+    publishedSlug = created.slug;
   }
 
   // Update submission status to published & approved
   const submissionUpdate = {
     status: SUBMISSION_STATUSES.PUBLISHED,
     publishedBlogId,
+    linkedBlogId: publishedBlogId,
+    slug: publishedSlug,
     reviewedAt: serverTimestamp(),
     reviewedBy: reviewerInfo,
     publishedAt: serverTimestamp(),
@@ -580,12 +621,25 @@ export async function approveAlumniArticle(id, reviewer) {
     submissionUpdate["author.name"] = resolvedName;
   }
 
-  await updateDoc(submissionRef, submissionUpdate);
+  publishBatch.update(submissionRef, submissionUpdate);
+  await publishBatch.commit();
+
+  if (!existingLinkedBlog) {
+    console.log("[alumniArticleService] PUBLISH BLOG CREATED", {
+      submissionId: id,
+      publishedBlogId,
+    });
+  }
+  console.log("[alumniArticleService] LINKED BLOG ID SAVED", {
+    submissionId: id,
+    linkedBlogId: publishedBlogId,
+  });
 
   return {
     id,
     blogId: publishedBlogId,
-    slug: finalSlug,
+    linkedBlogId: publishedBlogId,
+    slug: publishedSlug,
     status: SUBMISSION_STATUSES.PUBLISHED,
   };
 }
@@ -653,8 +707,302 @@ export async function publishAlumniArticleToBlog(submissionId, publisher) {
 /**
  * Admin action: Delete an alumni submission.
  */
-export async function deleteAlumniSubmission(id) {
+export async function deleteAlumniSubmission(id, actor = null, publishedBlogId = null) {
   const ref = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, id);
-  await deleteDoc(ref);
-  return { id };
+  let linkedBlogId = null;
+  let resolvedBlogId = null;
+  let operation = "submission read";
+  let documentPath = `${ALUMNI_SUBMISSIONS_COLLECTION}/${id}`;
+  const logContext = () => ({
+    articleId: id,
+    submissionId: id,
+    linkedBlogId,
+    resolvedBlogId,
+    uid: auth.currentUser?.uid || null,
+    role: actor?.role || null,
+  });
+
+  console.log("[alumniArticleService] DELETE BEGIN", {
+    articleId: id,
+    submissionId: id,
+    uid: auth.currentUser?.uid || null,
+    role: actor?.role || null,
+  });
+  try {
+    operation = "submission read";
+    const snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error("Article submission not found.");
+    const submission = snap.data();
+    const isOwner = actor?.role === "alumni"
+      && auth.currentUser?.uid
+      && (submission.authorUid === auth.currentUser.uid || submission.authorId === auth.currentUser.uid);
+    if (actor?.role === "alumni" && !isOwner) {
+      throw new Error("You are not authorized to delete this article.");
+    }
+
+    linkedBlogId = referenceId(submission.linkedBlogId)
+      || referenceId(submission.publishedBlogId)
+      || referenceId(publishedBlogId);
+    console.log("[alumniArticleService] DELETE START", {
+      articleId: id,
+      submissionId: id,
+      linkedBlogId,
+      uid: auth.currentUser?.uid || null,
+      role: actor?.role || null,
+    });
+
+    operation = "linked blog resolution";
+    let resolved = null;
+    try {
+      resolved = await resolveLinkedAlumniBlog(
+        id,
+        submission,
+        publishedBlogId ? [publishedBlogId] : [],
+      );
+    } catch (resolutionError) {
+      console.warn("[alumniArticleService] linked blog could not be safely resolved; deleting the owned submission only", {
+        submissionId: id,
+        linkedBlogId,
+        errorCode: resolutionError?.code || "unknown",
+        errorMessage: resolutionError?.message || String(resolutionError),
+      });
+    }
+    resolvedBlogId = resolved?.blogId || null;
+    console.log("[alumniArticleService] LINKED BLOG RESOLUTION", {
+      submissionId: id,
+      linkedBlogId,
+      resolvedBlogId,
+    });
+    if (!resolvedBlogId) {
+      console.warn("[alumniArticleService] no linked blog document found; deleting the owned alumni submission only", {
+        submissionId: id,
+        linkedBlogId,
+      });
+    }
+
+    const batch = writeBatch(db);
+    if (resolvedBlogId) {
+      documentPath = `blogs/${resolvedBlogId}`;
+      operation = "linked blog verification";
+      const blogRef = doc(db, "blogs", resolvedBlogId);
+      if (!resolved || resolved.blog.isAlumniContribution !== true) {
+        throw new Error("The linked blog does not belong to this alumni submission.");
+      }
+      console.log("[alumniArticleService] deleting linked blog", { ...logContext(), documentPath });
+      batch.delete(blogRef);
+    }
+
+    operation = resolvedBlogId
+      ? "batch commit (submission delete and linked blog delete)"
+      : "submission-only batch commit (no linked blog resolved)";
+    documentPath = resolvedBlogId
+      ? `${ALUMNI_SUBMISSIONS_COLLECTION}/${id}, blogs/${resolvedBlogId}`
+      : `${ALUMNI_SUBMISSIONS_COLLECTION}/${id}`;
+    console.log("[alumniArticleService] deleting alumni submission", { ...logContext(), documentPath });
+    batch.delete(ref);
+    console.log("[alumniArticleService] committing delete batch", { ...logContext(), documentPath });
+    await batch.commit();
+    console.log("[alumniArticleService] DELETE SUCCESS", logContext());
+    return { id, blogId: resolvedBlogId, linkedBlogId: resolvedBlogId, blogDeleted: Boolean(resolvedBlogId) };
+  } catch (error) {
+    console.error("[alumniArticleService] DELETE FAILED", {
+      code: error?.code,
+      message: error?.message,
+      name: error?.name,
+      ...logContext(),
+      operation,
+      document: documentPath,
+    }, error);
+    throw error;
+  }
+}
+
+const blogCollection = collection(db, "blogs");
+const submissionBlogReferenceFields = [
+  "linkedBlogId",
+  "publishedBlogId",
+  "blogId",
+  "linkedBlogId",
+  "publishedPostId",
+];
+const blogSubmissionReferenceFields = [
+  "submissionId",
+  "alumniSubmissionId",
+  "articleId",
+];
+
+function referenceId(value) {
+  if (typeof value === "string") return value.trim() || null;
+  if (value && typeof value.path === "string") return value.id || value.path.split("/").pop();
+  return null;
+}
+
+/** Resolve a linked blog only when the document carries a verifiable alumni link. */
+async function resolveLinkedAlumniBlog(submissionId, submission, additionalBlogIds = []) {
+  const ownerUid = submission.authorUid || submission.authorId || submission.author?.uid || null;
+  const referencedIds = new Set(
+    submissionBlogReferenceFields
+      .map((field) => referenceId(submission[field]))
+      .concat(additionalBlogIds.map(referenceId))
+      .filter(Boolean),
+  );
+  const candidates = new Map();
+
+  for (const blogId of referencedIds) {
+    try {
+      const snap = await getDoc(doc(db, "blogs", blogId));
+      if (snap.exists()) candidates.set(snap.id, snap.data());
+    } catch (error) {
+      // A stale reference may point at a deleted document; continue to the
+      // reciprocal-reference and slug lookups before declaring it unresolved.
+      if (error?.code !== "permission-denied" && error?.code !== "not-found") throw error;
+    }
+  }
+
+  for (const field of blogSubmissionReferenceFields) {
+    const matches = await getDocs(query(
+      blogCollection,
+      where("status", "==", "Published"),
+      where(field, "==", submissionId),
+    ));
+    matches.docs.forEach((snap) => candidates.set(snap.id, snap.data()));
+  }
+
+  if (submission.slug) {
+    const matches = await getDocs(query(
+      blogCollection,
+      where("status", "==", "Published"),
+      where("slug", "==", submission.slug),
+    ));
+    matches.docs.forEach((snap) => candidates.set(snap.id, snap.data()));
+  }
+
+  const validCandidates = [];
+  for (const [blogId, blog] of candidates) {
+    if (blog.isAlumniContribution !== true) continue;
+    const hasBackReference = blogSubmissionReferenceFields.some(
+      (field) => blog[field] === submissionId,
+    );
+    const blogOwnerUid = blog.authorUid || blog.authorId || blog.alumniAuthor?.uid || null;
+    const ownerAndSlugMatch = Boolean(
+      ownerUid && blogOwnerUid === ownerUid && submission.slug && blog.slug === submission.slug,
+    );
+    const storedReferenceMatches = referencedIds.has(blogId) && (!ownerUid || blogOwnerUid === ownerUid);
+    if (hasBackReference || ownerAndSlugMatch || storedReferenceMatches) {
+      validCandidates.push({ blogId, blog });
+    }
+  }
+
+  if (validCandidates.length > 1) {
+    throw new Error(`Multiple published blogs match alumni submission ${submissionId}; refusing an ambiguous operation.`);
+  }
+  return validCandidates[0] || null;
+}
+
+/** Keep the private submission record in sync when Super Admin edits its linked blog. */
+export async function syncAlumniSubmissionFromBlog(submissionId, blogId, blogData, actor) {
+  if (actor?.role !== "super_admin") {
+    throw new Error("Only Super Admin can sync a published alumni article.");
+  }
+  const ref = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, submissionId);
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) throw new Error("Article submission not found.");
+    const submission = snap.data();
+    const linked = await resolveLinkedAlumniBlog(submissionId, submission, [blogId]);
+    if (!linked || linked.blogId !== blogId) {
+      throw new Error("The blog is not linked to this alumni submission.");
+    }
+    const payload = {
+      title: blogData.title || "",
+      slug: blogData.slug || "",
+      category: blogData.category || "Alumni Stories",
+      excerpt: blogData.excerpt || "",
+      content: blogData.content || "",
+      featuredImage: blogData.featuredImage || "",
+      tags: Array.isArray(blogData.tags) ? blogData.tags : [],
+      updatedAt: serverTimestamp(),
+    };
+    if (blogData.status === "Published") {
+      payload.status = SUBMISSION_STATUSES.PUBLISHED;
+      if (submission.status !== SUBMISSION_STATUSES.PUBLISHED) {
+        payload.publishedAt = serverTimestamp();
+      }
+    } else if (submission.status === SUBMISSION_STATUSES.PUBLISHED && blogData.status === "Draft") {
+      payload.status = SUBMISSION_STATUSES.APPROVED;
+    }
+    payload.publishedBlogId = blogId;
+    payload.linkedBlogId = blogId;
+    await updateDoc(ref, payload);
+    return { id: submissionId, blogId };
+  } catch (error) {
+    console.error("[alumniArticleService] admin sync failed", {
+      errorCode: error?.code || "unknown",
+      errorMessage: error?.message || String(error),
+      articleId: submissionId,
+      blogId,
+      collections: [ALUMNI_SUBMISSIONS_COLLECTION],
+      currentUserUid: actor?.uid || null,
+      currentUserRole: actor?.role || null,
+    });
+    throw error;
+  }
+}
+
+/** Unpublish an author's live article while keeping its linked record for republishing. */
+export async function unpublishAlumniArticle(id, actor = null) {
+  const submissionRef = doc(db, ALUMNI_SUBMISSIONS_COLLECTION, id);
+  let blogId = null;
+  try {
+    const snap = await getDoc(submissionRef);
+    if (!snap.exists()) throw new Error("Article submission not found.");
+    const submission = snap.data();
+    const isSuperAdmin = actor?.role === "super_admin";
+    const isOwner = actor?.role === "alumni"
+      && actor?.uid
+      && (submission.authorUid === actor.uid || submission.authorId === actor.uid);
+    if (!isSuperAdmin && !isOwner) {
+      throw new Error("You are not authorized to unpublish this article.");
+    }
+    if (submission.status !== SUBMISSION_STATUSES.PUBLISHED) {
+      throw new Error("Published blog not found.");
+    }
+    const resolved = await resolveLinkedAlumniBlog(id, submission);
+    blogId = resolved?.blogId || null;
+    console.log("[alumniArticleService] resolved linked blog", { submissionId: id, blogId });
+    if (!blogId) {
+      throw new Error("Cannot unpublish alumni article: linked blog document could not be resolved.");
+    }
+    const blogRef = doc(db, "blogs", blogId);
+    const blog = resolved.blog;
+    if (blog.isAlumniContribution !== true) {
+      throw new Error("The published blog is not linked to this alumni submission.");
+    }
+    console.log("[alumniArticleService] unpublishing linked blog", { submissionId: id, blogId });
+    const batch = writeBatch(db);
+    batch.update(blogRef, {
+      status: "Draft",
+      updatedAt: serverTimestamp(),
+    });
+    batch.update(submissionRef, {
+      status: SUBMISSION_STATUSES.APPROVED,
+      publishedBlogId: blogId,
+      updatedAt: serverTimestamp(),
+    });
+    console.log("[alumniArticleService] committing unpublish batch", { submissionId: id, blogId });
+    await batch.commit();
+    return { id, blogId };
+  } catch (error) {
+    console.error("[alumniArticleService] unpublish failed", {
+      errorCode: error?.code || "unknown",
+      errorMessage: error?.message || String(error),
+      articleId: id,
+      submissionId: id,
+      blogId,
+      collections: [ALUMNI_SUBMISSIONS_COLLECTION, "blogs"],
+      currentUserUid: actor?.uid || null,
+      currentUserRole: actor?.role || null,
+    });
+    throw error;
+  }
 }

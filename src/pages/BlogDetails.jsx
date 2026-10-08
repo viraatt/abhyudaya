@@ -626,39 +626,49 @@ export default function BlogDetails() {
 
           {/* Share Buttons */}
           <div className="share-section">
-            <h2>Share this article</h2>
-            <div className="share-buttons">
+            <div className="share-heading-group">
+              <h2 className="share-title">Share this article</h2>
+              <p className="share-subtitle">Share this story with your network</p>
+            </div>
+            <div className="share-buttons" role="group" aria-label="Share this article">
               <button
+                type="button"
                 className="share-btn whatsapp"
                 onClick={shareWhatsapp}
                 aria-label="Share on WhatsApp"
+                title="Share on WhatsApp"
               >
                 <FaWhatsapp aria-hidden="true" />
-                WhatsApp
+                <span className="share-sr-only">WhatsApp</span>
               </button>
               <button
+                type="button"
                 className="share-btn linkedin"
                 onClick={shareLinkedin}
                 aria-label="Share on LinkedIn"
+                title="Share on LinkedIn"
               >
                 <FaLinkedin aria-hidden="true" />
-                LinkedIn
+                <span className="share-sr-only">LinkedIn</span>
               </button>
               <button
+                type="button"
                 className="share-btn twitter"
                 onClick={shareTwitter}
                 aria-label="Share on X (Twitter)"
+                title="Share on X"
               >
                 <FaXTwitter aria-hidden="true" />
-                X
+                <span className="share-sr-only">X</span>
               </button>
               <button
+                type="button"
                 className="share-btn copy"
                 onClick={copyLink}
                 aria-label={copied ? "Link copied" : "Copy article link"}
               >
                 <FiCopy aria-hidden="true" />
-                {copied ? "Copied!" : "Copy Link"}
+                <span aria-live="polite">{copied ? "✓ Link copied" : "Copy link"}</span>
               </button>
             </div>
           </div>

@@ -1,12 +1,12 @@
 import { db } from "./firebase";
 import {
   collection,
-  addDoc,
   doc,
   updateDoc,
   deleteDoc,
   getDoc,
   getDocs,
+  setDoc,
   query,
   where,
   orderBy,
@@ -203,7 +203,7 @@ export const validatePublishRequirements = (blog) => {
 /**
  * Publishes or saves a new blog to Firestore.
  */
-export const publishBlog = async (blog) => {
+export const publishBlog = async (blog, { batch = null, documentId = null } = {}) => {
   const isPublishing = blog.status === "Published";
 
   if (isPublishing) {
@@ -242,14 +242,19 @@ export const publishBlog = async (blog) => {
     publishedAt: isPublishing ? serverTimestamp() : null,
   };
 
-  const docRef = await addDoc(blogsRef, payload);
+  const docRef = documentId ? doc(blogsRef, documentId) : doc(blogsRef);
+  if (batch) {
+    batch.set(docRef, payload);
+  } else {
+    await setDoc(docRef, payload);
+  }
   return { id: docRef.id, slug: finalSlug };
 };
 
 /**
  * Updates an existing blog document.
  */
-export const updateBlogService = async (id, blogData) => {
+export const updateBlogService = async (id, blogData, { batch = null } = {}) => {
   const isPublishing = blogData.status === "Published";
 
   if (isPublishing) {
@@ -304,7 +309,11 @@ export const updateBlogService = async (id, blogData) => {
     publishedAt: publishedAt,
   };
 
-  await updateDoc(ref, payload);
+  if (batch) {
+    batch.update(ref, payload);
+  } else {
+    await updateDoc(ref, payload);
+  }
   return { slug: finalSlug };
 };
 

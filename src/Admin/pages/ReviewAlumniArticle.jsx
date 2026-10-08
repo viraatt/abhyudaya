@@ -175,13 +175,22 @@ export default function ReviewAlumniArticle() {
   const handleDelete = async () => {
     setActionLoading(true);
     try {
-      await deleteAlumniSubmission(id);
+      await deleteAlumniSubmission(id, currentUser);
       setShowDeleteModal(false);
       toast.success("Submission deleted.");
       navigate("/admin/alumni-articles");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete submission.");
+      console.error("[ReviewAlumniArticle] delete failed", {
+        errorCode: err?.code || "unknown",
+        errorMessage: err?.message || String(err),
+        articleId: id,
+        collections: ["alumniSubmissions", "blogs"],
+        currentUserUid: currentUser?.uid || null,
+        currentUserRole: currentUser?.role || null,
+      });
+      toast.error(err?.code === "permission-denied"
+        ? "You do not have permission to delete this article."
+        : (err?.message || "Failed to delete submission."));
       setActionLoading(false);
     }
   };
