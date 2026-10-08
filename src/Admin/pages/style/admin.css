@@ -199,16 +199,16 @@ body{
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: #64748b;
-  padding: 0 10px;
-  margin-bottom: 8px;
+  letter-spacing: 1.55px;
+  color: #c0c9d8;
+  padding: 0 12px;
+  margin-bottom: 10px;
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
 }
 
@@ -220,28 +220,47 @@ body{
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   text-decoration: none;
-  color: #cbd5e1;
-  padding: 10px 14px;
-  border-radius: 10px;
-  transition: all 0.18s ease;
-  font-weight: 500;
+  color: #f0f2f6;
+  padding: 11px 13px;
+  border-radius: 7px;
+  transition: color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  font-weight: 600;
   font-size: 13.5px;
+  line-height: 1.35;
   position: relative;
 }
 
+.sidebar-link::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 2px;
+  height: 22px;
+  border-radius: 0 2px 2px 0;
+  background: var(--sun, #eeb84a);
+  content: "";
+  opacity: 0;
+  transform: translateY(-50%) scaleY(0.65);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(251, 244, 232, 0.065);
   color: #ffffff;
-  transform: translateX(2px);
 }
 
 .sidebar-link.active {
-  background: rgba(238, 184, 74, 0.12);
+  background: rgba(238, 184, 74, 0.11);
   color: var(--sun, #eeb84a);
   font-weight: 600;
-  border-left: 3px solid var(--sun, #eeb84a);
+  box-shadow: inset 0 0 12px rgba(238, 184, 74, 0.055);
+}
+
+.sidebar-link.active::before {
+  opacity: 1;
+  transform: translateY(-50%) scaleY(1);
 }
 
 .sidebar-icon-wrap {
@@ -249,24 +268,23 @@ body{
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.85;
-  transition: opacity 0.18s ease;
+  color: #d6dce6;
+  opacity: 1;
+  transition: color 180ms ease, opacity 180ms ease;
 }
 
 .sidebar-link.active .sidebar-icon-wrap {
   color: var(--sun, #eeb84a);
-  opacity: 1;
 }
+
+.sidebar-link:hover .sidebar-icon-wrap { color: #f3d68e; }
 
 .sidebar-link-text {
   flex: 1;
 }
 
 .sidebar-active-indicator {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #f59e0b;
+  display: none;
 }
 
 .sidebar-logout-btn {
@@ -304,28 +322,30 @@ body{
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  color: #94a3b8;
+  color: #d0d6e0;
   font-size: 12.5px;
   font-weight: 500;
-  padding: 6px 10px;
+  line-height: 1.35;
+  padding: 7px 10px;
   border-radius: 6px;
   transition: all 0.18s ease;
 }
 
 .sidebar-sublink:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(251, 244, 232, 0.06);
 }
 
 .sidebar-sublink.active {
-  color: #fbbf24;
+  color: #f3d68e;
   font-weight: 600;
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(238, 184, 74, 0.11);
 }
 
 .sublink-bullet {
   font-size: 12px;
-  opacity: 0.6;
+  color: #b7c0ce;
+  opacity: 0.9;
 }
 
 /* ==============================
@@ -381,7 +401,7 @@ body{
 }
 
 .sidebar-user-name {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: #ffffff;
   white-space: nowrap;
@@ -392,7 +412,7 @@ body{
 
 .sidebar-user-role-label {
   font-size: 11px;
-  color: #94a3b8;
+  color: #c3ccda;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -402,7 +422,7 @@ body{
 .sidebar-quick-logout {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: #c3ccda;
   padding: 6px;
   border-radius: 8px;
   cursor: pointer;
@@ -2155,8 +2175,8 @@ body {
 }
 
 .sidebar-link {
-  min-height: 40px;
-  padding: 9px 11px;
+  min-height: 44px;
+  padding: 10px 12px;
   border-radius: 7px;
 }
 
@@ -2167,8 +2187,9 @@ body {
 
 .sidebar-link.active {
   color: var(--sun, #eeb84a);
-  background: rgba(238, 184, 74, 0.13);
-  border-left: 3px solid var(--sun, #eeb84a);
+  background: rgba(238, 184, 74, 0.11);
+  border-left: 0;
+  box-shadow: inset 0 0 12px rgba(238, 184, 74, 0.055);
 }
 
 .sidebar-link.active .sidebar-icon-wrap,
@@ -2393,7 +2414,7 @@ body {
 }
 
 .sidebar--alumni .sidebar-menu {
-  gap: 18px;
+  gap: 14px;
 }
 
 .sidebar--alumni .sidebar-item-group--editorial {
@@ -2403,7 +2424,7 @@ body {
 .sidebar-section-label {
   padding: 0 11px;
   margin-bottom: 4px;
-  color: #8790a3;
+  color: #c0c9d8;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 1.55px;
@@ -2413,48 +2434,50 @@ body {
 
 .sidebar--alumni .sidebar-link {
   position: relative;
-  min-height: 42px;
-  padding: 10px 12px 10px 14px;
+  min-height: 44px;
+  padding: 11px 12px 11px 14px;
   border: 0;
-  border-radius: 5px;
-  color: #e4e7ec;
+  border-radius: 7px;
+  color: #f0f2f6;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   transition: color 180ms ease, background-color 180ms ease;
 }
 
 .sidebar--alumni .sidebar-link::before {
   position: absolute;
-  top: 9px;
-  bottom: 9px;
+  top: 50%;
   left: 0;
   width: 2px;
+  height: 22px;
+  border-radius: 0 2px 2px 0;
   background: var(--sun, #eeb84a);
   content: "";
   opacity: 0;
-  transform: scaleY(0.55);
+  transform: translateY(-50%) scaleY(0.65);
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .sidebar--alumni .sidebar-link:hover {
-  background: rgba(251, 244, 232, 0.055);
+  background: rgba(251, 244, 232, 0.065);
   color: #fff;
 }
 
 .sidebar--alumni .sidebar-link.active {
   border-left: 0;
-  background: rgba(238, 184, 74, 0.085);
+  background: rgba(238, 184, 74, 0.11);
   color: #f4d58c;
   font-weight: 600;
+  box-shadow: inset 0 0 12px rgba(238, 184, 74, 0.055);
 }
 
 .sidebar--alumni .sidebar-link.active::before {
   opacity: 1;
-  transform: scaleY(1);
+  transform: translateY(-50%) scaleY(1);
 }
 
 .sidebar--alumni .sidebar-icon-wrap {
-  color: #b7becb;
+  color: #d6dce6;
   font-size: 16px;
   transition: color 180ms ease, transform 180ms ease;
 }
@@ -2465,7 +2488,7 @@ body {
 }
 
 .sidebar--alumni .sidebar-link:hover .sidebar-icon-wrap {
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .sidebar--alumni .sidebar-footer {
@@ -2497,13 +2520,13 @@ body {
 }
 
 .sidebar--alumni .sidebar-user-name {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: #f8f7f2;
 }
 
 .sidebar--alumni .sidebar-user-role-label {
-  color: #aeb6c4;
+  color: #c3ccda;
   font-size: 10.5px;
   font-weight: 400;
 }
@@ -2513,7 +2536,7 @@ body {
   height: 32px;
   border: 1px solid transparent;
   border-radius: 5px;
-  color: #aeb6c4;
+  color: #c3ccda;
   transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
