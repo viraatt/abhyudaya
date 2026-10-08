@@ -4,10 +4,12 @@ import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { initializeApp, cert, applicationDefault, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { isValidPublishedBlog } from "./blog-prerender-utils.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASE_URL = "https://www.abhyudayaclub.in";
 const DIST_DIR = path.join(ROOT, "dist");
+const requireFirestoreForBlogs = Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production" || process.env.CI === "true" || process.env.REQUIRE_FIRESTORE_SITEMAP === "true";
 
 function initializeFirebase() {
   if (getApps().length) return getFirestore();
@@ -96,6 +98,9 @@ async function generate() {
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(DIST_DIR, ".vite/manifest.json"), "utf8"));
   const db = initializeFirebase();
+  if (!db && requireFirestoreForBlogs) {
+    throw new Error("Firestore credentials are required to generate the production blog sitemap.");
+  }
 
   let blogs = [];
   let events = [];
@@ -115,7 +120,15 @@ async function generate() {
       ]);
 
       const byCreatedDate = (a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
-      blogs = blogSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
+      const publishedBlogBySlug = new Map();
+      blogSnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter(isValidPublishedBlog)
+        .sort(byCreatedDate)
+        .forEach((blog) => {
+          if (!publishedBlogBySlug.has(blog.slug)) publishedBlogBySlug.set(blog.slug, blog);
+        });
+      blogs = [...publishedBlogBySlug.values()];
       events = eventSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).filter((item) => item.slug).sort(byCreatedDate);
       announcements = announcementSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         .filter((item) => item.status === "published")
@@ -135,6 +148,7 @@ async function generate() {
         if (team.length === 0) team = staticTeam.webDev || [];
       }
     } catch (fbErr) {
+      if (requireFirestoreForBlogs) throw new Error(`Firestore query failed during production sitemap generation: ${fbErr.message}`);
       console.warn("[sitemap] Warning: Could not query Firestore for dynamic sitemap data:", fbErr.message);
     }
   } else {
@@ -159,16 +173,6 @@ async function generate() {
       team = [];
     }
   }
-  if (blogs.length === 0) {
-    try {
-      const { blogs: staticBlogs } = await import(pathToFileURL(path.join(ROOT, "src/data/blogs.js")));
-      blogs = Array.isArray(staticBlogs) ? staticBlogs : [];
-    } catch {
-      blogs = [];
-    }
-  }
-
-
   const pages = new Map();
   const addPage = (url, imageValues = []) => {
     const normalized = url.endsWith("/") && url !== BASE_URL + "/" ? url.slice(0, -1) : url;

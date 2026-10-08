@@ -62,7 +62,7 @@ async function renderBlogContent(content) {
         import("@tiptap/extension-image"),
       ]);
       return generateHTML(content, [
-        StarterKit,
+        StarterKit.configure({ link: false, underline: false }),
         Underline,
         LinkExtension,
         TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -144,7 +144,8 @@ export default function BlogDetails() {
     });
   }, [blog, blogIdentifier, featuredImage, ogImage]);
 
-  const canonicalUrl = `${SITE_URL}/blog/${encodeURIComponent(blogIdentifier)}`;
+  const canonicalSlug = blog?.slug || blogIdentifier;
+  const canonicalUrl = `${SITE_URL}/blog/${encodeURIComponent(canonicalSlug)}`;
 
   const shareText = blog
     ? `${blog.title} | ${ORG_NAME}`

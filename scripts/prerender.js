@@ -13,6 +13,16 @@ import {
 } from "firebase-admin/app";
 
 import { getFirestore } from "firebase-admin/firestore";
+import {
+  articleText,
+  escapeHtml,
+  isValidPublishedBlog,
+  renderBlogArticle,
+  renderBlogListing,
+  resolveBlogAuthor,
+  injectBlogSeo,
+  injectBlogListing,
+} from "./blog-prerender-utils.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -25,16 +35,6 @@ const BASE_URL = "https://www.abhyudayaclub.in";
 /* =========================================================
    Helpers
 ========================================================= */
-
-function escapeHtml(value = "") {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  }[char]));
-}
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
@@ -63,17 +63,18 @@ function getBlogDescription(blog) {
   if (typeof description === "string" && description.trim()) {
     return description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300);
   }
-  if (typeof blog.content === "string") {
-    const text = blog.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-    if (text) return text.slice(0, 300);
-  }
+  const text = articleText(blog.content);
+  if (text) return text.slice(0, 300);
   return blog.title || "Read the latest article from Abhyudaya Club.";
 }
 
 /* =========================================================
    Firebase Admin Initialization
-   Firebase is OPTIONAL during production builds.
 ========================================================= */
+
+function isProductionBuild() {
+  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production" || process.env.CI === "true";
+}
 
 function initializeFirebase() {
   if (getApps().length) {
@@ -134,9 +135,8 @@ function initializeFirebase() {
       "[prerender] Firebase Admin credentials are not available."
     );
 
-    console.warn(
-      "[prerender] Continuing with static routes only."
-    );
+    if (isProductionBuild()) throw new Error("Firebase Admin credentials are required to prerender production blog pages.");
+    console.warn("[prerender] Continuing with static routes only.");
 
     return null;
   } catch (error) {
@@ -148,9 +148,8 @@ function initializeFirebase() {
       `[prerender] ${error.message}`
     );
 
-    console.warn(
-      "[prerender] Continuing with static routes only."
-    );
+    if (isProductionBuild()) throw new Error("Firebase Admin initialization failed during production prerendering.");
+    console.warn("[prerender] Continuing with static routes only.");
 
     return null;
   }
@@ -222,6 +221,7 @@ async function getRoutesToPrerender(db) {
       path: "/blog",
       dataReady: true,
       canonical: "/blog",
+      blogListing: true,
       imageSelector:
         ".blog-card-image img, .featured-image img",
     },
@@ -258,16 +258,8 @@ async function getRoutesToPrerender(db) {
     },
   ];
 
-  /*
-   * IMPORTANT:
-   * Firebase is optional.
-   *
-   * If Firebase Admin credentials are unavailable,
-   * return the static/public route set instead of
-   * failing the production build.
-   */
-
   if (!db) {
+    if (isProductionBuild()) throw new Error("Firebase is required to verify published blogs during production prerendering.");
     console.warn(
       "[prerender] Firebase unavailable."
     );
@@ -310,7 +302,7 @@ async function getRoutesToPrerender(db) {
 
   try {
     const [
-      blogs,
+      blogSnapshot,
       events,
       albums,
     ] = await Promise.all([
@@ -330,27 +322,27 @@ async function getRoutesToPrerender(db) {
         .get(),
     ]);
 
-    blogs.forEach((doc) => {
-      const item = doc.data();
+    const publishedBlogs = blogSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter(isValidPublishedBlog);
+    const renderableBlogs = await Promise.all(publishedBlogs.map((blog) => resolveBlogAuthor(db, blog)));
+    const blogListing = routes.find((route) => route.path === "/blog");
+    if (blogListing) blogListing.blogs = renderableBlogs;
 
-      if (item.slug) {
-        const slug = encodeURIComponent(
-          item.slug
-        );
-
-        routes.push({
-          path: `/blog/${slug}`,
-          dataReady: true,
-          canonical: `/blog/${slug}`,
-          title: `${item.title || "Blog"} | Abhyudaya Club`,
-          description: getBlogDescription(item),
-          image: getBlogSocialImage(item),
-          imageAlt: item.title || "Abhyudaya Club blog article",
-          type: "article",
-          imageSelector:
-            ".details-featured-image",
-        });
-      }
+    renderableBlogs.forEach((item) => {
+      const slug = encodeURIComponent(item.slug);
+      routes.push({
+        path: `/blog/${slug}`,
+        dataReady: true,
+        canonical: `/blog/${slug}`,
+        title: `${item.title} | Abhyudaya Club`,
+        description: getBlogDescription(item),
+        image: getBlogSocialImage(item),
+        imageAlt: item.title,
+        type: "article",
+        imageSelector: ".details-featured-image",
+        blog: item,
+      });
     });
 
     events.forEach((doc) => {
@@ -420,6 +412,7 @@ async function getRoutesToPrerender(db) {
       );
     }
   } catch (error) {
+    if (isProductionBuild()) throw new Error(`Firestore query failed during production prerendering: ${error.message}`);
     /*
      * Firebase may be configured but temporarily
      * unavailable. Do not break production build.
@@ -539,7 +532,7 @@ function injectMeta(htmlTemplate, meta) {
    * Lightweight fallback for crawlers without JS.
    */
 
-  if (meta.path !== "/") {
+  if (meta.path !== "/" && !meta.blog && !meta.blogListing) {
     const noscriptContent = `
       <noscript>
         <div style="padding:2rem;font-family:sans-serif;max-width:800px;margin:0 auto;">
@@ -606,8 +599,12 @@ async function prerenderStatic() {
   let count = 0;
 
   for (const item of routes) {
-    const customizedHtml =
-      injectMeta(baseHtml, item);
+    let customizedHtml = injectMeta(baseHtml, item);
+    if (item.blog) {
+      customizedHtml = injectBlogSeo(customizedHtml, await renderBlogArticle(item.blog));
+    } else if (item.blogListing) {
+      customizedHtml = injectBlogListing(customizedHtml, renderBlogListing(item.blogs || []));
+    }
 
     const routeDir =
       item.path === "/"

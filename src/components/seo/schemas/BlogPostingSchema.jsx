@@ -116,7 +116,7 @@ export default function BlogPostingSchema({ blog, canonicalUrl }) {
 
   return (
     <Helmet>
-      <script type="application/ld+json">{JSON.stringify(schema)}</script>
+      <script id="prerender-blogposting-schema" data-rh="true" type="application/ld+json">{JSON.stringify(schema)}</script>
     </Helmet>
   );
 }
