@@ -2326,3 +2326,361 @@ body {
   .stat-card { min-height: 128px; padding: 14px; }
   .stat-value { font-size: 25px; }
 }
+
+/* Alumni Editorial sidebar */
+.sidebar--alumni {
+  width: 248px;
+  padding: 22px 16px 16px;
+  background: var(--night, #0d1224);
+  border-right-color: rgba(251, 244, 232, 0.14);
+}
+
+.sidebar--alumni ~ .dashboard-main {
+  margin-left: 248px;
+}
+
+.sidebar--alumni .sidebar-brand-wrapper {
+  position: relative;
+  margin-bottom: 20px;
+  padding: 0 0 19px;
+  border-bottom-color: rgba(251, 244, 232, 0.14);
+}
+
+.sidebar--alumni .sidebar-brand-link {
+  gap: 11px;
+}
+
+.sidebar-brand-logo {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  object-fit: contain;
+  padding: 2px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.sidebar--alumni .sidebar-title {
+  font-family: var(--font-display, "Fraunces", Georgia, serif);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.35px;
+}
+
+.sidebar--alumni .sidebar-brand-sub {
+  color: #d9bd7d;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.55px;
+  margin-top: 5px;
+}
+
+.sidebar-context-label {
+  display: block;
+  margin-top: 17px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(251, 244, 232, 0.1);
+  color: #b6a77f;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.55px;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.sidebar-drawer-close {
+  display: none;
+}
+
+.sidebar--alumni .sidebar-menu {
+  gap: 18px;
+}
+
+.sidebar--alumni .sidebar-item-group--editorial {
+  gap: 4px;
+}
+
+.sidebar-section-label {
+  padding: 0 11px;
+  margin-bottom: 4px;
+  color: #8790a3;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.55px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.sidebar--alumni .sidebar-link {
+  position: relative;
+  min-height: 42px;
+  padding: 10px 12px 10px 14px;
+  border: 0;
+  border-radius: 5px;
+  color: #e4e7ec;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.sidebar--alumni .sidebar-link::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 0;
+  width: 2px;
+  background: var(--sun, #eeb84a);
+  content: "";
+  opacity: 0;
+  transform: scaleY(0.55);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.sidebar--alumni .sidebar-link:hover {
+  background: rgba(251, 244, 232, 0.055);
+  color: #fff;
+}
+
+.sidebar--alumni .sidebar-link.active {
+  border-left: 0;
+  background: rgba(238, 184, 74, 0.085);
+  color: #f4d58c;
+  font-weight: 600;
+}
+
+.sidebar--alumni .sidebar-link.active::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.sidebar--alumni .sidebar-icon-wrap {
+  color: #b7becb;
+  font-size: 16px;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.sidebar--alumni .sidebar-link:hover .sidebar-icon-wrap,
+.sidebar--alumni .sidebar-link.active .sidebar-icon-wrap {
+  color: var(--sun, #eeb84a);
+}
+
+.sidebar--alumni .sidebar-link:hover .sidebar-icon-wrap {
+  transform: translateY(-1px);
+}
+
+.sidebar--alumni .sidebar-footer {
+  padding-top: 14px;
+  border-top-color: rgba(251, 244, 232, 0.14);
+}
+
+.sidebar--alumni .sidebar-user-card {
+  gap: 10px;
+  padding: 5px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sidebar--alumni .sidebar-user-avatar {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(238, 184, 74, 0.4);
+  background: rgba(238, 184, 74, 0.13);
+  box-shadow: none;
+}
+
+.sidebar--alumni .sidebar-avatar-initials {
+  color: #f3d48e;
+  font-family: var(--font-display, "Fraunces", Georgia, serif);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sidebar--alumni .sidebar-user-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f8f7f2;
+}
+
+.sidebar--alumni .sidebar-user-role-label {
+  color: #aeb6c4;
+  font-size: 10.5px;
+  font-weight: 400;
+}
+
+.sidebar--alumni .sidebar-quick-logout {
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #aeb6c4;
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+
+.sidebar--alumni .sidebar-quick-logout:hover {
+  border-color: rgba(238, 184, 74, 0.2);
+  background: rgba(238, 184, 74, 0.08);
+  color: #f3d48e;
+}
+
+.sidebar-mobile-bar,
+.sidebar-drawer-backdrop {
+  display: none;
+}
+
+@media (max-width: 992px) and (min-width: 769px) {
+  .sidebar--alumni {
+    position: fixed;
+    width: 232px;
+    max-height: none;
+    padding: 20px 14px 15px;
+  }
+
+  .sidebar--alumni ~ .dashboard-main {
+    margin-left: 232px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-mobile-bar {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    display: flex;
+    width: 100%;
+    min-height: 60px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(251, 244, 232, 0.12);
+    background: var(--night, #0d1224);
+  }
+
+  .sidebar-mobile-brand {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    color: #fff;
+    font-family: var(--font-display, "Fraunces", Georgia, serif);
+    font-size: 17px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .sidebar-mobile-brand-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+  }
+
+  .sidebar-mobile-brand-copy small {
+    margin-top: 3px;
+    color: #d9bd7d;
+    font-family: var(--font-body, Inter, "Segoe UI", sans-serif);
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-mobile-brand img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    padding: 2px;
+    border-radius: 7px;
+    background: #fff;
+  }
+
+  .sidebar-mobile-trigger {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 10px;
+    border: 1px solid rgba(238, 184, 74, 0.35);
+    border-radius: 5px;
+    background: transparent;
+    color: #f1d38d;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .sidebar-mobile-trigger:focus-visible,
+  .sidebar-drawer-close:focus-visible,
+  .sidebar--alumni .sidebar-link:focus-visible,
+  .sidebar--alumni .sidebar-quick-logout:focus-visible {
+    outline: 2px solid var(--sun, #eeb84a);
+    outline-offset: 3px;
+  }
+
+  .sidebar-drawer-backdrop {
+    position: fixed;
+    z-index: 49;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: rgba(8, 13, 27, 0.58);
+  }
+
+  .sidebar--alumni {
+    position: fixed;
+    z-index: 50;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(288px, calc(100vw - 44px));
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    padding: 20px 16px 16px;
+    transform: translateX(-102%);
+    visibility: hidden;
+    transition: transform 220ms ease, visibility 220ms ease;
+    will-change: transform;
+  }
+
+  .sidebar--alumni.is-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .sidebar--alumni .sidebar-brand-wrapper {
+    padding-right: 36px;
+  }
+
+  .sidebar--alumni .sidebar-drawer-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(251, 244, 232, 0.15);
+    border-radius: 5px;
+    background: transparent;
+    color: #dedfe4;
+    font-size: 17px;
+    cursor: pointer;
+  }
+
+  .sidebar--alumni ~ .dashboard-main {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar--alumni,
+  .sidebar--alumni .sidebar-link,
+  .sidebar--alumni .sidebar-link::before,
+  .sidebar--alumni .sidebar-icon-wrap,
+  .sidebar--alumni .sidebar-quick-logout {
+    transition-duration: 0.01ms;
+  }
+}

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../../../Firebase/firebase";
@@ -21,12 +22,16 @@ import {
   FiUser,
   FiLogOut,
   FiBookOpen,
+  FiMenu,
+  FiX,
 } from "react-icons/fi";
+import abhyudayaLogo from "../../../assets/logo-120.png";
 
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -38,6 +43,34 @@ export default function Sidebar() {
   };
 
   const currentRole = normalizeRole(currentUser?.role);
+  const isAlumniWorkspace = currentRole === ROLES.ALUMNI;
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const handleEscape = (event) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 769px)");
+    const closeOnDesktop = (event) => {
+      if (event.matches) setMobileMenuOpen(false);
+    };
+    desktopQuery.addEventListener("change", closeOnDesktop);
+    return () => desktopQuery.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   const roleLabel = {
     [ROLES.SUPER_ADMIN]: "Super Admin",
@@ -137,32 +170,92 @@ export default function Sidebar() {
   const menu = menus[currentRole] || [];
 
   return (
-    <aside className="sidebar" aria-label="CMS Navigation">
+    <>
+      {isAlumniWorkspace && (
+        <div className="sidebar-mobile-bar">
+          <Link to="/admin/blogs" className="sidebar-mobile-brand" aria-label="Abhyudaya Alumni Editorial">
+            <img src={abhyudayaLogo} alt="" />
+            <span className="sidebar-mobile-brand-copy">
+              <span>Abhyudaya<span className="brand-accent">.</span></span>
+              <small>Alumni Editorial</small>
+            </span>
+          </Link>
+          <button
+            type="button"
+            className="sidebar-mobile-trigger"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open alumni editorial navigation"
+            aria-controls="admin-sidebar"
+            aria-expanded={mobileMenuOpen}
+          >
+            <FiMenu aria-hidden="true" />
+            <span>Menu</span>
+          </button>
+        </div>
+      )}
+      {isAlumniWorkspace && mobileMenuOpen && (
+        <button
+          type="button"
+          className="sidebar-drawer-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-label="Close navigation menu"
+        />
+      )}
+      <aside
+        id="admin-sidebar"
+        className={`sidebar${isAlumniWorkspace ? ` sidebar--alumni${mobileMenuOpen ? " is-open" : ""}` : ""}`}
+        aria-label={isAlumniWorkspace ? "Alumni Editorial Navigation" : "CMS Navigation"}
+      >
       <div className="sidebar-brand-wrapper">
         <Link to="/admin/blogs" className="sidebar-brand-link">
-          <div className="sidebar-brand-icon">
-            <span>A</span>
-          </div>
+          {isAlumniWorkspace ? (
+            <img className="sidebar-brand-logo" src={abhyudayaLogo} alt="Abhyudaya Club" />
+          ) : (
+            <div className="sidebar-brand-icon">
+              <span>A</span>
+            </div>
+          )}
           <div className="sidebar-brand-text">
             <h2 className="sidebar-title">
               Abhyudaya<span className="brand-accent">.</span>
             </h2>
-            <span className="sidebar-brand-sub">Editorial Studio</span>
+            <span className="sidebar-brand-sub">
+              {isAlumniWorkspace ? "Alumni Editorial" : "Editorial Studio"}
+            </span>
           </div>
         </Link>
-
+        {isAlumniWorkspace && (
+          <>
+            <span className="sidebar-context-label">Alumni Contributor</span>
+            <button
+              type="button"
+              className="sidebar-drawer-close"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close alumni editorial navigation"
+            >
+              <FiX aria-hidden="true" />
+            </button>
+          </>
+        )}
       </div>
 
       <nav className="sidebar-menu" aria-label="Main Navigation">
-        <div className="sidebar-menu-label">Menu</div>
+        {!isAlumniWorkspace && <div className="sidebar-menu-label">Menu</div>}
         {menu.map((item) => {
           const isActive =
-            location.pathname === item.path ||
-            (item.path !== "/admin/dashboard" &&
-              location.pathname.startsWith(item.path + "/"));
+            isAlumniWorkspace
+              ? location.pathname === item.path
+              : location.pathname === item.path ||
+                (item.path !== "/admin/dashboard" &&
+                  location.pathname.startsWith(item.path + "/"));
 
           return (
-            <div key={item.path} className="sidebar-item-group">
+            <div key={item.path} className={`sidebar-item-group${isAlumniWorkspace ? " sidebar-item-group--editorial" : ""}`}>
+              {isAlumniWorkspace && (
+                <div className="sidebar-section-label">
+                  {item.name === "Blogs" ? "Articles" : "Contribute"}
+                </div>
+              )}
               <Link
                 to={item.path}
                 className={`sidebar-link ${isActive ? "active" : ""}`}
@@ -170,7 +263,7 @@ export default function Sidebar() {
               >
                 <span className="sidebar-icon-wrap">{item.icon}</span>
                 <span className="sidebar-link-text">{item.name}</span>
-                {isActive && <span className="sidebar-active-indicator" />}
+                {isActive && !isAlumniWorkspace && <span className="sidebar-active-indicator" />}
               </Link>
 
               {item.subItems && (
@@ -231,6 +324,7 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
