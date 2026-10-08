@@ -40,6 +40,36 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function getBlogSocialImage(blog) {
+  const value = blog.featuredImage || blog.image;
+  if (typeof value !== "string" || !value.trim()) {
+    return `${BASE_URL}/abhyudaya-logo.png`;
+  }
+
+  try {
+    const imageUrl = new URL(value.trim());
+    if (imageUrl.protocol === "https:" && imageUrl.hostname && !imageUrl.username && !imageUrl.password) {
+      return imageUrl.href;
+    }
+  } catch {
+    // Local, relative, blob, and malformed URLs are not safe crawler image URLs.
+  }
+
+  return `${BASE_URL}/abhyudaya-logo.png`;
+}
+
+function getBlogDescription(blog) {
+  const description = blog.seo || blog.excerpt;
+  if (typeof description === "string" && description.trim()) {
+    return description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300);
+  }
+  if (typeof blog.content === "string") {
+    const text = blog.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (text) return text.slice(0, 300);
+  }
+  return blog.title || "Read the latest article from Abhyudaya Club.";
+}
+
 /* =========================================================
    Firebase Admin Initialization
    Firebase is OPTIONAL during production builds.
@@ -312,6 +342,11 @@ async function getRoutesToPrerender(db) {
           path: `/blog/${slug}`,
           dataReady: true,
           canonical: `/blog/${slug}`,
+          title: `${item.title || "Blog"} | Abhyudaya Club`,
+          description: getBlogDescription(item),
+          image: getBlogSocialImage(item),
+          imageAlt: item.title || "Abhyudaya Club blog article",
+          type: "article",
           imageSelector:
             ".details-featured-image",
         });
@@ -436,6 +471,18 @@ async function getRoutesToPrerender(db) {
 function injectMeta(htmlTemplate, meta) {
   let html = htmlTemplate;
 
+  const setMeta = (attribute, key, value) => {
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(
+      `<meta\\s+${attribute}=["']${escapedKey}["']\\s+content=["'][^"']*["']\\s*\\/?>`,
+      "i"
+    );
+    const tag = `<meta ${attribute}="${key}" content="${escapeHtml(value)}" />`;
+    html = pattern.test(html)
+      ? html.replace(pattern, tag)
+      : html.replace(/<\/head>/i, `    ${tag}\n  </head>`);
+  };
+
   if (meta.title) {
     html = html.replace(
       /<title>.*?<\/title>/i,
@@ -455,78 +502,37 @@ function injectMeta(htmlTemplate, meta) {
   }
 
   if (meta.canonical) {
-    html = html.replace(
-      /<link\s+rel=["']canonical["']\s+href=["'].*?["']\s*\/?>/i,
-      `<link rel="canonical" href="${escapeHtml(
-        `${BASE_URL}${meta.canonical}`
-      )}" />`
-    );
+    const canonicalTag = `<link rel="canonical" href="${escapeHtml(`${BASE_URL}${meta.canonical}`)}" />`;
+    const canonicalPattern = /<link\s+rel=["']canonical["']\s+href=["'].*?["']\s*\/?>/i;
+    html = canonicalPattern.test(html)
+      ? html.replace(canonicalPattern, canonicalTag)
+      : html.replace(/<\/head>/i, `    ${canonicalTag}\n  </head>`);
   }
 
   if (meta.title) {
-    html = html.replace(
-      /<meta\s+property=["']og:title["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:title" content="${escapeHtml(
-        meta.title
-      )}" />`
-    );
-
-    html = html.replace(
-      /<meta\s+name=["']twitter:title["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta name="twitter:title" content="${escapeHtml(
-        meta.title
-      )}" />`
-    );
+    setMeta("property", "og:title", meta.title);
+    setMeta("name", "twitter:title", meta.title);
   }
 
   if (meta.description) {
-    html = html.replace(
-      /<meta\s+property=["']og:description["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:description" content="${escapeHtml(
-        meta.description
-      )}" />`
-    );
-
-    html = html.replace(
-      /<meta\s+name=["']twitter:description["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta name="twitter:description" content="${escapeHtml(
-        meta.description
-      )}" />`
-    );
+    setMeta("property", "og:description", meta.description);
+    setMeta("name", "twitter:description", meta.description);
   }
 
   if (meta.canonical) {
-    html = html.replace(
-      /<meta\s+property=["']og:url["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:url" content="${escapeHtml(
-        `${BASE_URL}${meta.canonical}`
-      )}" />`
-    );
+    setMeta("property", "og:url", `${BASE_URL}${meta.canonical}`);
   }
 
   if (meta.image) {
-    html = html.replace(
-      /<meta\s+property=["']og:image["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:image" content="${escapeHtml(
-        meta.image
-      )}" />`
-    );
-
-    html = html.replace(
-      /<meta\s+name=["']twitter:image["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta name="twitter:image" content="${escapeHtml(
-        meta.image
-      )}" />`
-    );
+    setMeta("property", "og:image", meta.image);
+    setMeta("property", "og:image:alt", meta.imageAlt || "Abhyudaya Club blog article");
+    setMeta("property", "og:image:width", "1200");
+    setMeta("property", "og:image:height", "630");
+    setMeta("name", "twitter:image", meta.image);
   }
 
   if (meta.type) {
-    html = html.replace(
-      /<meta\s+property=["']og:type["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:type" content="${escapeHtml(
-        meta.type
-      )}" />`
-    );
+    setMeta("property", "og:type", meta.type);
   }
 
   /*

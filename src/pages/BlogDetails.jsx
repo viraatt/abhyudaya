@@ -88,6 +88,19 @@ async function renderBlogContent(content) {
 const SITE_URL = "https://www.abhyudayaclub.in";
 const ORG_NAME = "Abhyudaya Club";
 
+function getPublicSocialImage(value) {
+  if (typeof value !== "string" || !value.trim()) return `${SITE_URL}/abhyudaya-logo.png`;
+  try {
+    const imageUrl = new URL(value.trim());
+    if (imageUrl.protocol === "https:" && imageUrl.hostname && !imageUrl.username && !imageUrl.password) {
+      return imageUrl.href;
+    }
+  } catch {
+    // Ignore non-public or malformed image URLs and use the official logo.
+  }
+  return `${SITE_URL}/abhyudaya-logo.png`;
+}
+
 export default function BlogDetails() {
   // Extract route parameters flexibly (supports both :slug and :id params)
   const params = useParams();
@@ -118,6 +131,18 @@ export default function BlogDetails() {
   const [message, setMessage] = useState("");
   const [posting, setPosting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+
+  const featuredImage = blog?.featuredImage || blog?.image;
+  const ogImage = getPublicSocialImage(featuredImage);
+
+  useEffect(() => {
+    if (!blog || !import.meta.env.DEV) return;
+    console.log("[SEO] Blog social image:", {
+      slug: blog.slug || blogIdentifier,
+      featuredImage,
+      socialImage: ogImage,
+    });
+  }, [blog, blogIdentifier, featuredImage, ogImage]);
 
   const canonicalUrl = `${SITE_URL}/blog/${encodeURIComponent(blogIdentifier)}`;
 
@@ -506,8 +531,6 @@ export default function BlogDetails() {
     blog.excerpt ||
     (blog.content || "").replace(/<[^>]+>/g, "").slice(0, 160);
 
-  const ogImage = blog.featuredImage || `${SITE_URL}/abhyudaya-logo.png`;
-
   const tags = Array.isArray(blog.tags) ? blog.tags : [];
   const keywords = [
     blog.category,
@@ -545,6 +568,7 @@ export default function BlogDetails() {
         <meta property="og:title" content={`${blog.title} | ${ORG_NAME}`} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:image" content={ogImage} />
+        <meta property="og:image:alt" content={blog.title} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:url" content={canonicalUrl} />

@@ -76,7 +76,7 @@ export default function BlogPostingSchema({ blog, canonicalUrl }) {
     url: canonicalUrl,
     image: {
       "@type": "ImageObject",
-      url: blog.featuredImage || `${SITE_URL}/abhyudaya-logo.png`,
+      url: blog.featuredImage || blog.image || `${SITE_URL}/abhyudaya-logo.png`,
       width: 1200,
       height: 630,
     },
