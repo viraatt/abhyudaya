@@ -46,10 +46,6 @@ export default function Sidebar() {
   const isAlumniWorkspace = currentRole === ROLES.ALUMNI;
 
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname, location.search]);
-
-  useEffect(() => {
     if (!mobileMenuOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
     const handleEscape = (event) => {
@@ -171,29 +167,27 @@ export default function Sidebar() {
 
   return (
     <>
-      {isAlumniWorkspace && (
-        <div className="sidebar-mobile-bar">
-          <Link to="/admin/blogs" className="sidebar-mobile-brand" aria-label="Abhyudaya Alumni Editorial">
-            <img src={abhyudayaLogo} alt="" />
-            <span className="sidebar-mobile-brand-copy">
-              <span>Abhyudaya<span className="brand-accent">.</span></span>
-              <small>Alumni Editorial</small>
-            </span>
-          </Link>
-          <button
-            type="button"
-            className="sidebar-mobile-trigger"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Open alumni editorial navigation"
-            aria-controls="admin-sidebar"
-            aria-expanded={mobileMenuOpen}
-          >
-            <FiMenu aria-hidden="true" />
-            <span>Menu</span>
-          </button>
-        </div>
-      )}
-      {isAlumniWorkspace && mobileMenuOpen && (
+      <div className={`sidebar-mobile-bar${isAlumniWorkspace ? " sidebar-mobile-bar--alumni" : ""}`}>
+        <Link to={menu[0]?.path || "/admin/dashboard"} className="sidebar-mobile-brand" aria-label="Abhyudaya Admin Panel">
+          <img src={abhyudayaLogo} alt="" />
+          <span className="sidebar-mobile-brand-copy">
+            <span>Abhyudaya<span className="brand-accent">.</span></span>
+            <small>{isAlumniWorkspace ? "Alumni Editorial" : "Admin Panel"}</small>
+          </span>
+        </Link>
+        <button
+          type="button"
+          className="sidebar-mobile-trigger"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open admin navigation"
+          aria-controls="admin-sidebar"
+          aria-expanded={mobileMenuOpen}
+        >
+          <FiMenu aria-hidden="true" />
+          <span>Menu</span>
+        </button>
+      </div>
+      {mobileMenuOpen && (
         <button
           type="button"
           className="sidebar-drawer-backdrop"
@@ -203,7 +197,7 @@ export default function Sidebar() {
       )}
       <aside
         id="admin-sidebar"
-        className={`sidebar${isAlumniWorkspace ? ` sidebar--alumni${mobileMenuOpen ? " is-open" : ""}` : ""}`}
+        className={`sidebar sidebar--mobile-drawer${isAlumniWorkspace ? " sidebar--alumni" : ""}${mobileMenuOpen ? " is-open" : ""}`}
         aria-label={isAlumniWorkspace ? "Alumni Editorial Navigation" : "CMS Navigation"}
       >
       <div className="sidebar-brand-wrapper">
@@ -224,19 +218,15 @@ export default function Sidebar() {
             </span>
           </div>
         </Link>
-        {isAlumniWorkspace && (
-          <>
-            <span className="sidebar-context-label">Alumni Contributor</span>
-            <button
-              type="button"
-              className="sidebar-drawer-close"
-              onClick={() => setMobileMenuOpen(false)}
-              aria-label="Close alumni editorial navigation"
-            >
-              <FiX aria-hidden="true" />
-            </button>
-          </>
-        )}
+        {isAlumniWorkspace && <span className="sidebar-context-label">Alumni Contributor</span>}
+        <button
+          type="button"
+          className="sidebar-drawer-close"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-label="Close admin navigation"
+        >
+          <FiX aria-hidden="true" />
+        </button>
       </div>
 
       <nav className="sidebar-menu" aria-label="Main Navigation">
@@ -258,6 +248,7 @@ export default function Sidebar() {
               )}
               <Link
                 to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
                 className={`sidebar-link ${isActive ? "active" : ""}`}
                 aria-current={isActive ? "page" : undefined}
               >
@@ -279,6 +270,7 @@ export default function Sidebar() {
                       <Link
                         key={sub.path + sub.name}
                         to={sub.path}
+                        onClick={() => setMobileMenuOpen(false)}
                         className={`sidebar-sublink ${isSubActive ? "active" : ""}`}
                       >
                         <span className="sublink-bullet">•</span>
