@@ -2401,10 +2401,10 @@ body {
   margin-top: 17px;
   padding-top: 13px;
   border-top: 1px solid rgba(251, 244, 232, 0.1);
-  color: #b6a77f;
-  font-size: 9px;
+  color: #d0c18f;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 1.55px;
+  letter-spacing: 1.4px;
   line-height: 1.4;
   text-transform: uppercase;
 }
@@ -2422,12 +2422,12 @@ body {
 }
 
 .sidebar-section-label {
-  padding: 0 11px;
-  margin-bottom: 4px;
-  color: #c0c9d8;
-  font-size: 9px;
+  padding: 0 12px;
+  margin-bottom: 5px;
+  color: #d0d6e0;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 1.55px;
+  letter-spacing: 1.4px;
   line-height: 1.5;
   text-transform: uppercase;
 }
@@ -2441,7 +2441,7 @@ body {
   color: #f0f2f6;
   font-size: 13px;
   font-weight: 600;
-  transition: color 180ms ease, background-color 180ms ease;
+  transition: color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
 }
 
 .sidebar--alumni .sidebar-link::before {
@@ -2527,8 +2527,8 @@ body {
 
 .sidebar--alumni .sidebar-user-role-label {
   color: #c3ccda;
-  font-size: 10.5px;
-  font-weight: 400;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .sidebar--alumni .sidebar-quick-logout {
