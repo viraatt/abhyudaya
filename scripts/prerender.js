@@ -40,6 +40,36 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function getBlogSocialImage(blog) {
+  const value = blog.featuredImage || blog.image;
+  return getPublicHttpsUrl(value) || `${BASE_URL}/abhyudaya-logo.png`;
+}
+
+function getPublicHttpsUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  try {
+    const imageUrl = new URL(value.trim());
+    if (imageUrl.protocol === "https:" && imageUrl.hostname && !imageUrl.username && !imageUrl.password) {
+      return imageUrl.href;
+    }
+  } catch {
+    // Local, relative, blob, and malformed URLs are not safe crawler image URLs.
+  }
+
+  return null;
+}
+
+function getBlogDescription(blog) {
+  const description = blog.seo || blog.excerpt;
+  if (typeof description === "string" && description.trim()) {
+    return description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300);
+  }
+  const text = articleText(blog.content);
+  if (text) return text.slice(0, 300);
+  return blog.title || "Read the latest article from Abhyudaya Club.";
+}
+
 /* =========================================================
    Firebase Admin Initialization
    Firebase is OPTIONAL during production builds.
@@ -208,6 +238,8 @@ async function getRoutesToPrerender(db) {
       path: "/gallery",
       dataReady: true,
       canonical: "/gallery",
+      title: "Photography Archive & Event Albums | Abhyudaya Club",
+      description: "Explore the digital memory archive of Abhyudaya Club — curated annual albums of TechBloom, Antariksh Spardha, workshops, robotics, and celebrations at MPEC Kanpur.",
       imageSelector: ".collage-img",
     },
 
@@ -340,8 +372,14 @@ async function getRoutesToPrerender(db) {
       }
     });
 
-    albums.forEach((doc) => {
-      const item = doc.data();
+    const publishedGalleryAlbums = albums.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    const galleryRoute = routes.find((route) => route.path === "/gallery");
+    if (galleryRoute) galleryRoute.galleryAlbums = publishedGalleryAlbums;
+
+    publishedGalleryAlbums.forEach((item) => {
 
       if (item.slug) {
         const slug = encodeURIComponent(
@@ -352,6 +390,11 @@ async function getRoutesToPrerender(db) {
           path: `/gallery/${slug}`,
           dataReady: true,
           canonical: `/gallery/${slug}`,
+          title: `${item.title || "Event Album"} — Event Photos & Gallery | Abhyudaya Club`,
+          description: item.description || `Browse event photographs from ${item.title || "Abhyudaya Club"}.`,
+          image: getPublicHttpsUrl(item.coverImage),
+          imageAlt: item.title || "Abhyudaya Club event album",
+          galleryAlbum: item,
           imageSelector:
             ".gallery-clean-media",
         });
@@ -533,18 +576,18 @@ function injectMeta(htmlTemplate, meta) {
    * Lightweight fallback for crawlers without JS.
    */
 
-  if (meta.path !== "/") {
+  if (meta.path !== "/" && !meta.blog && !meta.blogListing) {
+    const galleryContent = meta.galleryAlbum
+      ? renderGalleryAlbumFallback(meta.galleryAlbum)
+      : Array.isArray(meta.galleryAlbums)
+        ? renderGalleryListingFallback(meta.galleryAlbums)
+        : "";
     const noscriptContent = `
       <noscript>
-        <div style="padding:2rem;font-family:sans-serif;max-width:800px;margin:0 auto;">
-          <h1>${escapeHtml(
-            meta.title || "Abhyudaya Club"
-          )}</h1>
-          <p>${escapeHtml(
-            meta.description ||
-              "Abhyudaya Club — Science & Literary Club of MPEC Kanpur"
-          )}</p>
-        </div>
+        ${galleryContent || `<div style="padding:2rem;font-family:sans-serif;max-width:800px;margin:0 auto;">
+          <h1>${escapeHtml(meta.title || "Abhyudaya Club")}</h1>
+          <p>${escapeHtml(meta.description || "Abhyudaya Club — Science & Literary Club of MPEC Kanpur")}</p>
+        </div>`}
       </noscript>
     `;
 
@@ -555,6 +598,49 @@ function injectMeta(htmlTemplate, meta) {
   }
 
   return html;
+}
+
+function renderGalleryListingFallback(albums) {
+  const seenImages = new Set();
+  const entries = albums.flatMap((album) => {
+    const imageUrl = getPublicHttpsUrl(
+      album.coverImage || album.photos?.[0]?.src || album.photos?.[0]?.thumbnailSrc
+    );
+    if (!imageUrl || seenImages.has(imageUrl) || !album.slug) return [];
+    seenImages.add(imageUrl);
+
+    const title = album.title || "Abhyudaya Club event album";
+    const href = `/gallery/${encodeURIComponent(album.slug)}`;
+    return [`<li><a href="${escapeHtml(href)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(`${title} cover`)}"${getImageDimensions(album.width, album.height)} loading="lazy"><span>${escapeHtml(title)}</span></a></li>`];
+  });
+
+  return `<main style="padding:2rem;font-family:sans-serif;max-width:1200px;margin:0 auto;"><h1>Photography Archive &amp; Event Albums</h1><p>Explore event photographs from Abhyudaya Club at MPEC Kanpur.</p><ul>${entries.join("")}</ul></main>`;
+}
+
+function renderGalleryAlbumFallback(album) {
+  const seenImages = new Set();
+  const photos = (Array.isArray(album.photos) ? album.photos : [])
+    .filter((photo) => !photo.isVideo)
+    .flatMap((photo, index) => {
+      const imageUrl = getPublicHttpsUrl(photo.src || photo.thumbnailSrc || photo.rawSrc);
+      if (!imageUrl || seenImages.has(imageUrl)) return [];
+      seenImages.add(imageUrl);
+
+      const title = photo.title || `${album.title || "Event album"} photo ${index + 1}`;
+      return [`<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}"${getImageDimensions(photo.width, photo.height)} loading="lazy"><figcaption>${escapeHtml(title)}</figcaption></figure>`];
+    });
+
+  return `<main style="padding:2rem;font-family:sans-serif;max-width:1200px;margin:0 auto;"><p><a href="/gallery">Back to all event albums</a></p><h1>${escapeHtml(album.title || "Event Album")}</h1><p>${escapeHtml(album.description || "")}</p>${photos.join("")}</main>`;
+}
+
+function getImageDimensions(width, height) {
+  const validWidth = Number.isFinite(Number(width)) && Number(width) > 0
+    ? ` width="${Math.round(Number(width))}"`
+    : "";
+  const validHeight = Number.isFinite(Number(height)) && Number(height) > 0
+    ? ` height="${Math.round(Number(height))}"`
+    : "";
+  return `${validWidth}${validHeight}`;
 }
 
 /* =========================================================
