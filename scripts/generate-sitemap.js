@@ -1,5 +1,5 @@
 
-/* global process, Buffer */
+/* global process */
 
 import fs from "node:fs";
 import path from "node:path";
@@ -12,6 +12,7 @@ import {
 } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { isValidPublishedBlog } from "./blog-prerender-utils.js";
+import { parseStaticGallery, readBuildManifest } from "./static-gallery.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASE_URL = "https://www.abhyudayaclub.in";
@@ -98,7 +99,16 @@ function imageUrl(value, manifest) {
 
   const raw = value.trim();
 
-  if (/^https:\/\//i.test(raw)) return raw;
+  if (/^https:\/\//i.test(raw)) {
+    try {
+      const parsed = new URL(raw);
+      if (!parsed.hostname || parsed.username || parsed.password) return null;
+      parsed.hash = "";
+      return parsed.href;
+    } catch {
+      return null;
+    }
+  }
 
   if (/^(?:data:|blob:|javascript:|http:\/\/|\/\/)/i.test(raw)) {
     return null;
@@ -130,60 +140,8 @@ function imageUrl(value, manifest) {
   return null;
 }
 
-async function parseStaticGallery(manifest) {
-  const sourcePath = path.join(ROOT, "src/data/staticGalleryAlbums.js");
-  let source = fs.readFileSync(sourcePath, "utf8");
-
-  const imports = [
-    ...source.matchAll(
-      /^import\s+(\w+)\s+from\s+["'](\.\.\/assets\/[^"']+)["'];?\s*$/gm
-    ),
-  ];
-
-  for (const [, binding, assetPath] of imports) {
-    const key = `src/assets/${path.basename(assetPath)}`;
-
-    const entry =
-      manifest[key] ||
-      Object.entries(manifest).find(([name]) =>
-        name.endsWith(`/assets/${path.basename(assetPath)}`)
-      )?.[1];
-
-    if (!entry?.file) {
-      throw new Error(`Vite manifest is missing the gallery image ${assetPath}`);
-    }
-
-    source = source.replace(
-      new RegExp(
-        `^import\\s+${binding}\\s+from\\s+["'][^"']+["'];?\\s*$`,
-        "m"
-      ),
-      `const ${binding} = ${JSON.stringify(
-        `/${entry.file.replace(/^\//, "")}`
-      )};`
-    );
-  }
-
-  const isolated = source
-    .replace(/export\s+const\s+STATIC_ALBUMS\s*=/, "const STATIC_ALBUMS =")
-    .concat("\nexport { STATIC_ALBUMS };");
-
-  const encoded = Buffer.from(isolated).toString("base64");
-  const module = await import(`data:text/javascript;base64,${encoded}`);
-
-  return module.STATIC_ALBUMS;
-}
-
 async function generate() {
-  const manifestPath = path.join(DIST_DIR, ".vite/manifest.json");
-
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error(
-      "Vite build manifest is missing. Run vite build before sitemap generation."
-    );
-  }
-
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const manifest = readBuildManifest();
   const db = initializeFirebase();
   if (!db && requireFirestoreForBlogs) {
     throw new Error("Firestore credentials are required to generate the production blog sitemap.");
