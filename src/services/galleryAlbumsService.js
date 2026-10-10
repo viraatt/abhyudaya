@@ -61,6 +61,31 @@ function normalizeFirestoreAlbum(doc) {
   };
 }
 
+function toAlbumCards(albums) {
+  return albums.map((album) => ({
+    id: album.id,
+    slug: album.slug,
+    title: album.title,
+    subtitle: album.subtitle,
+    category: album.category,
+    date: album.date,
+    year: album.year,
+    description: album.description,
+    coverThumbnail: getCloudinaryThumbnail(album.coverImage),
+    coverImage: album.coverImage,
+    photoCount: Array.isArray(album.photos) ? album.photos.length : (album.photoCount || 0),
+    featured: Boolean(album.featured),
+  }));
+}
+
+export function getStaticGalleryAlbums() {
+  return toAlbumCards(STATIC_ALBUMS.map((album) => ({
+    ...album,
+    category: normalizeCategory(album.category),
+    date: formatDisplayDate(album.date),
+  })));
+}
+
 /**
  * Fetches published albums from Firestore.
  * Falls back to STATIC_ALBUMS ONLY when Firestore has zero documents.
@@ -138,21 +163,7 @@ export async function getGalleryAlbums({ category = "all", search = "", year = "
     );
   }
 
-  // Return album cards with optimized cover thumbnail URLs
-  return filtered.map((album) => ({
-    id: album.id,
-    slug: album.slug,
-    title: album.title,
-    subtitle: album.subtitle,
-    category: album.category,
-    date: album.date,
-    year: album.year,
-    description: album.description,
-    coverThumbnail: getCloudinaryThumbnail(album.coverImage),
-    coverImage: album.coverImage,
-    photoCount: album.photoCount || album.photos?.length || 0,
-    featured: Boolean(album.featured),
-  }));
+  return toAlbumCards(filtered);
 }
 
 /**

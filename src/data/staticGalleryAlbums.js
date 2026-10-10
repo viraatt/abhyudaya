@@ -141,15 +141,6 @@ export const STATIC_ALBUMS = [
         height: 1200,
         aspectRatio: "3/4",
       },
-      {
-        id: "as-04",
-        title: "Satellite & Rocket Model Exhibition",
-        description: "Scale models of ISRO launch vehicles (PSLV, LVM3) created by aerospace enthusiasts.",
-        src: "https://images.unsplash.com/photo-1517976487586-13d82a17f694?auto=format&fit=crop&w=1200&q=80",
-        width: 1200,
-        height: 800,
-        aspectRatio: "3/2",
-      }
     ]
   },
   {
@@ -183,15 +174,6 @@ export const STATIC_ALBUMS = [
         height: 800,
         aspectRatio: "3/2",
       },
-      {
-        id: "am-03",
-        title: "Runway Launch Testing",
-        description: "First gliding tests on the football ground checking center of gravity.",
-        src: "https://images.unsplash.com/photo-1519074069444-1ba4fff16def?auto=format&fit=crop&w=1200&q=80",
-        width: 1200,
-        height: 800,
-        aspectRatio: "3/2",
-      }
     ]
   },
   {

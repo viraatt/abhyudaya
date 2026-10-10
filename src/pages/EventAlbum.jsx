@@ -268,7 +268,8 @@ export default function EventAlbum() {
                         alt={photo.title}
                         width={photo.width || 1200}
                         height={photo.height || 800}
-                        loading={idx < 4 ? "eager" : "lazy"}
+                        loading={idx === 0 ? "eager" : "lazy"}
+                        fetchPriority={idx === 0 ? "high" : "auto"}
                         decoding="async"
                         onLoad={() => handleImageLoaded(photo.id)}
                         onError={(e) => {
