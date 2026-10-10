@@ -76,7 +76,7 @@ export default function BlogPostingSchema({ blog, canonicalUrl }) {
     url: canonicalUrl,
     image: {
       "@type": "ImageObject",
-      url: blog.featuredImage || `${SITE_URL}/og-image.jpg`,
+      url: blog.featuredImage || blog.image || `${SITE_URL}/abhyudaya-logo.png`,
       width: 1200,
       height: 630,
     },
@@ -92,7 +92,7 @@ export default function BlogPostingSchema({ blog, canonicalUrl }) {
       name: ORG_NAME,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/favicon.png`,
+        url: `${SITE_URL}/abhyudaya-logo.png`,
         width: 512,
         height: 512,
       },
@@ -116,7 +116,7 @@ export default function BlogPostingSchema({ blog, canonicalUrl }) {
 
   return (
     <Helmet>
-      <script type="application/ld+json">{JSON.stringify(schema)}</script>
+      <script id="prerender-blogposting-schema" data-rh="true" type="application/ld+json">{JSON.stringify(schema)}</script>
     </Helmet>
   );
 }

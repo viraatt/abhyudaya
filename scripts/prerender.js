@@ -13,6 +13,16 @@ import {
 } from "firebase-admin/app";
 
 import { getFirestore } from "firebase-admin/firestore";
+import {
+  articleText,
+  escapeHtml,
+  isValidPublishedBlog,
+  renderBlogArticle,
+  renderBlogListing,
+  resolveBlogAuthor,
+  injectBlogSeo,
+  injectBlogListing,
+} from "./blog-prerender-utils.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -25,16 +35,6 @@ const BASE_URL = "https://www.abhyudayaclub.in";
 /* =========================================================
    Helpers
 ========================================================= */
-
-function escapeHtml(value = "") {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  }[char]));
-}
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
@@ -72,8 +72,11 @@ function getBlogDescription(blog) {
 
 /* =========================================================
    Firebase Admin Initialization
-   Firebase is OPTIONAL during production builds.
 ========================================================= */
+
+function isProductionBuild() {
+  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production" || process.env.CI === "true";
+}
 
 function initializeFirebase() {
   if (getApps().length) {
@@ -134,9 +137,8 @@ function initializeFirebase() {
       "[prerender] Firebase Admin credentials are not available."
     );
 
-    console.warn(
-      "[prerender] Continuing with static routes only."
-    );
+    if (isProductionBuild()) throw new Error("Firebase Admin credentials are required to prerender production blog pages.");
+    console.warn("[prerender] Continuing with static routes only.");
 
     return null;
   } catch (error) {
@@ -148,9 +150,8 @@ function initializeFirebase() {
       `[prerender] ${error.message}`
     );
 
-    console.warn(
-      "[prerender] Continuing with static routes only."
-    );
+    if (isProductionBuild()) throw new Error("Firebase Admin initialization failed during production prerendering.");
+    console.warn("[prerender] Continuing with static routes only.");
 
     return null;
   }
@@ -222,6 +223,7 @@ async function getRoutesToPrerender(db) {
       path: "/blog",
       dataReady: true,
       canonical: "/blog",
+      blogListing: true,
       imageSelector:
         ".blog-card-image img, .featured-image img",
     },
@@ -260,16 +262,8 @@ async function getRoutesToPrerender(db) {
     },
   ];
 
-  /*
-   * IMPORTANT:
-   * Firebase is optional.
-   *
-   * If Firebase Admin credentials are unavailable,
-   * return the static/public route set instead of
-   * failing the production build.
-   */
-
   if (!db) {
+    if (isProductionBuild()) throw new Error("Firebase is required to verify published blogs during production prerendering.");
     console.warn(
       "[prerender] Firebase unavailable."
     );
@@ -312,7 +306,7 @@ async function getRoutesToPrerender(db) {
 
   try {
     const [
-      blogs,
+      blogSnapshot,
       events,
       albums,
     ] = await Promise.all([
@@ -332,22 +326,27 @@ async function getRoutesToPrerender(db) {
         .get(),
     ]);
 
-    blogs.forEach((doc) => {
-      const item = doc.data();
+    const publishedBlogs = blogSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter(isValidPublishedBlog);
+    const renderableBlogs = await Promise.all(publishedBlogs.map((blog) => resolveBlogAuthor(db, blog)));
+    const blogListing = routes.find((route) => route.path === "/blog");
+    if (blogListing) blogListing.blogs = renderableBlogs;
 
-      if (item.slug) {
-        const slug = encodeURIComponent(
-          item.slug
-        );
-
-        routes.push({
-          path: `/blog/${slug}`,
-          dataReady: true,
-          canonical: `/blog/${slug}`,
-          imageSelector:
-            ".details-featured-image",
-        });
-      }
+    renderableBlogs.forEach((item) => {
+      const slug = encodeURIComponent(item.slug);
+      routes.push({
+        path: `/blog/${slug}`,
+        dataReady: true,
+        canonical: `/blog/${slug}`,
+        title: `${item.title} | Abhyudaya Club`,
+        description: getBlogDescription(item),
+        image: getBlogSocialImage(item),
+        imageAlt: item.title,
+        type: "article",
+        imageSelector: ".details-featured-image",
+        blog: item,
+      });
     });
 
     events.forEach((doc) => {
@@ -428,6 +427,7 @@ async function getRoutesToPrerender(db) {
       );
     }
   } catch (error) {
+    if (isProductionBuild()) throw new Error(`Firestore query failed during production prerendering: ${error.message}`);
     /*
      * Firebase may be configured but temporarily
      * unavailable. Do not break production build.
@@ -479,6 +479,18 @@ async function getRoutesToPrerender(db) {
 function injectMeta(htmlTemplate, meta) {
   let html = htmlTemplate;
 
+  const setMeta = (attribute, key, value) => {
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(
+      `<meta\\s+${attribute}=["']${escapedKey}["']\\s+content=["'][^"']*["']\\s*\\/?>`,
+      "i"
+    );
+    const tag = `<meta ${attribute}="${key}" content="${escapeHtml(value)}" />`;
+    html = pattern.test(html)
+      ? html.replace(pattern, tag)
+      : html.replace(/<\/head>/i, `    ${tag}\n  </head>`);
+  };
+
   if (meta.title) {
     html = html.replace(
       /<title>.*?<\/title>/i,
@@ -498,78 +510,37 @@ function injectMeta(htmlTemplate, meta) {
   }
 
   if (meta.canonical) {
-    html = html.replace(
-      /<link\s+rel=["']canonical["']\s+href=["'].*?["']\s*\/?>/i,
-      `<link rel="canonical" href="${escapeHtml(
-        `${BASE_URL}${meta.canonical}`
-      )}" />`
-    );
+    const canonicalTag = `<link rel="canonical" href="${escapeHtml(`${BASE_URL}${meta.canonical}`)}" />`;
+    const canonicalPattern = /<link\s+rel=["']canonical["']\s+href=["'].*?["']\s*\/?>/i;
+    html = canonicalPattern.test(html)
+      ? html.replace(canonicalPattern, canonicalTag)
+      : html.replace(/<\/head>/i, `    ${canonicalTag}\n  </head>`);
   }
 
   if (meta.title) {
-    html = html.replace(
-      /<meta\s+property=["']og:title["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:title" content="${escapeHtml(
-        meta.title
-      )}" />`
-    );
-
-    html = html.replace(
-      /<meta\s+name=["']twitter:title["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta name="twitter:title" content="${escapeHtml(
-        meta.title
-      )}" />`
-    );
+    setMeta("property", "og:title", meta.title);
+    setMeta("name", "twitter:title", meta.title);
   }
 
   if (meta.description) {
-    html = html.replace(
-      /<meta\s+property=["']og:description["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:description" content="${escapeHtml(
-        meta.description
-      )}" />`
-    );
-
-    html = html.replace(
-      /<meta\s+name=["']twitter:description["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta name="twitter:description" content="${escapeHtml(
-        meta.description
-      )}" />`
-    );
+    setMeta("property", "og:description", meta.description);
+    setMeta("name", "twitter:description", meta.description);
   }
 
   if (meta.canonical) {
-    html = html.replace(
-      /<meta\s+property=["']og:url["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:url" content="${escapeHtml(
-        `${BASE_URL}${meta.canonical}`
-      )}" />`
-    );
+    setMeta("property", "og:url", `${BASE_URL}${meta.canonical}`);
   }
 
   if (meta.image) {
-    html = html.replace(
-      /<meta\s+property=["']og:image["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:image" content="${escapeHtml(
-        meta.image
-      )}" />`
-    );
-
-    html = html.replace(
-      /<meta\s+name=["']twitter:image["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta name="twitter:image" content="${escapeHtml(
-        meta.image
-      )}" />`
-    );
+    setMeta("property", "og:image", meta.image);
+    setMeta("property", "og:image:alt", meta.imageAlt || "Abhyudaya Club blog article");
+    setMeta("property", "og:image:width", "1200");
+    setMeta("property", "og:image:height", "630");
+    setMeta("name", "twitter:image", meta.image);
   }
 
   if (meta.type) {
-    html = html.replace(
-      /<meta\s+property=["']og:type["']\s+content=["'].*?["']\s*\/?>/i,
-      `<meta property="og:type" content="${escapeHtml(
-        meta.type
-      )}" />`
-    );
+    setMeta("property", "og:type", meta.type);
   }
 
   /*
@@ -686,8 +657,12 @@ async function prerenderStatic() {
   let count = 0;
 
   for (const item of routes) {
-    const customizedHtml =
-      injectMeta(baseHtml, item);
+    let customizedHtml = injectMeta(baseHtml, item);
+    if (item.blog) {
+      customizedHtml = injectBlogSeo(customizedHtml, await renderBlogArticle(item.blog));
+    } else if (item.blogListing) {
+      customizedHtml = injectBlogListing(customizedHtml, renderBlogListing(item.blogs || []));
+    }
 
     const routeDir =
       item.path === "/"

@@ -52,11 +52,20 @@ function extractCandidateName(item, depth = 0) {
     item.alumniName,
     item.authorName,
     item.writerName,
+    item.value,
+    item.label,
   ];
   for (const f of fields) {
     if (typeof f === "string" && isValidName(f)) {
       return f.trim();
     }
+  }
+
+  // Some legacy profiles store the name as a nested object (for example
+  // { name: { value: "Apoorva Awasthi" } }). Resolve it before rendering.
+  if (item.name && typeof item.name === "object") {
+    const nestedName = extractCandidateName(item.name, depth + 1);
+    if (nestedName) return nestedName;
   }
 
   // 2. Combined first + last name

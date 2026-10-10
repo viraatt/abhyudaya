@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 import { useAuth } from "../../context/AuthContext";
+import { extractAuthorName } from "../../utils/authorHelper";
+import { FiBookOpen, FiCalendar, FiUsers } from "react-icons/fi";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
@@ -58,9 +60,9 @@ export default function Dashboard() {
               marginBottom: "20px",
             }}
           >
-            <h2>Welcome Back, {currentUser?.name || "Admin"}</h2>
+            <h2>Welcome Back, {extractAuthorName(currentUser) || "Admin"}</h2>
             <p style={{ color: "#64748b", marginTop: "4px" }}>
-              <strong>Email:</strong> {currentUser?.email} | <strong>Role:</strong> {currentUser?.role}
+              <strong>Email:</strong> {typeof currentUser?.email === "string" ? currentUser.email : ""} | <strong>Role:</strong> {typeof currentUser?.role === "string" ? currentUser.role : "Admin"}
             </p>
           </div>
 

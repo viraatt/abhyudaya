@@ -175,13 +175,22 @@ export default function ReviewAlumniArticle() {
   const handleDelete = async () => {
     setActionLoading(true);
     try {
-      await deleteAlumniSubmission(id);
+      await deleteAlumniSubmission(id, currentUser);
       setShowDeleteModal(false);
       toast.success("Submission deleted.");
       navigate("/admin/alumni-articles");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete submission.");
+      console.error("[ReviewAlumniArticle] delete failed", {
+        errorCode: err?.code || "unknown",
+        errorMessage: err?.message || String(err),
+        articleId: id,
+        collections: ["alumniSubmissions", "blogs"],
+        currentUserUid: currentUser?.uid || null,
+        currentUserRole: currentUser?.role || null,
+      });
+      toast.error(err?.code === "permission-denied"
+        ? "You do not have permission to delete this article."
+        : (err?.message || "Failed to delete submission."));
       setActionLoading(false);
     }
   };
@@ -306,7 +315,7 @@ export default function ReviewAlumniArticle() {
                     </div>
                   ) : (
                     <div className="no-image-notice">
-                      No featured header image uploaded by author.
+                      No featured image provided. This article can be approved without one.
                     </div>
                   )}
 
@@ -629,7 +638,7 @@ export default function ReviewAlumniArticle() {
                 <p>
                   Are you sure you want to approve <strong>"{article.title}"</strong> submitted by <strong>{article.author?.name}</strong>?
                 </p>
-                <p style={{ color: "#cbd5e1", fontSize: "13px" }}>
+                <p style={{ color: "var(--ink-soft, #4a4f6b)", fontSize: "13px" }}>
                   Once approved, this article will immediately be published live to the public Abhyudaya Blog and will appear in the alumni author&apos;s dashboard.
                 </p>
                 <div className="modal-actions-row">

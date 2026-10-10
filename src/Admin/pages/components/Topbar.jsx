@@ -4,6 +4,7 @@ import { auth } from "../../../Firebase/firebase";
 import { useAuth } from "../../../context/AuthContext";
 import { ROLES, normalizeRole } from "../../config/roles";
 import { FiLogOut, FiFeather } from "react-icons/fi";
+import { extractAuthorName } from "../../../utils/authorHelper";
 
 export default function Topbar({ title, subtitle }) {
   const navigate = useNavigate();
@@ -23,18 +24,42 @@ export default function Topbar({ title, subtitle }) {
   const isAlumni = currentRole === ROLES.ALUMNI;
 
   const userName =
-    currentUser?.name ||
-    currentUser?.displayName ||
-    currentUser?.fullName ||
-    auth.currentUser?.displayName ||
-    currentUser?.email?.split("@")[0] ||
+    extractAuthorName(currentUser, auth.currentUser) ||
+    (typeof currentUser?.email === "string" ? currentUser.email.split("@")[0] : "") ||
     "Contributor";
 
   const userInitial = userName.charAt(0).toUpperCase();
 
   const isWriteArticle = location.pathname === "/admin/blogs/add";
-  const defaultTitle = isWriteArticle ? "Editorial Studio" : "Dashboard";
-  const displayTitle = title || defaultTitle;
+  const routeTitle = [
+    ["/admin/dashboard", "Dashboard"],
+    ["/admin/events/add", "Add Event"],
+    ["/admin/events", "Events"],
+    ["/admin/certificates/create", "Create Certificates"],
+    ["/admin/certificates/add", "Create Certificate"],
+    ["/admin/certificates", "Certificates"],
+    ["/admin/registrations", "Registrations"],
+    ["/admin/time-capsules", "Time Capsules"],
+    ["/admin/announcements", "Announcements"],
+    ["/admin/students", "Students"],
+    ["/admin/registration-outreach", "Registration Outreach"],
+    ["/admin/blogs/add", isAlumni ? "Write Article" : "Create Blog"],
+    ["/admin/blogs/edit/", "Edit Article"],
+    ["/admin/blogs", "Blog Manager"],
+    ["/admin/alumni-articles/review/", "Review Alumni Article"],
+    ["/admin/alumni-articles", "Alumni Articles"],
+    ["/admin/media", "Media Library"],
+    ["/admin/team", "Team"],
+    ["/admin/gallery", "Gallery"],
+    ["/admin/contact", "Contact"],
+    ["/admin/reviews", "Reviews"],
+    ["/admin/users", "Users"],
+  ].find(([path]) =>
+    path.endsWith("/")
+      ? location.pathname.startsWith(path)
+      : location.pathname === path || location.pathname.startsWith(`${path}/`)
+  )?.[1] || "Dashboard";
+  const displayTitle = title || routeTitle;
   const displaySubtitle = subtitle || `Welcome back, ${userName}`;
 
   return (

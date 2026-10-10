@@ -39,7 +39,6 @@ import { FaXTwitter } from "react-icons/fa6";
 
 import BlogPostingSchema from "../components/seo/schemas/BlogPostingSchema";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema";
-import OrganizationSchema from "../components/seo/schemas/OrganizationSchema";
 import LatestBlogsSidebar from "../components/blog/LatestBlogsSidebar";
 import { markPrerenderReady } from "../utils/prerender.js";
 
@@ -63,7 +62,7 @@ async function renderBlogContent(content) {
         import("@tiptap/extension-image"),
       ]);
       return generateHTML(content, [
-        StarterKit,
+        StarterKit.configure({ link: false, underline: false }),
         Underline,
         LinkExtension,
         TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -88,6 +87,19 @@ async function renderBlogContent(content) {
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 const ORG_NAME = "Abhyudaya Club";
+
+function getPublicSocialImage(value) {
+  if (typeof value !== "string" || !value.trim()) return `${SITE_URL}/abhyudaya-logo.png`;
+  try {
+    const imageUrl = new URL(value.trim());
+    if (imageUrl.protocol === "https:" && imageUrl.hostname && !imageUrl.username && !imageUrl.password) {
+      return imageUrl.href;
+    }
+  } catch {
+    // Ignore non-public or malformed image URLs and use the official logo.
+  }
+  return `${SITE_URL}/abhyudaya-logo.png`;
+}
 
 export default function BlogDetails() {
   // Extract route parameters flexibly (supports both :slug and :id params)
@@ -120,7 +132,20 @@ export default function BlogDetails() {
   const [posting, setPosting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  const canonicalUrl = `${SITE_URL}/blog/${encodeURIComponent(blogIdentifier)}`;
+  const featuredImage = blog?.featuredImage || blog?.image;
+  const ogImage = getPublicSocialImage(featuredImage);
+
+  useEffect(() => {
+    if (!blog || !import.meta.env.DEV) return;
+    console.log("[SEO] Blog social image:", {
+      slug: blog.slug || blogIdentifier,
+      featuredImage,
+      socialImage: ogImage,
+    });
+  }, [blog, blogIdentifier, featuredImage, ogImage]);
+
+  const canonicalSlug = blog?.slug || blogIdentifier;
+  const canonicalUrl = `${SITE_URL}/blog/${encodeURIComponent(canonicalSlug)}`;
 
   const shareText = blog
     ? `${blog.title} | ${ORG_NAME}`
@@ -507,8 +532,6 @@ export default function BlogDetails() {
     blog.excerpt ||
     (blog.content || "").replace(/<[^>]+>/g, "").slice(0, 160);
 
-  const ogImage = blog.featuredImage || `${SITE_URL}/og-image.jpg`;
-
   const tags = Array.isArray(blog.tags) ? blog.tags : [];
   const keywords = [
     blog.category,
@@ -546,6 +569,7 @@ export default function BlogDetails() {
         <meta property="og:title" content={`${blog.title} | ${ORG_NAME}`} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:image" content={ogImage} />
+        <meta property="og:image:alt" content={blog.title} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:url" content={canonicalUrl} />
@@ -569,7 +593,6 @@ export default function BlogDetails() {
       {/* JSON-LD Structured Data */}
       <BlogPostingSchema blog={blog} canonicalUrl={canonicalUrl} />
       <BreadcrumbSchema items={breadcrumbItems} />
-      <OrganizationSchema />
 
       <section className="blog-details">
 
@@ -611,54 +634,65 @@ export default function BlogDetails() {
 
           {/* Featured Image — fetchpriority=high as it is the LCP element */}
           {blog.featuredImage && (
-            <img
-              src={blog.featuredImage}
-              alt={`${blog.title} — featured image`}
-              className="details-featured-image"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              width="1200"
-              height="630"
-              style={{ width: "100%", borderRadius: "12px", marginBottom: "2rem" }}
-            />
+            <div className="details-featured-image-wrapper">
+              <img
+                src={blog.featuredImage}
+                alt={`${blog.title} — featured image`}
+                className="details-featured-image"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                width="1200"
+                height="630"
+              />
+            </div>
           )}
 
           {/* Share Buttons */}
           <div className="share-section">
-            <h2>Share this article</h2>
-            <div className="share-buttons">
+            <div className="share-heading-group">
+              <h2 className="share-title">Share this article</h2>
+              <p className="share-subtitle">Share this story with your network</p>
+            </div>
+            <div className="share-buttons" role="group" aria-label="Share this article">
               <button
+                type="button"
                 className="share-btn whatsapp"
                 onClick={shareWhatsapp}
                 aria-label="Share on WhatsApp"
+                title="Share on WhatsApp"
               >
                 <FaWhatsapp aria-hidden="true" />
-                WhatsApp
+                <span className="share-sr-only">WhatsApp</span>
               </button>
               <button
+                type="button"
                 className="share-btn linkedin"
                 onClick={shareLinkedin}
                 aria-label="Share on LinkedIn"
+                title="Share on LinkedIn"
               >
                 <FaLinkedin aria-hidden="true" />
-                LinkedIn
+                <span className="share-sr-only">LinkedIn</span>
               </button>
               <button
+                type="button"
                 className="share-btn twitter"
                 onClick={shareTwitter}
                 aria-label="Share on X (Twitter)"
+                title="Share on X"
               >
                 <FaXTwitter aria-hidden="true" />
-                X
+                <span className="share-sr-only">X</span>
               </button>
               <button
+                type="button"
                 className="share-btn copy"
                 onClick={copyLink}
                 aria-label={copied ? "Link copied" : "Copy article link"}
               >
                 <FiCopy aria-hidden="true" />
-                {copied ? "Copied!" : "Copy Link"}
+                <span aria-live="polite">{copied ? "✓ Link copied" : "Copy link"}</span>
               </button>
             </div>
           </div>
@@ -752,14 +786,16 @@ export default function BlogDetails() {
                     className="related-card"
                     aria-label={`Read related article: ${item.title}`}
                   >
-                    <img
-                      src={item.featuredImage || "https://placehold.co/400x250?text=No+Image"}
-                      alt={`${item.title} featured image`}
-                      width="400"
-                      height="250"
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    {item.featuredImage && (
+                      <img
+                        src={item.featuredImage}
+                        alt={`${item.title} featured image`}
+                        width="400"
+                        height="250"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
                     <div className="related-body">
                       <span>{item.category}</span>
                       <h3>{item.title}</h3>

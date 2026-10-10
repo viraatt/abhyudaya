@@ -9,6 +9,33 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
     }
 
+    function ownsAlumniArticle(data) {
+      return request.auth != null
+        && ((('authorUid' in data) && data.authorUid == request.auth.uid)
+          || (('authorId' in data) && data.authorId == request.auth.uid));
+    }
+
+    function preservesAlumniOwner(before, after) {
+      return after.get('authorUid', null) == before.get('authorUid', null)
+        && after.get('authorId', null) == before.get('authorId', null);
+    }
+
+    function ownsLinkedAlumniBlog(blogId, blogData) {
+      return request.auth != null
+        && blogData.isAlumniContribution == true
+        && blogData.submissionId is string
+        && exists(/databases/$(database)/documents/alumniSubmissions/$(blogData.submissionId))
+        && (get(/databases/$(database)/documents/alumniSubmissions/$(blogData.submissionId)).data.get('authorUid', null) == request.auth.uid
+          || get(/databases/$(database)/documents/alumniSubmissions/$(blogData.submissionId)).data.get('authorId', null) == request.auth.uid);
+    }
+
+    function linksToOwnedAlumniBlog(submissionId, blogId) {
+      return blogId is string
+        && exists(/databases/$(database)/documents/blogs/$(blogId))
+        && get(/databases/$(database)/documents/blogs/$(blogId)).data.isAlumniContribution == true
+        && get(/databases/$(database)/documents/blogs/$(blogId)).data.submissionId == submissionId;
+    }
+
     // ============================================================
     // USERS (admin accounts)
     // Authenticated users can read their own record.
@@ -72,18 +99,48 @@ service cloud.firestore {
     // Public: read published blogs only.
     // Super Admin: full create/update/delete including publishing alumni articles.
     // Blog Admin: can manage standard blogs, but CANNOT publish alumni articles.
-    // Alumni: CANNOT write to blogs directly at all.
+    // Alumni can edit, unpublish, and delete only their own linked contributions.
     // ============================================================
     match /blogs/{blogId} {
       allow read: if isAdmin(['super_admin', 'blog_admin'])
-        || resource.data.status == 'Published';
+        || resource.data.status == 'Published'
+        || (isAdmin(['alumni'])
+          && resource.data.isAlumniContribution == true
+          && (ownsAlumniArticle(resource.data) || ownsLinkedAlumniBlog(blogId, resource.data)));
 
       // Only super_admin can create/update alumni contribution blogs
       // Blog Admin can manage regular blogs only
-      allow create, update: if isAdmin(['super_admin'])
+      allow create: if isAdmin(['super_admin'])
         || (isAdmin(['blog_admin']) && request.resource.data.isAlumniContribution != true);
 
-      allow delete: if isAdmin(['super_admin', 'blog_admin']);
+      allow update: if isAdmin(['super_admin'])
+        || (isAdmin(['blog_admin'])
+          && resource.data.isAlumniContribution != true
+          && request.resource.data.isAlumniContribution != true)
+        || (isAdmin(['alumni'])
+          && resource.data.isAlumniContribution == true
+          && (ownsAlumniArticle(resource.data) || ownsLinkedAlumniBlog(blogId, resource.data))
+          && request.resource.data.isAlumniContribution == true
+          && request.resource.data.status == resource.data.status
+          && preservesAlumniOwner(resource.data, request.resource.data)
+          && request.resource.data.submissionId == resource.data.submissionId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'slug', 'category', 'featuredImage', 'tags', 'seo',
+            'publishDate', 'author', 'alumniAuthor', 'excerpt', 'content', 'updatedAt'
+          ]))
+        || (isAdmin(['alumni'])
+          && resource.data.isAlumniContribution == true
+          && (ownsAlumniArticle(resource.data) || ownsLinkedAlumniBlog(blogId, resource.data))
+          && resource.data.status == 'Published'
+          && request.resource.data.status == 'Draft'
+          && preservesAlumniOwner(resource.data, request.resource.data)
+          && request.resource.data.submissionId == resource.data.submissionId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']));
+
+      allow delete: if isAdmin(['super_admin', 'blog_admin'])
+        || (isAdmin(['alumni'])
+          && resource.data.isAlumniContribution == true
+          && (ownsAlumniArticle(resource.data) || ownsLinkedAlumniBlog(blogId, resource.data)));
     }
 
     // ============================================================
@@ -94,17 +151,21 @@ service cloud.firestore {
     // ============================================================
     match /alumniSubmissions/{submissionId} {
       allow read: if isAdmin(['super_admin', 'blog_admin'])
-        || (request.auth != null && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid))
-        || resource.data.status == 'published'
-        || resource.data.status == 'approved';
+        || (isAdmin(['alumni'])
+          && request.auth != null
+          && resource.data.authorUid == request.auth.uid)
+        || (isAdmin(['alumni'])
+          && request.auth != null
+          && resource.data.authorId == request.auth.uid)
+        // Public article pages use the sanitized blogs document; keep private
+        // submission details (including author email) out of authenticated reads.
+        || (request.auth == null
+          && (resource.data.status == 'published' || resource.data.status == 'approved'));
 
-      allow create: if (isAdmin(['super_admin', 'blog_admin']))
-        || (
-          request.auth != null
-          && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending')
-          && request.resource.data.status != 'published'
-          && request.resource.data.status != 'approved'
-        );
+      allow create: if isAdmin(['super_admin', 'blog_admin'])
+        || (isAdmin(['alumni'])
+          && ownsAlumniArticle(request.resource.data)
+          && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending'));
 
       // Super Admin has full review/publish rights.
       // Blog Admin cannot approve or publish alumni submissions.
@@ -117,18 +178,49 @@ service cloud.firestore {
         )
         || (
           request.auth != null
-          && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid)
+          && isAdmin(['alumni'])
+          && ownsAlumniArticle(resource.data)
           && (resource.data.status == 'draft' || resource.data.status == 'changes_requested')
           && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending' || request.resource.data.status == 'resubmitted')
           && request.resource.data.status != 'published'
           && request.resource.data.status != 'approved'
-        );
+        )
+        // Alumni may edit their own already-published article while keeping it published.
+        || (isAdmin(['alumni'])
+          && ownsAlumniArticle(resource.data)
+          && resource.data.status == 'published'
+          && request.resource.data.status == 'published'
+          && preservesAlumniOwner(resource.data, request.resource.data)
+          && request.resource.data.publishedBlogId == resource.data.publishedBlogId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title', 'slug', 'category', 'excerpt', 'content', 'featuredImage', 'tags',
+            'author', 'alumniAuthor', 'authorEmail', 'authorProfilePhoto', 'updatedAt'
+          ]))
+        // After unpublishing, the owner can edit the approved article back into a draft.
+        || (isAdmin(['alumni'])
+          && ownsAlumniArticle(resource.data)
+          && resource.data.status == 'approved'
+          && request.resource.data.status == 'draft'
+          && preservesAlumniOwner(resource.data, request.resource.data)
+          && request.resource.data.publishedBlogId == resource.data.publishedBlogId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'title', 'slug', 'category', 'excerpt', 'content', 'featuredImage', 'tags',
+            'author', 'alumniAuthor', 'authorEmail', 'authorProfilePhoto', 'updatedAt'
+          ]))
+        // Unpublishing is limited to the owning alumni contributor and this one status change.
+        || (isAdmin(['alumni'])
+          && ownsAlumniArticle(resource.data)
+          && resource.data.status == 'published'
+          && request.resource.data.status == 'approved'
+          && preservesAlumniOwner(resource.data, request.resource.data)
+          && (request.resource.data.publishedBlogId == resource.data.publishedBlogId
+            || linksToOwnedAlumniBlog(submissionId, request.resource.data.publishedBlogId))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'publishedBlogId']));
 
       allow delete: if isAdmin(['super_admin'])
         || (
-          request.auth != null
-          && (resource.data.authorUid == request.auth.uid || resource.data.authorId == request.auth.uid)
-          && resource.data.status == 'draft'
+          isAdmin(['alumni'])
+          && ownsAlumniArticle(resource.data)
         );
     }
 

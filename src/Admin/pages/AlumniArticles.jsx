@@ -16,6 +16,7 @@ import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useToast } from "../components/Toast";
+import { useAuth } from "../../context/AuthContext";
 import {
   getAlumniSubmissions,
   deleteAlumniSubmission,
@@ -27,6 +28,7 @@ import "./AlumniArticles.css";
 
 export default function AlumniArticles() {
   const toast = useToast();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -76,12 +78,21 @@ export default function AlumniArticles() {
       return;
     }
     try {
-      await deleteAlumniSubmission(id);
+      await deleteAlumniSubmission(id, currentUser);
       setSubmissions((prev) => prev.filter((item) => item.id !== id));
       toast.success("Submission deleted successfully.");
     } catch (err) {
-      console.error("Delete error:", err);
-      toast.error("Failed to delete submission.");
+      console.error("[AlumniArticles] delete failed", {
+        errorCode: err?.code || "unknown",
+        errorMessage: err?.message || String(err),
+        articleId: id,
+        collections: ["alumniSubmissions", "blogs"],
+        currentUserUid: currentUser?.uid || null,
+        currentUserRole: currentUser?.role || null,
+      });
+      toast.error(err?.code === "permission-denied"
+        ? "You do not have permission to delete this article."
+        : (err?.message || "Failed to delete submission."));
     }
   };
 

@@ -28,6 +28,8 @@ import { ROLES, normalizeRole } from "../config/roles";
 import {
   getAlumniSubmissionsByAuthor,
   deleteAlumniSubmission,
+  publishAlumniArticleToBlog,
+  unpublishAlumniArticle,
   SUBMISSION_STATUSES,
 } from "../../Firebase/alumniArticleService";
 import Sidebar from "./components/Sidebar";
@@ -50,6 +52,7 @@ function BlogManager() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [updatingArticleId, setUpdatingArticleId] = useState(null);
 
   const fetchBlogs = useCallback(async () => {
     setLoading(true);
@@ -86,7 +89,7 @@ function BlogManager() {
     fetchBlogs();
   }, [fetchBlogs]);
 
-  const handleDelete = async (id, isDraft = false) => {
+  const handleDelete = async (id, blog = null) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this article?"
     );
@@ -94,19 +97,32 @@ function BlogManager() {
 
     try {
       if (isAlumniUser) {
-        await deleteAlumniSubmission(id);
+        await deleteAlumniSubmission(id, currentUser);
+      } else if (blog?.isAlumniContribution && blog?.submissionId) {
+        await deleteAlumniSubmission(blog.submissionId, currentUser, blog.id);
       } else {
         await deleteDoc(doc(db, "blogs", id));
       }
       setBlogs((prev) => prev.filter((blog) => blog.id !== id));
       toast.success("Article deleted successfully.");
     } catch (error) {
-      console.error("Delete Error:", error);
-      toast.error("Failed to delete article.");
+      console.error("[BlogManager] delete article failed", {
+        errorCode: error?.code || "unknown",
+        errorMessage: error?.message || String(error),
+        articleId: isAlumniUser ? id : (blog?.submissionId || id),
+        submissionId: isAlumniUser ? id : (blog?.submissionId || null),
+        blogId: blog?.id || null,
+        collections: isAlumniUser || blog?.isAlumniContribution ? ["alumniSubmissions", "blogs"] : ["blogs"],
+        currentUserUid: currentUser?.uid || null,
+        currentUserRole: currentUser?.role || null,
+      });
+      toast.error(error?.code === "permission-denied"
+        ? "You do not have permission to delete this article."
+        : (error?.message || "Failed to delete article."));
     }
   };
 
-  const handleStatusChange = async (id, newStatus, isAlumniContribution = false) => {
+  const handleStatusChange = async (id, newStatus, isAlumniContribution = false, submissionId = null) => {
     // CRITICAL: Blog Admin must NOT publish alumni-submitted articles
     if (isAlumniContribution && !isSuperAdmin && newStatus === "Published") {
       toast.error("Only Super Admin has authority to publish alumni articles.");
@@ -114,7 +130,13 @@ function BlogManager() {
     }
 
     try {
-      await updateBlogStatusService(id, newStatus);
+      if (isAlumniContribution && submissionId && newStatus === "Draft") {
+        await unpublishAlumniArticle(submissionId, currentUser);
+      } else if (isAlumniContribution && submissionId && newStatus === "Published" && isSuperAdmin) {
+        await publishAlumniArticleToBlog(submissionId, currentUser);
+      } else {
+        await updateBlogStatusService(id, newStatus);
+      }
       setBlogs((prev) =>
         prev.map((blog) => (blog.id === id ? { ...blog, status: newStatus } : blog))
       );
@@ -127,8 +149,48 @@ function BlogManager() {
         toast.info(`Blog status updated to ${newStatus}.`);
       }
     } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Failed to update blog status.");
+      console.error("[BlogManager] update article status failed", {
+        errorCode: err?.code || "unknown",
+        errorMessage: err?.message || String(err),
+        articleId: submissionId || id,
+        submissionId: submissionId || null,
+        blogId: id,
+        collections: isAlumniContribution ? ["alumniSubmissions", "blogs"] : ["blogs"],
+        currentUserUid: currentUser?.uid || null,
+        currentUserRole: currentUser?.role || null,
+      });
+      toast.error(err?.code === "permission-denied"
+        ? "You do not have permission to update this article."
+        : (err.message || "Failed to update blog status."));
+    }
+  };
+
+  const handleAlumniStatusChange = async (article) => {
+    try {
+      setUpdatingArticleId(article.id);
+      if (article.status === SUBMISSION_STATUSES.PUBLISHED) {
+        await unpublishAlumniArticle(article.id, currentUser);
+        setBlogs((prev) => prev.map((item) => item.id === article.id
+          ? { ...item, status: SUBMISSION_STATUSES.APPROVED }
+          : item));
+        toast.info("Article unpublished and moved to Approved.");
+      }
+    } catch (error) {
+      console.error("[BlogManager] alumni article unpublish failed", {
+        errorCode: error?.code || "unknown",
+        errorMessage: error?.message || String(error),
+        articleId: article.id,
+        submissionId: article.id,
+        blogId: article.publishedBlogId || null,
+        collections: ["alumniSubmissions", "blogs"],
+        currentUserUid: currentUser?.uid || null,
+        currentUserRole: currentUser?.role || null,
+      });
+      toast.error(error?.code === "permission-denied"
+        ? "You do not have permission to unpublish this article."
+        : (error.message || "Failed to update article status."));
+    } finally {
+      setUpdatingArticleId(null);
     }
   };
 
@@ -166,11 +228,10 @@ function BlogManager() {
         const normalized = normalizeAlumniStatus(blog.status);
         if (statusFilter === "All") {
           matchesStatus = true;
-        } else if (statusFilter.toLowerCase() === "approved" || statusFilter.toLowerCase() === "published") {
-          matchesStatus =
-            blog.status === "approved" ||
-            blog.status === "published" ||
-            Boolean(blog.publishedBlogId);
+        } else if (statusFilter.toLowerCase() === "approved") {
+          matchesStatus = blog.status === "approved";
+        } else if (statusFilter.toLowerCase() === "published") {
+          matchesStatus = blog.status === "published";
         } else {
           matchesStatus = normalized.toLowerCase() === statusFilter.toLowerCase();
         }
@@ -204,7 +265,7 @@ function BlogManager() {
         <Topbar />
 
         <div className="dashboard-content">
-          <div className="admin-blog-manager">
+          <div className={`admin-blog-manager${isAlumniUser ? " admin-blog-manager-alumni" : ""}`}>
             {/* Header */}
             <div className="admin-blog-header">
               <div>
@@ -301,18 +362,15 @@ function BlogManager() {
                       <th scope="col">Title &amp; Category</th>
                       <th scope="col">Status</th>
                       <th scope="col">Date</th>
-                      <th scope="col" style={{ width: "220px" }}>Actions</th>
+                      <th scope="col" style={{ width: "340px" }}>Actions</th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {filteredBlogs.map((article) => {
                       const normalizedStatus = normalizeAlumniStatus(article.status);
-                      const isEditable = article.status === "draft" || article.status === "changes_requested";
-                      const isLive =
-                        article.status === "published" ||
-                        article.status === "approved" ||
-                        Boolean(article.publishedBlogId);
+                      const isEditable = ["draft", "changes_requested", "published", "approved"].includes(article.status);
+                      const isLive = article.status === "published" && Boolean(article.publishedBlogId);
 
                       return (
                         <tr key={article.id}>
@@ -374,18 +432,33 @@ function BlogManager() {
                                 </Link>
                               )}
 
+                              {isLive && (
+                                <button
+                                  type="button"
+                                  className={`action-btn-pill ${isLive ? "btn-unpublish" : "btn-publish"}`}
+                                  onClick={() => handleAlumniStatusChange(article)}
+                                  disabled={updatingArticleId === article.id}
+                                  title={isLive ? "Unpublish article" : "Publish article"}
+                                  aria-label={`${isLive ? "Unpublish" : "Publish"} ${article.title}`}
+                                >
+                                  {isLive ? <FaUndo /> : <FaPaperPlane />}
+                                  <span>{updatingArticleId === article.id ? "Saving…" : "Unpublish"}</span>
+                                </button>
+                              )}
+
                               {!isEditable && !isLive && (
                                 <span className="action-btn-pill" style={{ opacity: 0.6, cursor: "default" }}>
                                   {article.status === "pending" || article.status === "resubmitted" ? "Under Review" : normalizedStatus}
                                 </span>
                               )}
 
-                              {article.status === "draft" && (
+                              {(
                                 <button
                                   type="button"
                                   className="action-btn-pill btn-delete"
-                                  onClick={() => handleDelete(article.id, true)}
-                                  title="Delete draft"
+                                  onClick={() => handleDelete(article.id)}
+                                  title="Delete article"
+                                  aria-label={`Delete ${article.title}`}
                                 >
                                   <FaTrash />
                                   <span>Delete</span>
@@ -468,7 +541,7 @@ function BlogManager() {
                               <button
                                 type="button"
                                 className="action-btn-pill btn-unpublish"
-                                onClick={() => handleStatusChange(blog.id, "Draft", blog.isAlumniContribution)}
+                                onClick={() => handleStatusChange(blog.id, "Draft", blog.isAlumniContribution, blog.submissionId)}
                                 title="Unpublish post"
                                 aria-label={`Unpublish ${blog.title}`}
                               >
@@ -479,7 +552,7 @@ function BlogManager() {
                               <button
                                 type="button"
                                 className="action-btn-pill btn-publish"
-                                onClick={() => handleStatusChange(blog.id, "Published", blog.isAlumniContribution)}
+                                onClick={() => handleStatusChange(blog.id, "Published", blog.isAlumniContribution, blog.submissionId)}
                                 title="Publish post"
                                 aria-label={`Publish ${blog.title}`}
                               >
@@ -491,7 +564,7 @@ function BlogManager() {
                             <button
                               type="button"
                               className="action-btn-pill btn-delete"
-                              onClick={() => handleDelete(blog.id)}
+                              onClick={() => handleDelete(blog.id, blog)}
                               title="Delete post"
                               aria-label={`Delete ${blog.title}`}
                             >

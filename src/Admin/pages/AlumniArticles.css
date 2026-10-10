@@ -437,3 +437,37 @@
     min-width: 100%;
   }
 }
+
+/* Light editorial queue within the shared Abhyudaya admin shell. */
+.admin-alumni-dashboard { color: var(--ink, #14172b); gap: 20px; }
+.admin-alumni-header h1 { color: var(--night, #0d1224); font-family: var(--font-display, "Fraunces", Georgia, serif); }
+.admin-alumni-header p,
+.admin-alumni-eyebrow { color: var(--ink-soft, #4a4f6b); }
+.admin-alumni-eyebrow { letter-spacing: 0.08em; }
+.alumni-stat-card,
+.admin-alumni-table-container,
+.empty-state-box {
+  color: var(--ink, #14172b);
+  background: #fff;
+  border-color: var(--border, rgba(20, 23, 43, 0.12));
+  border-radius: 9px;
+  box-shadow: 0 3px 12px rgba(20, 23, 43, 0.045);
+}
+.alumni-stat-card { padding: 16px 18px; }
+.alumni-stat-card.active { border-color: var(--sun, #eeb84a); box-shadow: inset 3px 0 var(--sun, #eeb84a); }
+.alumni-stat-card .stat-label,
+.alumni-stat-card .stat-subtext { color: var(--ink-soft, #4a4f6b); }
+.alumni-stat-card .stat-value { color: var(--night, #0d1224); }
+.admin-alumni-table th { background: #f6f5f1; color: var(--ink-soft, #4a4f6b); }
+.admin-alumni-table td { color: var(--ink, #14172b); border-color: var(--border, rgba(20, 23, 43, 0.12)); }
+.admin-alumni-table tr.clickable-row:hover { background: #fcf8f0; }
+.admin-alumni-title-text,
+.author-name { color: var(--night, #0d1224); }
+.admin-alumni-slug-text,
+.author-meta,
+.author-org { color: var(--ink-soft, #4a4f6b); }
+.view-form-btn,
+.review-btn { background: var(--sun, #eeb84a); color: var(--night, #0d1224); border: 1px solid var(--sun, #eeb84a); border-radius: 7px; box-shadow: none; }
+.view-form-btn:hover,
+.review-btn:hover { background: var(--sun-soft, #f7d189); color: var(--night, #0d1224); transform: none; }
+.admin-alumni-table-container { overflow-x: auto; }

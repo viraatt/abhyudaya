@@ -595,3 +595,55 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Editorial review surface in the shared light admin visual language. */
+.review-page-container { color: var(--ink, #14172b); }
+.back-link { color: var(--ink-soft, #4a4f6b); }
+.back-link:hover { color: #8b6412; transform: none; }
+.status-indicator-badge,
+.review-article-card,
+.review-action-card,
+.review-author-card,
+.review-meta-card,
+.review-modal-card {
+  color: var(--ink, #14172b);
+  background: #fff;
+  border-color: var(--border, rgba(20, 23, 43, 0.12));
+  box-shadow: 0 3px 14px rgba(20, 23, 43, 0.05);
+}
+.status-indicator-badge strong,
+.author-card-header h3,
+.review-article-title,
+.review-action-card h3,
+.review-author-card h3,
+.review-meta-card h4,
+.author-name-title,
+.review-article-body h3 { color: var(--night, #0d1224); }
+.review-article-excerpt-box,
+.author-avatar-stage,
+.review-meta-card li { background: #f8f7f3; border-color: var(--border, rgba(20, 23, 43, 0.12)); }
+.review-article-excerpt-box,
+.review-article-excerpt-box p,
+.article-prose-render,
+.actions-subtext,
+.author-academic-line,
+.detail-key,
+.detail-val,
+.review-modal-card p { color: var(--ink-soft, #4a4f6b); }
+.alumni-badge { background: #fbf4e8; color: #78550d; border-color: #ead8ae; }
+.category-tag { background: #f3f1e9; color: var(--ink-soft, #4a4f6b); }
+.no-image-notice { background: #f8f7f3; border-color: #d8d3c4; color: var(--ink-soft, #4a4f6b); }
+.action-btn.approve,
+.action-btn.publish,
+.modal-submit-btn.approve,
+.modal-submit-btn.publish { background: var(--sun, #eeb84a); color: var(--night, #0d1224); border-color: var(--sun, #eeb84a); box-shadow: none; }
+.action-btn.approve:hover:not(:disabled),
+.action-btn.publish:hover:not(:disabled),
+.modal-submit-btn.approve:hover:not(:disabled),
+.modal-submit-btn.publish:hover:not(:disabled) { background: var(--sun-soft, #f7d189); color: var(--night, #0d1224); }
+.action-btn.changes { color: #8b6412; background: #fbf4e8; border-color: #ead8ae; }
+.review-modal-backdrop { background: rgba(13, 18, 36, 0.58); }
+.review-modal-card h3 { color: var(--night, #0d1224); }
+.modal-textarea { background: #fff; border-color: var(--border, rgba(20, 23, 43, 0.12)); color: var(--ink, #14172b); }
+.modal-textarea:focus { border-color: var(--sun, #eeb84a); }
+.modal-cancel-btn { background: #fff; border-color: var(--border, rgba(20, 23, 43, 0.12)); color: var(--ink, #14172b); }

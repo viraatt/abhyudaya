@@ -663,3 +663,22 @@
     grid-template-columns: 1fr;
   }
 }
+
+.editorial-publish-btn,
+.publish-btn {
+  background: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+  border-color: var(--sun, #eeb84a);
+  box-shadow: none;
+}
+.editorial-publish-btn:hover:not(:disabled),
+.publish-btn:hover:not(:disabled) {
+  background: var(--sun-soft, #f7d189);
+  border-color: var(--sun-soft, #f7d189);
+  color: var(--night, #0d1224);
+  box-shadow: none;
+}
+.create-header { border-bottom-color: var(--border, rgba(20, 23, 43, 0.12)); }
+.editorial-main-title { color: var(--night, #0d1224); font-family: var(--font-display, "Fraunces", Georgia, serif); }
+.editorial-eyebrow { background: #fbf4e8; border-color: #ead8ae; border-radius: 6px; }
+.editorial-draft-btn:hover:not(:disabled) { border-color: var(--sun, #eeb84a); box-shadow: none; }

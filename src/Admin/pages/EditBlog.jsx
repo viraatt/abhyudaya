@@ -19,6 +19,8 @@ import { ROLES, normalizeRole } from "../config/roles";
 import {
   saveAlumniArticleDraft,
   submitAlumniArticleForApproval,
+  syncAlumniSubmissionFromBlog,
+  unpublishAlumniArticle,
   ALUMNI_CATEGORIES,
   SUBMISSION_STATUSES,
 } from "../../Firebase/alumniArticleService";
@@ -35,6 +37,7 @@ function EditBlog() {
   const toast = useToast();
   const { currentUser } = useAuth();
   const isAlumniUser = normalizeRole(currentUser?.role) === ROLES.ALUMNI;
+  const isSuperAdmin = normalizeRole(currentUser?.role) === ROLES.SUPER_ADMIN;
 
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +50,7 @@ function EditBlog() {
   const [status, setStatus] = useState("Draft");
   const [adminFeedback, setAdminFeedback] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
+  const [articleMetadata, setArticleMetadata] = useState(null);
 
   // Editor States
   const [contentJson, setContentJson] = useState(null);
@@ -118,6 +122,7 @@ function EditBlog() {
           }
 
           const data = snapshot.data();
+          setArticleMetadata(data);
           setTitle(data.title || "");
           setCategory(data.category || "Club News");
           setTags(Array.isArray(data.tags) ? data.tags.join(", ") : "");
@@ -146,7 +151,7 @@ function EditBlog() {
   const isEditableForAlumni = useMemo(() => {
     if (!isAlumniUser) return true;
     const st = (status || "").toLowerCase();
-    return st === "draft" || st === "changes_requested";
+    return st === "draft" || st === "changes_requested" || st === "published" || st === "approved";
   }, [isAlumniUser, status]);
 
   // Callback to compute blog data payload for autosave
@@ -164,10 +169,18 @@ function EditBlog() {
       publishDate,
       status,
       author: isAlumniUser ? resolveAuthorName(null, currentUser) : "Admin",
+      ...(articleMetadata?.isAlumniContribution ? {
+        author: articleMetadata.author || articleMetadata.alumniAuthor?.name || "Abhyudaya Alumni",
+        isAlumniContribution: true,
+        alumniAuthor: articleMetadata.alumniAuthor || null,
+        authorUid: articleMetadata.authorUid || articleMetadata.authorId || null,
+        authorId: articleMetadata.authorId || articleMetadata.authorUid || null,
+        submissionId: articleMetadata.submissionId || null,
+      } : {}),
       excerpt: contentExcerpt.trim().substring(0, 180),
       content: contentJson,
     };
-  }, [title, category, featuredImage, tags, slug, seo, publishDate, status, contentExcerpt, contentJson, isAlumniUser, currentUser]);
+  }, [title, category, featuredImage, tags, slug, seo, publishDate, status, contentExcerpt, contentJson, isAlumniUser, currentUser, articleMetadata]);
 
   // Handle autosave callback from hook
   const handleAutosave = useCallback(
@@ -187,10 +200,13 @@ function EditBlog() {
         return id;
       } else {
         await updateBlogService(id, blogData);
+        if (isSuperAdmin && articleMetadata?.isAlumniContribution && articleMetadata.submissionId) {
+          await syncAlumniSubmissionFromBlog(articleMetadata.submissionId, id, blogData, currentUser);
+        }
         return id;
       }
     },
-    [id, isAlumniUser, isEditableForAlumni, title, category, featuredImage, tags, slug, seo, contentExcerpt, contentJson, currentUser]
+    [id, isAlumniUser, isEditableForAlumni, isSuperAdmin, articleMetadata, title, category, featuredImage, tags, slug, seo, contentExcerpt, contentJson, currentUser]
   );
 
   // Use Autosave Hook (30 sec interval)
@@ -264,7 +280,7 @@ function EditBlog() {
         };
 
         await saveAlumniArticleDraft(id, articleData, currentUser);
-        toast.success("💾 Draft Saved Successfully!");
+        toast.success(status === "published" ? "Article updated successfully." : "Draft saved successfully.");
       } catch (err) {
         console.error(err);
         toast.error(err.message || "Failed to save article draft.");
@@ -289,12 +305,24 @@ function EditBlog() {
         seo,
         publishDate: publishDate || new Date().toISOString().split("T")[0],
         status: targetStatus,
-        author: "Admin",
+        author: articleMetadata?.isAlumniContribution
+          ? (articleMetadata.author || articleMetadata.alumniAuthor?.name || "Abhyudaya Alumni")
+          : "Admin",
         excerpt: contentExcerpt.trim().substring(0, 180),
         content: contentJson,
+        ...(articleMetadata?.isAlumniContribution ? {
+          isAlumniContribution: true,
+          alumniAuthor: articleMetadata.alumniAuthor || null,
+          authorUid: articleMetadata.authorUid || articleMetadata.authorId || null,
+          authorId: articleMetadata.authorId || articleMetadata.authorUid || null,
+          submissionId: articleMetadata.submissionId || null,
+        } : {}),
       };
 
       await updateBlogService(id, blogData);
+      if (isSuperAdmin && articleMetadata?.isAlumniContribution && articleMetadata.submissionId) {
+        await syncAlumniSubmissionFromBlog(articleMetadata.submissionId, id, blogData, currentUser);
+      }
       setStatus(targetStatus);
       toast.success(
         targetStatus === "Published"
@@ -357,7 +385,11 @@ function EditBlog() {
   const handleUnpublish = async () => {
     try {
       setUnpublishing(true);
-      await updateBlogStatusService(id, "Draft");
+      if (articleMetadata?.isAlumniContribution && articleMetadata.submissionId) {
+        await unpublishAlumniArticle(articleMetadata.submissionId, currentUser);
+      } else {
+        await updateBlogStatusService(id, "Draft");
+      }
       setStatus("Draft");
       toast.info("Blog unpublished and moved to Drafts.");
     } catch (err) {
@@ -424,10 +456,10 @@ function EditBlog() {
                           onClick={() => handleSave()}
                           disabled={saving || submittingApproval}
                         >
-                          {saving ? "Saving..." : "💾 Save Draft"}
+                          {saving ? "Saving..." : status === "published" ? "💾 Save Changes" : "💾 Save Draft"}
                         </button>
 
-                        <button
+                        {status !== "published" && status !== "approved" && <button
                           type="button"
                           className="publish-btn"
                           style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
@@ -439,7 +471,7 @@ function EditBlog() {
                             : status === "changes_requested"
                             ? "📨 Resubmit for Approval"
                             : "📨 Submit for Approval"}
-                        </button>
+                        </button>}
                       </>
                     )}
 

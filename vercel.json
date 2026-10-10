@@ -1,4 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/blog/techbloom-2-0-at-mpec-igniting-curiosity-inspiring-innovation-and-shaping-tomorrows",
+      "destination": "/blog/techbloom-20-at-mpec-igniting-curiosity-inspiring-innovation-and-shaping-tomorrows",
+      "permanent": true
+    }
+  ],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "dist/index.html"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
@@ -85,7 +97,15 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!.*\\.(?:png|jpg|jpeg|gif|svg|webp|avif|ico|css|js|mjs|json|woff|woff2|ttf|eot|mp4|webm|txt|xml|pdf)$).*)",
+      "source": "/blog/write",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/blog/:slug",
+      "destination": "/api/index?blogSlug=:slug"
+    },
+    {
+      "source": "/((?!blog(?:/|$)|.*\\.(?:png|jpg|jpeg|gif|svg|webp|avif|ico|css|js|mjs|json|woff|woff2|ttf|eot|mp4|webm|txt|xml|pdf)$).*)",
       "destination": "/index.html"
     }
   ]

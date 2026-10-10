@@ -16,7 +16,7 @@ import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://www.abhyudayaclub.in";
 const SITE_NAME = "Abhyudaya Club";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/abhyudaya-logo.png`;
 const DEFAULT_DESCRIPTION =
   "Abhyudaya Club — the official Science & Literary Club of Maharana Pratap Engineering College (MPEC) Kanpur. Explore events, workshops, blogs and student initiatives.";
 
@@ -56,8 +56,8 @@ export default function SEO({
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical || SITE_URL} />
       <meta property="og:image" content={ogImage} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
+      <meta property="og:image:width" content="512" />
+      <meta property="og:image:height" content="512" />
       <meta property="og:locale" content="en_IN" />
 
       {/* Article-specific OG */}
