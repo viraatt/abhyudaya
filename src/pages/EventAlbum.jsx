@@ -243,6 +243,10 @@ export default function EventAlbum() {
           <div className="gallery-masonry-grid">
             {album.photos.map((photo, idx) => {
               const isLoaded = loadedImages[photo.id];
+              const photoTitle = typeof photo.title === "string" ? photo.title.trim() : "";
+              const photoAlt = photoTitle && !/^moments?$/i.test(photoTitle)
+                ? `${album.title}: ${photoTitle}`
+                : `${album.title} — event photo ${idx + 1}`;
               return (
                 <div key={photo.id} className="gallery-masonry-item">
                   <div
@@ -263,7 +267,7 @@ export default function EventAlbum() {
                         src={photo.thumbnailSrc || photo.src}
                         srcSet={`${photo.thumbnailSrc || photo.src} 600w, ${photo.fullSrc || photo.src} 1200w`}
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        alt={photo.title || `${album.title} photo ${idx + 1}`}
+                        alt={photoAlt}
                         width={photo.width || 1200}
                         height={photo.height || 800}
                         loading={idx === 0 ? "eager" : "lazy"}

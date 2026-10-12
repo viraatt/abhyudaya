@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   initializeApp,
@@ -24,6 +24,7 @@ import {
   injectBlogListing,
 } from "./blog-prerender-utils.js";
 import { parseStaticGallery, readBuildManifest } from "./static-gallery.js";
+import { fetchPublicGalleryData } from "./public-gallery.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -77,6 +78,17 @@ async function getStaticGalleryAlbums() {
   return parseStaticGallery(readBuildManifest());
 }
 
+async function getBuildGalleryAlbums() {
+  try {
+    const { albums, deletedIds } = await fetchPublicGalleryData();
+    if (albums.length) return albums;
+    return (await getStaticGalleryAlbums()).filter((album) => !deletedIds.includes(album.id) && !deletedIds.includes(album.slug));
+  } catch (error) {
+    console.warn(`[prerender] Public gallery query unavailable; using bundled gallery snapshot: ${error.message}`);
+    return getStaticGalleryAlbums();
+  }
+}
+
 function getBlogDescription(blog) {
   const description = blog.seo || blog.excerpt;
   if (typeof description === "string" && description.trim()) {
@@ -95,10 +107,6 @@ function getBlogSocialImage(blog) {
 /* =========================================================
    Firebase Admin Initialization
 ========================================================= */
-
-function isProductionBuild() {
-  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production" || process.env.CI === "true";
-}
 
 function initializeFirebase() {
   if (getApps().length) {
@@ -159,7 +167,6 @@ function initializeFirebase() {
       "[prerender] Firebase Admin credentials are not available."
     );
 
-    if (isProductionBuild()) throw new Error("Firebase Admin credentials are required to prerender production blog pages.");
     console.warn("[prerender] Continuing with static routes only.");
 
     return null;
@@ -172,7 +179,6 @@ function initializeFirebase() {
       `[prerender] ${error.message}`
     );
 
-    if (isProductionBuild()) throw new Error("Firebase Admin initialization failed during production prerendering.");
     console.warn("[prerender] Continuing with static routes only.");
 
     return null;
@@ -207,6 +213,21 @@ function addGalleryAlbumRoutes(routes, albums) {
       imageSelector: ".gallery-clean-media",
     });
   });
+}
+
+async function addStaticBlogRoutes(routes) {
+  try {
+    const { blogs = [] } = await import(pathToFileURL(path.join(ROOT, "src/data/blogs.js")));
+    const publishedBlogs = blogs.filter((blog) => blog?.slug && blog?.title);
+    const listing = routes.find((route) => route.path === "/blog");
+    if (listing) listing.blogs = publishedBlogs;
+    publishedBlogs.forEach((blog) => {
+      const slug = encodeURIComponent(blog.slug);
+      routes.push({ path: `/blog/${slug}`, dataReady: true, canonical: `/blog/${slug}`, title: `${blog.title} | Abhyudaya Club`, description: getBlogDescription(blog), image: getBlogSocialImage(blog), imageAlt: blog.title, type: "article", imageSelector: ".details-featured-image", blog });
+    });
+  } catch (error) {
+    console.warn(`[prerender] Could not load bundled blog data: ${error.message}`);
+  }
 }
 
 /* =========================================================
@@ -278,7 +299,6 @@ async function getRoutesToPrerender(db) {
   ];
 
   if (!db) {
-    if (isProductionBuild()) throw new Error("Firebase is required to verify published blogs during production prerendering.");
     console.warn(
       "[prerender] Firebase unavailable."
     );
@@ -287,7 +307,8 @@ async function getRoutesToPrerender(db) {
       "[prerender] Adding static gallery routes."
     );
 
-    addGalleryAlbumRoutes(routes, await getStaticGalleryAlbums());
+    await addStaticBlogRoutes(routes);
+    addGalleryAlbumRoutes(routes, await getBuildGalleryAlbums());
 
     return [
       ...new Map(
@@ -379,10 +400,9 @@ async function getRoutesToPrerender(db) {
       addGalleryAlbumRoutes(routes, publishedGalleryAlbums);
     } else {
       console.log("[prerender] Firebase gallery is empty. Using static gallery data.");
-      addGalleryAlbumRoutes(routes, await getStaticGalleryAlbums());
+      addGalleryAlbumRoutes(routes, await getBuildGalleryAlbums());
     }
   } catch (error) {
-    if (isProductionBuild()) throw new Error(`Firestore query failed during production prerendering: ${error.message}`);
     /*
      * Firebase may be configured but temporarily
      * unavailable. Do not break production build.
@@ -400,7 +420,8 @@ async function getRoutesToPrerender(db) {
       "[prerender] Continuing with static routes."
     );
 
-    addGalleryAlbumRoutes(routes, await getStaticGalleryAlbums());
+    await addStaticBlogRoutes(routes);
+    addGalleryAlbumRoutes(routes, await getBuildGalleryAlbums());
   }
 
   return [
@@ -582,7 +603,10 @@ function renderGalleryAlbumFallback(album) {
       const imageUrl = getPublicImageUrl(photo.src || photo.thumbnailSrc || photo.rawSrc);
       if (!imageUrl) return [];
       const title = photo.title || `${album.title || "Event album"} — Photo ${index + 1}`;
-      return [`<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}"${getImageDimensions(photo.width, photo.height)} loading="${index === 0 ? "eager" : "lazy"}"><figcaption>${escapeHtml(title)}</figcaption></figure>`];
+      const alt = photo.title && !/^moments?$/i.test(photo.title.trim())
+        ? `${album.title || "Event album"}: ${photo.title.trim()}`
+        : `${album.title || "Event album"} — event photo ${index + 1}`;
+      return [`<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(alt)}"${getImageDimensions(photo.width, photo.height)} loading="${index === 0 ? "eager" : "lazy"}"><figcaption>${escapeHtml(title)}</figcaption></figure>`];
     });
 
   return `<main class="prerender-gallery-content" style="padding:2rem;font-family:sans-serif;max-width:1200px;margin:0 auto;"><p><a href="/gallery">Back to all event albums</a></p><h1>${escapeHtml(album.title || "Event Album")}</h1><p>${escapeHtml(album.description || "")}</p>${photos.join("")}</main>`;

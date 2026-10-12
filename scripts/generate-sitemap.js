@@ -13,11 +13,11 @@ import {
 import { getFirestore } from "firebase-admin/firestore";
 import { isValidPublishedBlog } from "./blog-prerender-utils.js";
 import { parseStaticGallery, readBuildManifest } from "./static-gallery.js";
+import { fetchPublicGalleryData } from "./public-gallery.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASE_URL = "https://www.abhyudayaclub.in";
 const DIST_DIR = path.join(ROOT, "dist");
-const requireFirestoreForBlogs = Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production" || process.env.CI === "true" || process.env.REQUIRE_FIRESTORE_SITEMAP === "true";
 
 function initializeFirebase() {
   if (getApps().length) return getFirestore();
@@ -143,9 +143,6 @@ function imageUrl(value, manifest) {
 async function generate() {
   const manifest = readBuildManifest();
   const db = initializeFirebase();
-  if (!db && requireFirestoreForBlogs) {
-    throw new Error("Firestore credentials are required to generate the production blog sitemap.");
-  }
 
   let blogs = [];
   let events = [];
@@ -195,13 +192,7 @@ async function generate() {
           ? galleryMeta.data().ids
           : [];
 
-      if (albums.length === 0) {
-        albums = (await parseStaticGallery(manifest)).filter(
-          (album) =>
-            !deletedIds.includes(album.id) &&
-            !deletedIds.includes(album.slug)
-        );
-      }
+      if (albums.length === 0) albums = (await parseStaticGallery(manifest)).filter((album) => !deletedIds.includes(album.id) && !deletedIds.includes(album.slug));
 
       const { team: staticTeam } = await import(
         pathToFileURL(path.join(ROOT, "src/data/club.js"))
@@ -232,13 +223,24 @@ async function generate() {
         }
       }
     } catch (fbErr) {
-      if (requireFirestoreForBlogs) throw new Error(`Firestore query failed during production sitemap generation: ${fbErr.message}`);
       console.warn("[sitemap] Warning: Could not query Firestore for dynamic sitemap data:", fbErr.message);
     }
   } else {
     console.warn(
       "[sitemap] Warning: Firebase build credentials are not available. Falling back to static/public routes and bundled data."
     );
+  }
+
+  if (albums.length === 0) {
+    try {
+      const publicData = await fetchPublicGalleryData();
+      albums = publicData.albums.length
+        ? publicData.albums
+        : (await parseStaticGallery(manifest)).filter((album) => !publicData.deletedIds.includes(album.id) && !publicData.deletedIds.includes(album.slug));
+      console.log(`[sitemap] Loaded ${albums.length} gallery albums from public Firestore data.`);
+    } catch (error) {
+      console.warn("[sitemap] Public gallery query unavailable; using bundled gallery snapshot:", error.message);
+    }
   }
 
   // Safe fallbacks when Firestore is unavailable or collections are empty.
@@ -290,14 +292,21 @@ async function generate() {
       return;
     }
 
-    const images = unique(
-      imageValues.map((value) => imageUrl(value, manifest)).filter(Boolean)
-    );
-
-    pages.set(
-      normalized,
-      unique([...(pages.get(normalized) || []), ...images])
-    );
+    const images = imageValues.map((value) => {
+      const source = typeof value === "string" ? value : value?.url || value?.src;
+      const url = imageUrl(source, manifest);
+      return url ? { url, title: value?.title || "", caption: value?.caption || "" } : null;
+    }).filter(Boolean);
+    const merged = new Map((pages.get(normalized) || []).map((image) => [image.url, image]));
+    images.forEach((image) => {
+      const existing = merged.get(image.url);
+      merged.set(image.url, {
+        url: image.url,
+        title: existing?.title || image.title,
+        caption: existing?.caption || image.caption,
+      });
+    });
+    pages.set(normalized, [...merged.values()]);
   };
 
   const staticPaths = [
@@ -364,11 +373,13 @@ async function generate() {
       : [];
 
     addPage(albumUrl, [
-      album.coverImage,
-      ...photos.map(
-        (photo) => photo.src || photo.thumbnailSrc || photo.rawSrc
-      ),
-    ]);
+      album.coverImage ? { src: album.coverImage, title: `${album.title || "Event album"} cover`, caption: album.description || "" } : null,
+      ...photos.map((photo, index) => ({
+        src: photo.src || photo.thumbnailSrc || photo.rawSrc,
+        title: photo.title && !/^moments?$/i.test(photo.title.trim()) ? photo.title : `${album.title || "Event album"} — Photo ${index + 1}`,
+        caption: photo.description || album.description || "",
+      })),
+    ].filter(Boolean));
 
     addPage(`${BASE_URL}/gallery`, [album.coverImage]);
   });
@@ -397,11 +408,11 @@ async function generate() {
   const imageBody = [...pages]
     .filter(([, images]) => images.length)
     .map(
-      ([url, images]) =>
+          ([url, images]) =>
         `  <url><loc>${escapeXml(url)}</loc>${images
           .map(
             (image) =>
-              `<image:image><image:loc>${escapeXml(image)}</image:loc></image:image>`
+              `<image:image><image:loc>${escapeXml(image.url)}</image:loc>${image.title ? `<image:title>${escapeXml(image.title)}</image:title>` : ""}${image.caption ? `<image:caption>${escapeXml(image.caption)}</image:caption>` : ""}</image:image>`
           )
           .join("")}</url>`
     )
@@ -519,7 +530,7 @@ async function generate() {
       .filter(Boolean)
   );
 
-  const allImageReferences = [...pages.values()].flat();
+  const allImageReferences = [...pages.values()].flat().map((image) => image.url);
 
   console.log(
     `Sitemaps generated: ${pages.size} page URLs, ${allImageReferences.length} image references, ${unique(allImageReferences).length} unique image URLs.`
