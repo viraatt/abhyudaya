@@ -247,7 +247,7 @@ const EDGE_DUR_MS   = 380; // single edge draw duration
    5. MAIN COMPONENT
    =================================================================== */
 
-export default function ConstellationLoader({ isReady, error, onRetry }) {
+export default function ConstellationLoader({ isReady, error, onRetry, onAnimationComplete }) {
   // Animation stage booleans
   const [stage, setStage] = useState(1);
   const [exiting, setExiting] = useState(false);
@@ -264,6 +264,8 @@ export default function ConstellationLoader({ isReady, error, onRetry }) {
   const timerRefs = useRef([]);
   const readyRef   = useRef(isReady);
   const startTime  = useRef(Date.now());
+  const animationCompleteRef = useRef(false);
+  const [animationComplete, setAnimationComplete] = useState(false);
 
   const addTimer = useCallback((fn, delay) => {
     const id = setTimeout(fn, delay);
@@ -292,6 +294,14 @@ export default function ConstellationLoader({ isReady, error, onRetry }) {
   useEffect(() => {
     readyRef.current = isReady;
   }, [isReady]);
+
+  const handleSequenceComplete = useCallback((event) => {
+    if (event.target !== event.currentTarget || event.propertyName !== "opacity") return;
+    if (animationCompleteRef.current) return;
+    animationCompleteRef.current = true;
+    setAnimationComplete(true);
+    onAnimationComplete?.();
+  }, [onAnimationComplete]);
 
   // ── Stage sequencer ────────────────────────────────────────────────
   useEffect(() => {
@@ -360,7 +370,7 @@ export default function ConstellationLoader({ isReady, error, onRetry }) {
 
   // ── Exit when app is ready ─────────────────────────────────────────
   useEffect(() => {
-    if (!isReady && !error) return;
+    if (error || !isReady || !animationComplete) return;
     if (exiting || !mounted) return;
 
     const elapsed = Date.now() - startTime.current;
@@ -371,7 +381,7 @@ export default function ConstellationLoader({ isReady, error, onRetry }) {
       // Unmount after CSS fade-out completes
       addTimer(() => setMounted(false), T.EXIT_DURATION + 50);
     }, remaining);
-  }, [isReady, error, exiting, mounted, addTimer]);
+  }, [isReady, error, animationComplete, exiting, mounted, addTimer]);
 
   if (!mounted) return null;
 
@@ -486,6 +496,7 @@ export default function ConstellationLoader({ isReady, error, onRetry }) {
       <div
         className={`cl-identity${identityVisible ? " cl-identity--visible" : ""}`}
         aria-hidden={!identityVisible}
+        onTransitionEnd={handleSequenceComplete}
       >
         <span className="cl-identity__title">Abhyudaya</span>
         <span className="cl-identity__sub">Science &amp; Literary Club &middot; MPEC Kanpur</span>

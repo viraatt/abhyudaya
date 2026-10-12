@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from "react";
+import { Suspense, useContext, useEffect } from "react";
 import {
   Navigate,
   Routes,
@@ -16,6 +16,7 @@ import { ToastProvider } from "./Admin/components/Toast.jsx";
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 import ErrorBoundary from "./Admin/components/ErrorBoundary.jsx";
 import { lazyWithRetry } from "./utils/lazyWithRetry.js";
+import { AppStartupContext } from "./context/AppStartupContext.jsx";
 
 
 // ─────────────────────────────────────────────────────────────
@@ -127,6 +128,16 @@ function LegacyBlogRedirect() {
   );
 }
 
+function InitialRouteReady({ children }) {
+  const markInitialRouteReady = useContext(AppStartupContext);
+
+  useEffect(() => {
+    markInitialRouteReady?.();
+  }, [markInitialRouteReady]);
+
+  return children;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Main App
 // ─────────────────────────────────────────────────────────────
@@ -157,7 +168,8 @@ export default function App() {
 
       <Suspense fallback={<ConstellationLoader isReady={false} />}>
         <ErrorBoundary key={location.pathname}>
-          <Routes>
+          <InitialRouteReady>
+            <Routes>
             {/* ================= ADMIN ROUTES ================= */}
 
             <Route
@@ -519,7 +531,8 @@ export default function App() {
 
               <Route path="*" element={<NotFound />} />
             </Route>
-          </Routes>
+            </Routes>
+          </InitialRouteReady>
         </ErrorBoundary>
       </Suspense>
     </ToastProvider>

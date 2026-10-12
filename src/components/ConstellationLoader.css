@@ -413,6 +413,7 @@
   .cl-overlay::before,
   .cl-starfield,
   .cl-starfield::after { animation: none; }
+  .cl-identity { transition: opacity 0.01ms linear; transform: none; }
   .cl-star { animation: none; opacity: 0.25; }
   .cl-particle { animation: none; opacity: 0.12; }
   .cl-glow--pulse { animation: none; }
