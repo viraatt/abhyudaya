@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
 import {
   getGalleryAlbums,
+  getStaticGalleryAlbums,
   EDITORIAL_MOMENTS,
   HERO_COLLAGE_PHOTOS,
   getRandomHighlightPhoto,
@@ -36,8 +37,8 @@ const YEAR_FILTERS = ["all", "2026", "2025", "2024"];
 
 export default function Gallery() {
   const navigate = useNavigate();
-  const [albums, setAlbums] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [albums, setAlbums] = useState(getStaticGalleryAlbums);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
@@ -55,7 +56,6 @@ export default function Gallery() {
     let isMounted = true;
     async function loadAlbums() {
       try {
-        setLoading(true);
         const data = await getGalleryAlbums({
           category: selectedCategory,
           search: searchQuery,
@@ -123,7 +123,13 @@ export default function Gallery() {
     description:
       "A digital annual album of Abhyudaya Club memories, workshops, hackathons, and celebrations at MPEC Kanpur.",
     url: `${SITE_URL}/gallery`,
-    image: albums.slice(0, 5).map((a) => a.coverThumbnail),
+    image: albums.slice(0, 5).map((album) => {
+      try {
+        return new URL(album.coverThumbnail, SITE_URL).href;
+      } catch {
+        return null;
+      }
+    }).filter(Boolean),
   };
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import ConstellationLoader from "../components/ConstellationLoader.jsx";
 import { getEventBySlug, getEvents } from "../Firebase/eventService.js";
 import { getEventStatus, formatDate } from "../utils/registrationStatus.js";
 import { normalizeEvent } from "../utils/eventNormalizer.js";
@@ -76,13 +77,7 @@ export default function EventDetails() {
   }, [event, slug]);
 
   if (loading) {
-    return (
-      <section className="event-not-found">
-        <div style={{ textAlign: "center", color: "#64748b" }}>
-          <h2>Loading Event Details...</h2>
-        </div>
-      </section>
-    );
+    return <ConstellationLoader isReady={false} />;
   }
 
   if (error) {

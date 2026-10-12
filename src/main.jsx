@@ -5,6 +5,7 @@ import { HelmetProvider } from "react-helmet-async";
 import ReactGA from "react-ga4";
 
 import App from "./App.jsx";
+import AppLoader from "./components/AppLoader.jsx";
 
 import "./styles/tokens.css";
 import "./styles/shared.css";
@@ -38,7 +39,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <HelmetProvider>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <AppLoader>
+            <App />
+          </AppLoader>
         </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>

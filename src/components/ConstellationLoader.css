@@ -1,0 +1,427 @@
+/* ===================================================================
+   ConstellationLoader.css
+   Premium full-screen loading overlay for Abhyudaya Club website.
+   Palette matches existing design tokens (tokens.css):
+     --night: #0d1224  --sun: #eeb84a  --horizon: #7a2128
+   =================================================================== */
+
+/* Overlay */
+.cl-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(20, 30, 59, 0.32), transparent 48%),
+    linear-gradient(145deg, #030711 0%, #080e20 45%, #090a18 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: cl-fade-in 0.35s ease both;
+}
+
+/* Deep-space haze and distant spiral forms stay behind every loader element. */
+.cl-overlay::before,
+.cl-overlay::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.cl-overlay::before {
+  background:
+    radial-gradient(ellipse 24% 13% at 18% 30%, rgba(74, 105, 176, 0.2), transparent 72%),
+    radial-gradient(ellipse 22% 12% at 82% 68%, rgba(116, 74, 151, 0.17), transparent 74%),
+    radial-gradient(ellipse 35% 20% at 52% 12%, rgba(39, 77, 138, 0.12), transparent 76%),
+    radial-gradient(ellipse 28% 17% at 12% 82%, rgba(66, 45, 119, 0.12), transparent 78%),
+    radial-gradient(ellipse 13% 4% at 18% 30%, rgba(147, 173, 223, 0.12), transparent 75%),
+    radial-gradient(ellipse 12% 4% at 82% 68%, rgba(188, 157, 224, 0.1), transparent 75%),
+    conic-gradient(from 30deg at 18% 30%, transparent 0 18%, rgba(105, 135, 197, 0.06) 25%, transparent 37% 70%, rgba(90, 123, 190, 0.045) 78%, transparent 88%),
+    conic-gradient(from 210deg at 82% 68%, transparent 0 20%, rgba(152, 115, 193, 0.055) 29%, transparent 42% 73%, rgba(120, 152, 205, 0.04) 82%, transparent 90%);
+  filter: blur(22px);
+  opacity: 0.9;
+  animation: cl-nebula-drift 90s ease-in-out infinite alternate;
+}
+
+.cl-overlay::after {
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(1, 4, 12, 0.32) 100%);
+}
+
+@keyframes cl-nebula-drift {
+  from { transform: translate3d(-0.5%, 0.3%, 0) scale(1); }
+  to { transform: translate3d(0.6%, -0.4%, 0) scale(1.035); }
+}
+
+.cl-overlay--exiting {
+  animation: cl-fade-out 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
+  pointer-events: none;
+}
+
+@keyframes cl-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cl-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Star-field */
+.cl-starfield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  background-image:
+    radial-gradient(circle, rgba(214, 226, 255, 0.38) 0 0.55px, transparent 0.95px),
+    radial-gradient(circle, rgba(180, 194, 235, 0.28) 0 0.65px, transparent 1px),
+    radial-gradient(circle, rgba(255, 231, 184, 0.32) 0 0.6px, transparent 1px),
+    radial-gradient(circle, rgba(202, 211, 242, 0.2) 0 0.8px, transparent 1.2px);
+  background-size: 47px 61px, 83px 71px, 113px 97px, 157px 131px;
+  background-position: 11px 17px, 37px 9px, 53px 43px, 19px 67px;
+  animation: cl-starfield-drift 140s linear infinite;
+}
+
+.cl-starfield::before,
+.cl-starfield::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* A few connected star groups sit at the edges, leaving the hero unobstructed. */
+.cl-starfield::before {
+  opacity: 0.25;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='760' height='520' viewBox='0 0 760 520'%3E%3Cg fill='none' stroke='%239bb6e8' stroke-opacity='.35' stroke-width='.7'%3E%3Cpath d='M46 86 93 53 132 101 173 78 208 124M545 52 590 92 636 68 687 120 723 92M28 382 74 344 117 397 157 366 198 414M531 388 576 350 623 398 672 361 728 414'/%3E%3C/g%3E%3Cg fill='%23dce7ff' fill-opacity='.65'%3E%3Ccircle cx='46' cy='86' r='1.6'/%3E%3Ccircle cx='93' cy='53' r='1.2'/%3E%3Ccircle cx='132' cy='101' r='1.5'/%3E%3Ccircle cx='173' cy='78' r='1.1'/%3E%3Ccircle cx='208' cy='124' r='1.4'/%3E%3Ccircle cx='545' cy='52' r='1.4'/%3E%3Ccircle cx='590' cy='92' r='1.1'/%3E%3Ccircle cx='636' cy='68' r='1.5'/%3E%3Ccircle cx='687' cy='120' r='1.2'/%3E%3Ccircle cx='723' cy='92' r='1.4'/%3E%3Ccircle cx='28' cy='382' r='1.3'/%3E%3Ccircle cx='74' cy='344' r='1.5'/%3E%3Ccircle cx='117' cy='397' r='1.1'/%3E%3Ccircle cx='157' cy='366' r='1.5'/%3E%3Ccircle cx='198' cy='414' r='1.2'/%3E%3Ccircle cx='531' cy='388' r='1.4'/%3E%3Ccircle cx='576' cy='350' r='1.1'/%3E%3Ccircle cx='623' cy='398' r='1.5'/%3E%3Ccircle cx='672' cy='361' r='1.2'/%3E%3Ccircle cx='728' cy='414' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: min(760px, 100vw) auto;
+  mask-image: radial-gradient(ellipse at center, transparent 0 28%, #000 66%);
+}
+
+.cl-starfield::after {
+  background:
+    radial-gradient(circle at 12% 22%, rgba(218, 229, 255, 0.8) 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 28%, rgba(238, 184, 74, 0.72) 0 1px, transparent 2.4px),
+    radial-gradient(circle at 78% 79%, rgba(219, 229, 255, 0.74) 0 1px, transparent 2.2px),
+    radial-gradient(circle at 8% 75%, rgba(183, 197, 239, 0.65) 0 0.8px, transparent 2px);
+  filter: drop-shadow(0 0 5px rgba(180, 204, 255, 0.5));
+  animation: cl-bright-stars 8s ease-in-out infinite alternate;
+}
+
+@keyframes cl-starfield-drift {
+  to { background-position: 31px -9px, 5px 37px, 79px 13px, -17px 91px; }
+}
+
+@keyframes cl-bright-stars {
+  from { opacity: 0.58; }
+  to { opacity: 0.92; }
+}
+
+.cl-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 4px currentColor;
+  opacity: 0;
+  animation: cl-twinkle var(--dur, 3s) var(--delay, 0s) ease-in-out infinite;
+}
+
+@keyframes cl-twinkle {
+  0%,100% { opacity: var(--dim, 0.15); transform: scale(1); }
+  50%      { opacity: var(--bright, 0.65); transform: scale(1.4); }
+}
+
+.cl-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: cl-drift var(--dur, 18s) var(--delay, 0s) linear infinite;
+  opacity: 0.18;
+}
+
+@keyframes cl-drift {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.12; }
+  50%  { opacity: 0.22; }
+  100% { transform: translate(var(--dx,20px), var(--dy,-40px)) scale(0.7); opacity: 0.08; }
+}
+
+/* Ambient glow behind logo */
+.cl-glow {
+  position: absolute;
+  width: clamp(240px, 50vmin, 400px);
+  height: clamp(240px, 50vmin, 400px);
+  border-radius: 50%;
+  z-index: 2;
+  background: radial-gradient(circle, rgba(255, 227, 165, 0.18) 0%, rgba(125, 143, 203, 0.11) 28%, rgba(100, 66, 137, 0.1) 48%, transparent 76%);
+  filter: blur(3px);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.cl-glow--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cl-glow--pulse {
+  animation: cl-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes cl-glow-pulse {
+  0%,100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+
+/* SVG constellation container */
+.cl-svg-wrap {
+  position: relative;
+  z-index: 3;
+  width: clamp(200px, 44vmin, 320px);
+  height: clamp(200px, 44vmin, 320px);
+}
+
+.cl-constellation {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Constellation star dots */
+.cl-dot {
+  transition: r 0.4s ease, opacity 0.4s ease;
+}
+
+/* Constellation edge lines */
+.cl-edge {
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0;
+  stroke-dasharray: var(--len, 200);
+  stroke-dashoffset: var(--len, 200);
+  transition: opacity 0.3s ease;
+}
+
+.cl-edge--animate {
+  opacity: 1;
+  animation: cl-draw var(--draw-dur, 0.6s) var(--draw-delay, 0s) ease both;
+}
+
+@keyframes cl-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.cl-edge--fade {
+  animation: cl-edge-fade 0.8s ease both;
+}
+
+@keyframes cl-edge-fade {
+  to { opacity: 0.12; }
+}
+
+.cl-edge--living {
+  animation: cl-living-line 4s ease-in-out infinite;
+}
+
+@keyframes cl-living-line {
+  0%,100% { opacity: 0.1; }
+  50%      { opacity: 0.45; }
+}
+
+/* Logo reveal */
+.cl-logo-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.cl-logo {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 0.7s cubic-bezier(0.34,1.56,0.64,1),
+              transform 0.7s cubic-bezier(0.34,1.56,0.64,1);
+  filter: drop-shadow(0 0 22px rgba(238, 184, 74, 0.22))
+          drop-shadow(0 0 6px rgba(122, 33, 40, 0.18));
+}
+
+.cl-logo--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Identity text */
+.cl-identity {
+  position: relative;
+  z-index: 3;
+  margin-top: clamp(20px, 4vmin, 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.cl-identity--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cl-identity__title {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: clamp(1rem, 3.5vmin, 1.35rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #fbf4e8;
+  text-transform: uppercase;
+}
+
+.cl-identity__sub {
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.65rem, 2vmin, 0.78rem);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: rgba(238, 184, 74, 0.82);
+  text-transform: uppercase;
+}
+
+/* Loading bar */
+.cl-bar-wrap {
+  position: relative;
+  z-index: 3;
+  margin-top: clamp(16px, 3vmin, 24px);
+  width: clamp(120px, 28vmin, 200px);
+  height: 2px;
+  background: rgba(251, 244, 232, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.5s ease 0.2s;
+}
+
+.cl-bar-wrap--visible {
+  opacity: 1;
+}
+
+.cl-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #7a2128, #eeb84a, #eeb84a);
+  border-radius: 2px;
+  animation: cl-indeterminate 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: left center;
+}
+
+@keyframes cl-indeterminate {
+  0%   { transform: translateX(-100%) scaleX(0.4); }
+  50%  { transform: translateX(30%)   scaleX(0.5); }
+  100% { transform: translateX(150%)  scaleX(0.4); }
+}
+
+/* Status message */
+.cl-status {
+  position: relative;
+  z-index: 3;
+  margin-top: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.62rem, 1.8vmin, 0.72rem);
+  color: rgba(251, 244, 232, 0.42);
+  letter-spacing: 0.06em;
+  text-align: center;
+  min-height: 1em;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.cl-status--visible {
+  opacity: 1;
+}
+
+/* Error / Offline state */
+.cl-error {
+  position: relative;
+  z-index: 2;
+  margin-top: clamp(16px, 3vmin, 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.cl-error--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cl-error__msg {
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.75rem, 2.2vmin, 0.88rem);
+  color: rgba(251, 244, 232, 0.7);
+  text-align: center;
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+.cl-error__retry {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #0d1224;
+  background: #eeb84a;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.4rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.cl-error__retry:hover {
+  background: #f7d189;
+  transform: translateY(-2px);
+}
+
+.cl-error__retry:focus-visible {
+  outline: 2.5px solid #eeb84a;
+  outline-offset: 3px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .cl-overlay { animation: none; }
+  .cl-overlay--exiting { animation: cl-fade-out 0.3s ease both; }
+  .cl-overlay::before,
+  .cl-starfield,
+  .cl-starfield::after { animation: none; }
+  .cl-star { animation: none; opacity: 0.25; }
+  .cl-particle { animation: none; opacity: 0.12; }
+  .cl-glow--pulse { animation: none; }
+  .cl-edge--animate { animation: none; stroke-dashoffset: 0; opacity: 1; }
+  .cl-edge--living { animation: none; opacity: 0.25; }
+  .cl-bar { animation: cl-indeterminate-reduced 2s ease-in-out infinite; }
+}
+
+@keyframes cl-indeterminate-reduced {
+  0%,100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}

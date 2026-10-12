@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import ConstellationLoader from "../components/ConstellationLoader.jsx";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema.jsx";
-import { getAlbumBySlug } from "../services/galleryAlbumsService.js";
+import { getAlbumBySlug, getSynchronousAlbumBySlug } from "../services/galleryAlbumsService.js";
 import {
   FaArrowLeft,
   FaCalendarAlt,
@@ -20,8 +21,8 @@ const SITE_URL = "https://www.abhyudayaclub.in";
 
 export default function EventAlbum() {
   const { eventSlug } = useParams();
-  const [album, setAlbum] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [album, setAlbum] = useState(() => getSynchronousAlbumBySlug(eventSlug));
+  const [loading, setLoading] = useState(() => !getSynchronousAlbumBySlug(eventSlug));
   const [error, setError] = useState(null);
 
   // Lightbox state
@@ -37,21 +38,23 @@ export default function EventAlbum() {
 
   useEffect(() => {
     let isMounted = true;
+    const initialAvailable = Boolean(getSynchronousAlbumBySlug(eventSlug));
+
     async function loadAlbumData() {
       try {
-        setLoading(true);
+        if (!initialAvailable) setLoading(true);
         setError(null);
         const data = await getAlbumBySlug(eventSlug);
         if (isMounted) {
           if (data) {
             setAlbum(data);
-          } else {
+          } else if (!initialAvailable) {
             setError("Album not found.");
           }
         }
       } catch (err) {
         console.error("Error fetching album details:", err);
-        if (isMounted) setError("Failed to load event album.");
+        if (isMounted && !initialAvailable) setError("Failed to load event album.");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -131,14 +134,7 @@ export default function EventAlbum() {
   };
 
   if (loading) {
-    return (
-      <div className="gallery-page">
-        <div className="album-detail-loading">
-          <div className="album-detail-spinner" />
-          <h2>Loading Event Album...</h2>
-        </div>
-      </div>
-    );
+    return <ConstellationLoader isReady={false} />;
   }
 
   if (error && error !== "Album not found.") {
@@ -247,6 +243,10 @@ export default function EventAlbum() {
           <div className="gallery-masonry-grid">
             {album.photos.map((photo, idx) => {
               const isLoaded = loadedImages[photo.id];
+              const photoTitle = typeof photo.title === "string" ? photo.title.trim() : "";
+              const photoAlt = photoTitle && !/^moments?$/i.test(photoTitle)
+                ? `${album.title}: ${photoTitle}`
+                : `${album.title} — event photo ${idx + 1}`;
               return (
                 <div key={photo.id} className="gallery-masonry-item">
                   <div
@@ -264,11 +264,14 @@ export default function EventAlbum() {
                       {!isLoaded && <div className="gallery-skeleton-shimmer" />}
 
                       <img
-                        src={photo.thumbnailSrc}
-                        alt={photo.title}
+                        src={photo.thumbnailSrc || photo.src}
+                        srcSet={`${photo.thumbnailSrc || photo.src} 600w, ${photo.fullSrc || photo.src} 1200w`}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        alt={photoAlt}
                         width={photo.width || 1200}
                         height={photo.height || 800}
-                        loading={idx < 4 ? "eager" : "lazy"}
+                        loading={idx === 0 ? "eager" : "lazy"}
+                        fetchPriority={idx === 0 ? "high" : "auto"}
                         decoding="async"
                         onLoad={() => handleImageLoaded(photo.id)}
                         onError={(e) => {

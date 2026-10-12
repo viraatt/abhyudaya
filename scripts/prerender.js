@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   initializeApp,
@@ -23,6 +23,8 @@ import {
   injectBlogSeo,
   injectBlogListing,
 } from "./blog-prerender-utils.js";
+import { parseStaticGallery, readBuildManifest } from "./static-gallery.js";
+import { fetchPublicGalleryData } from "./public-gallery.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -60,6 +62,38 @@ function getPublicHttpsUrl(value) {
   return null;
 }
 
+function getPublicImageUrl(value) {
+  const externalUrl = getPublicHttpsUrl(value);
+  if (externalUrl) return externalUrl;
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  const cleanPath = value.trim().replace(/^\.\//, "").replace(/^\//, "");
+  if (
+    !cleanPath ||
+    cleanPath.split(/[\\/]/).includes("..") ||
+    !fs.existsSync(path.join(DIST_DIR, cleanPath))
+  ) {
+    return null;
+  }
+
+  return `${BASE_URL}/${cleanPath.replace(/\\/g, "/")}`;
+}
+
+async function getStaticGalleryAlbums() {
+  return parseStaticGallery(readBuildManifest());
+}
+
+async function getBuildGalleryAlbums() {
+  try {
+    const { albums, deletedIds } = await fetchPublicGalleryData();
+    if (albums.length) return albums;
+    return (await getStaticGalleryAlbums()).filter((album) => !deletedIds.includes(album.id) && !deletedIds.includes(album.slug));
+  } catch (error) {
+    console.warn(`[prerender] Public gallery query unavailable; using bundled gallery snapshot: ${error.message}`);
+    return getStaticGalleryAlbums();
+  }
+}
+
 function getBlogDescription(blog) {
   const description = blog.seo || blog.excerpt;
   if (typeof description === "string" && description.trim()) {
@@ -70,13 +104,14 @@ function getBlogDescription(blog) {
   return blog.title || "Read the latest article from Abhyudaya Club.";
 }
 
+function getBlogSocialImage(blog) {
+  const value = blog.featuredImage || blog.image;
+  return getPublicHttpsUrl(value) || `${BASE_URL}/abhyudaya-logo.png`;
+}
+
 /* =========================================================
    Firebase Admin Initialization
 ========================================================= */
-
-function isProductionBuild() {
-  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production" || process.env.CI === "true";
-}
 
 function initializeFirebase() {
   if (getApps().length) {
@@ -137,7 +172,6 @@ function initializeFirebase() {
       "[prerender] Firebase Admin credentials are not available."
     );
 
-    if (isProductionBuild()) throw new Error("Firebase Admin credentials are required to prerender production blog pages.");
     console.warn("[prerender] Continuing with static routes only.");
 
     return null;
@@ -150,7 +184,6 @@ function initializeFirebase() {
       `[prerender] ${error.message}`
     );
 
-    if (isProductionBuild()) throw new Error("Firebase Admin initialization failed during production prerendering.");
     console.warn("[prerender] Continuing with static routes only.");
 
     return null;
@@ -161,36 +194,44 @@ function initializeFirebase() {
    Static Gallery Fallback
 ========================================================= */
 
-function getStaticGallerySlugs() {
-  const staticGalleryPath = path.join(
-    ROOT,
-    "src/data/staticGalleryAlbums.js"
-  );
-
-  if (!fs.existsSync(staticGalleryPath)) {
-    return [];
+function addGalleryAlbumRoutes(routes, albums) {
+  const galleryRoute = routes.find((route) => route.path === "/gallery");
+  if (galleryRoute) {
+    galleryRoute.galleryAlbums = albums;
+    galleryRoute.image = albums
+      .map((album) => getPublicImageUrl(album.coverImage || album.photos?.[0]?.src))
+      .find(Boolean);
   }
 
+  albums.forEach((album) => {
+    if (!album.slug) return;
+    const slug = encodeURIComponent(album.slug);
+    routes.push({
+      path: `/gallery/${slug}`,
+      dataReady: true,
+      canonical: `/gallery/${slug}`,
+      title: `${album.title || "Event Album"} — Event Photos & Gallery | Abhyudaya Club`,
+      description: album.description || `Browse event photographs from ${album.title || "Abhyudaya Club"}.`,
+      image: getPublicImageUrl(album.coverImage || album.photos?.[0]?.src),
+      imageAlt: album.title || "Abhyudaya Club event album",
+      galleryAlbum: album,
+      imageSelector: ".gallery-clean-media",
+    });
+  });
+}
+
+async function addStaticBlogRoutes(routes) {
   try {
-    const source = fs.readFileSync(
-      staticGalleryPath,
-      "utf8"
-    );
-
-    return unique(
-      [
-        ...source.matchAll(
-          /slug:\s*["']([^"']+)["']/g
-        ),
-      ].map((match) => match[1])
-    );
+    const { blogs = [] } = await import(pathToFileURL(path.join(ROOT, "src/data/blogs.js")));
+    const publishedBlogs = blogs.filter((blog) => blog?.slug && blog?.title);
+    const listing = routes.find((route) => route.path === "/blog");
+    if (listing) listing.blogs = publishedBlogs;
+    publishedBlogs.forEach((blog) => {
+      const slug = encodeURIComponent(blog.slug);
+      routes.push({ path: `/blog/${slug}`, dataReady: true, canonical: `/blog/${slug}`, title: `${blog.title} | Abhyudaya Club`, description: getBlogDescription(blog), image: getBlogSocialImage(blog), imageAlt: blog.title, type: "article", imageSelector: ".details-featured-image", blog });
+    });
   } catch (error) {
-    console.warn(
-      "[prerender] Could not read static gallery data:",
-      error.message
-    );
-
-    return [];
+    console.warn(`[prerender] Could not load bundled blog data: ${error.message}`);
   }
 }
 
@@ -263,7 +304,6 @@ async function getRoutesToPrerender(db) {
   ];
 
   if (!db) {
-    if (isProductionBuild()) throw new Error("Firebase is required to verify published blogs during production prerendering.");
     console.warn(
       "[prerender] Firebase unavailable."
     );
@@ -272,22 +312,8 @@ async function getRoutesToPrerender(db) {
       "[prerender] Adding static gallery routes."
     );
 
-    const staticSlugs =
-      getStaticGallerySlugs();
-
-    staticSlugs.forEach((slug) => {
-      routes.push({
-        path: `/gallery/${encodeURIComponent(
-          slug
-        )}`,
-        dataReady: true,
-        canonical: `/gallery/${encodeURIComponent(
-          slug
-        )}`,
-        imageSelector:
-          ".gallery-clean-media",
-      });
-    });
+    await addStaticBlogRoutes(routes);
+    addGalleryAlbumRoutes(routes, await getBuildGalleryAlbums());
 
     return [
       ...new Map(
@@ -375,6 +401,11 @@ async function getRoutesToPrerender(db) {
       id: doc.id,
       ...doc.data(),
     }));
+    if (publishedGalleryAlbums.length > 0) {
+      addGalleryAlbumRoutes(routes, publishedGalleryAlbums);
+    } else {
+      console.log("[prerender] Firebase gallery is empty. Using static gallery data.");
+      addGalleryAlbumRoutes(routes, await getBuildGalleryAlbums());
     const galleryRoute = routes.find((route) => route.path === "/gallery");
     if (galleryRoute) galleryRoute.galleryAlbums = publishedGalleryAlbums;
 
@@ -427,7 +458,6 @@ async function getRoutesToPrerender(db) {
       );
     }
   } catch (error) {
-    if (isProductionBuild()) throw new Error(`Firestore query failed during production prerendering: ${error.message}`);
     /*
      * Firebase may be configured but temporarily
      * unavailable. Do not break production build.
@@ -445,21 +475,8 @@ async function getRoutesToPrerender(db) {
       "[prerender] Continuing with static routes."
     );
 
-    getStaticGallerySlugs().forEach(
-      (slug) => {
-        routes.push({
-          path: `/gallery/${encodeURIComponent(
-            slug
-          )}`,
-          dataReady: true,
-          canonical: `/gallery/${encodeURIComponent(
-            slug
-          )}`,
-          imageSelector:
-            ".gallery-clean-media",
-        });
-      }
-    );
+    await addStaticBlogRoutes(routes);
+    addGalleryAlbumRoutes(routes, await getBuildGalleryAlbums());
   }
 
   return [
@@ -511,10 +528,11 @@ function injectMeta(htmlTemplate, meta) {
 
   if (meta.canonical) {
     const canonicalTag = `<link rel="canonical" href="${escapeHtml(`${BASE_URL}${meta.canonical}`)}" />`;
-    const canonicalPattern = /<link\s+rel=["']canonical["']\s+href=["'].*?["']\s*\/?>/i;
-    html = canonicalPattern.test(html)
-      ? html.replace(canonicalPattern, canonicalTag)
-      : html.replace(/<\/head>/i, `    ${canonicalTag}\n  </head>`);
+    html = replaceOrAppendHeadTag(
+      html,
+      /<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*\/?>/i,
+      canonicalTag
+    );
   }
 
   if (meta.title) {
@@ -539,12 +557,57 @@ function injectMeta(htmlTemplate, meta) {
     setMeta("name", "twitter:image", meta.image);
   }
 
+  if (meta.imageAlt) {
+    html = replaceOrAppendHeadTag(
+      html,
+      /<meta\s+property=["']og:image:alt["']\s+content=["'][^"']*["']\s*\/?>/i,
+      `<meta property="og:image:alt" content="${escapeHtml(meta.imageAlt)}" />`
+    );
+  }
+
   if (meta.type) {
     setMeta("property", "og:type", meta.type);
   }
 
+  if (meta.galleryAlbum) {
+    const album = meta.galleryAlbum;
+    const albumUrl = `${BASE_URL}/gallery/${encodeURIComponent(album.slug)}`;
+    const images = (Array.isArray(album.photos) ? album.photos : [])
+      .filter((photo) => !photo.isVideo)
+      .map((photo) => getPublicImageUrl(photo.src || photo.thumbnailSrc || photo.rawSrc))
+      .filter(Boolean);
+
+    const schemaTag = gallerySchemaMarkup(
+      album.title,
+      album.description,
+      albumUrl,
+      images
+    );
+    const breadcrumbTag = breadcrumbSchemaMarkup([
+      { name: "Home", url: BASE_URL },
+      { name: "Gallery", url: `${BASE_URL}/gallery` },
+      { name: album.title, url: albumUrl },
+    ]);
+    html = replaceOrAppendHeadTag(html, /<\/head>/i, `    ${schemaTag}\n    ${breadcrumbTag}\n  </head>`);
+  } else if (Array.isArray(meta.galleryAlbums)) {
+    const images = meta.galleryAlbums
+      .map((album) => getPublicImageUrl(album.coverImage || album.photos?.[0]?.src))
+      .filter(Boolean);
+    const schemaTag = gallerySchemaMarkup(
+      "Photography Archive & Event Albums",
+      "Explore curated annual event photography albums and collections from Abhyudaya Club at MPEC Kanpur.",
+      `${BASE_URL}/gallery`,
+      images
+    );
+    const breadcrumbTag = breadcrumbSchemaMarkup([
+      { name: "Home", url: BASE_URL },
+      { name: "Gallery", url: `${BASE_URL}/gallery` },
+    ]);
+    html = replaceOrAppendHeadTag(html, /<\/head>/i, `    ${schemaTag}\n    ${breadcrumbTag}\n  </head>`);
+  }
+
   /*
-   * Lightweight fallback for crawlers without JS.
+   * Server-rendered semantic fallback for search engine crawlers and users.
    */
 
   if (meta.path !== "/" && !meta.blog && !meta.blogListing) {
@@ -553,55 +616,88 @@ function injectMeta(htmlTemplate, meta) {
       : Array.isArray(meta.galleryAlbums)
         ? renderGalleryListingFallback(meta.galleryAlbums)
         : "";
-    const noscriptContent = `
-      <noscript>
-        ${galleryContent || `<div style="padding:2rem;font-family:sans-serif;max-width:800px;margin:0 auto;">
-          <h1>${escapeHtml(meta.title || "Abhyudaya Club")}</h1>
-          <p>${escapeHtml(meta.description || "Abhyudaya Club — Science & Literary Club of MPEC Kanpur")}</p>
-        </div>`}
-      </noscript>
-    `;
 
-    html = html.replace(
-      /<div id=["']root["']>[\s\S]*?<\/div>/i,
-      `<div id="root">${noscriptContent}</div>`
-    );
+    if (galleryContent) {
+      html = html.replace(/<div id=["']root["']><\/div>/i, `<div id="root">${galleryContent}</div>`);
+    } else {
+      const noscriptFallback = `
+        <noscript>
+          <div style="padding:2rem;font-family:sans-serif;max-width:800px;margin:0 auto;">
+            <h1>${escapeHtml(meta.title || "Abhyudaya Club")}</h1>
+            <p>${escapeHtml(meta.description || "Abhyudaya Club — Science & Literary Club of MPEC Kanpur")}</p>
+          </div>
+        </noscript>
+      `;
+      html = html.replace(/<div id=["']root["']><\/div>/i, `<div id="root">${noscriptFallback}</div>`);
+    }
   }
 
   return html;
 }
 
 function renderGalleryListingFallback(albums) {
-  const seenImages = new Set();
-  const entries = albums.flatMap((album) => {
-    const imageUrl = getPublicHttpsUrl(
+  const entries = albums.flatMap((album, index) => {
+    if (!album.slug || !album.title) return [];
+    const imageUrl = getPublicImageUrl(
       album.coverImage || album.photos?.[0]?.src || album.photos?.[0]?.thumbnailSrc
     );
-    if (!imageUrl || seenImages.has(imageUrl) || !album.slug) return [];
-    seenImages.add(imageUrl);
-
-    const title = album.title || "Abhyudaya Club event album";
     const href = `/gallery/${encodeURIComponent(album.slug)}`;
-    return [`<li><a href="${escapeHtml(href)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(`${title} cover`)}"${getImageDimensions(album.width, album.height)} loading="lazy"><span>${escapeHtml(title)}</span></a></li>`];
+    const image = imageUrl
+      ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(`${album.title} cover`)}"${getImageDimensions(album.width || album.photos?.[0]?.width, album.height || album.photos?.[0]?.height)} loading="${index === 0 ? "eager" : "lazy"}">`
+      : "";
+    return [`<li><a href="${escapeHtml(href)}">${image}<span>${escapeHtml(album.title)}</span></a>${album.description ? `<p>${escapeHtml(album.description)}</p>` : ""}</li>`];
   });
 
-  return `<main style="padding:2rem;font-family:sans-serif;max-width:1200px;margin:0 auto;"><h1>Photography Archive &amp; Event Albums</h1><p>Explore event photographs from Abhyudaya Club at MPEC Kanpur.</p><ul>${entries.join("")}</ul></main>`;
+  return `<main class="prerender-gallery-content" style="padding:2rem;font-family:sans-serif;max-width:1200px;margin:0 auto;"><h1>Photography Archive &amp; Event Albums</h1><p>Explore event photographs from Abhyudaya Club at MPEC Kanpur.</p><ul>${entries.join("")}</ul></main>`;
 }
 
 function renderGalleryAlbumFallback(album) {
-  const seenImages = new Set();
   const photos = (Array.isArray(album.photos) ? album.photos : [])
     .filter((photo) => !photo.isVideo)
     .flatMap((photo, index) => {
-      const imageUrl = getPublicHttpsUrl(photo.src || photo.thumbnailSrc || photo.rawSrc);
-      if (!imageUrl || seenImages.has(imageUrl)) return [];
-      seenImages.add(imageUrl);
-
-      const title = photo.title || `${album.title || "Event album"} photo ${index + 1}`;
-      return [`<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}"${getImageDimensions(photo.width, photo.height)} loading="lazy"><figcaption>${escapeHtml(title)}</figcaption></figure>`];
+      const imageUrl = getPublicImageUrl(photo.src || photo.thumbnailSrc || photo.rawSrc);
+      if (!imageUrl) return [];
+      const title = photo.title || `${album.title || "Event album"} — Photo ${index + 1}`;
+      const alt = photo.title && !/^moments?$/i.test(photo.title.trim())
+        ? `${album.title || "Event album"}: ${photo.title.trim()}`
+        : `${album.title || "Event album"} — event photo ${index + 1}`;
+      return [`<figure><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(alt)}"${getImageDimensions(photo.width, photo.height)} loading="${index === 0 ? "eager" : "lazy"}"><figcaption>${escapeHtml(title)}</figcaption></figure>`];
     });
 
-  return `<main style="padding:2rem;font-family:sans-serif;max-width:1200px;margin:0 auto;"><p><a href="/gallery">Back to all event albums</a></p><h1>${escapeHtml(album.title || "Event Album")}</h1><p>${escapeHtml(album.description || "")}</p>${photos.join("")}</main>`;
+  return `<main class="prerender-gallery-content" style="padding:2rem;font-family:sans-serif;max-width:1200px;margin:0 auto;"><p><a href="/gallery">Back to all event albums</a></p><h1>${escapeHtml(album.title || "Event Album")}</h1><p>${escapeHtml(album.description || "")}</p>${photos.join("")}</main>`;
+}
+
+function gallerySchemaMarkup(name, description, url, images) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name,
+    description,
+    url,
+    image: unique(images),
+    primaryImageOfPage: images[0] || undefined,
+  };
+  return `<script type="application/ld+json">${JSON.stringify(schema).replace(/</g, "\\u003c")}</script>`;
+}
+
+function breadcrumbSchemaMarkup(items) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+  return `<script type="application/ld+json">${JSON.stringify(schema).replace(/</g, "\\u003c")}</script>`;
+}
+
+function replaceOrAppendHeadTag(html, pattern, replacement) {
+  return pattern.test(html)
+    ? html.replace(pattern, replacement)
+    : html.replace(/<\/head>/i, `${replacement}\n</head>`);
 }
 
 function getImageDimensions(width, height) {

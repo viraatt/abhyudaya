@@ -10,16 +10,13 @@ import ReactGA from "react-ga4";
 
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
-import PageLoader from "./components/PageLoader.jsx";
+import ConstellationLoader from "./components/ConstellationLoader.jsx";
 import { ToastProvider } from "./Admin/components/Toast.jsx";
-import TimeCapsulePopup from "./components/TimeCapsulePopup.jsx";
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 import ErrorBoundary from "./Admin/components/ErrorBoundary.jsx";
 import { lazyWithRetry } from "./utils/lazyWithRetry.js";
 
-import NProgress from "nprogress";
-import "nprogress/nprogress.css";
 
 // ─────────────────────────────────────────────────────────────
 // Lazy Loaded Public Pages (with chunk 404 auto-retry recovery)
@@ -114,14 +111,6 @@ const ReviewAlumniArticle = lazyWithRetry(
 
 
 // ─────────────────────────────────────────────────────────────
-// NProgress Configuration
-// ─────────────────────────────────────────────────────────────
-
-NProgress.configure({
-  showSpinner: false,
-  speed: 300,
-  minimum: 0.2,
-});
 
 // ─────────────────────────────────────────────────────────────
 // Legacy Blog Redirect
@@ -160,28 +149,13 @@ export default function App() {
         page: safePage,
       });
     }
-
-    // Page loading progress
-    NProgress.start();
-
-    const timer = setTimeout(() => {
-      NProgress.done();
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      NProgress.done();
-    };
   }, [location.pathname, location.search]);
 
   return (
     <ToastProvider>
       <ScrollToTop />
 
-      {/* Time Capsule promotional popup — shown once per 7 days on public pages */}
-      <TimeCapsulePopup />
-
-      <Suspense fallback={<PageLoader />}>
+      <Suspense fallback={<ConstellationLoader isReady={false} />}>
         <ErrorBoundary key={location.pathname}>
           <Routes>
             {/* ================= ADMIN ROUTES ================= */}

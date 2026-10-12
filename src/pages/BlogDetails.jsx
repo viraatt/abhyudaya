@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import ConstellationLoader from "../components/ConstellationLoader.jsx";
 import "./BlogDetails.css";
 
 // ── Heavy Tiptap modules loaded dynamically — only when a blog post with
@@ -470,13 +471,7 @@ export default function BlogDetails() {
   // ==========================
 
   if (loading) {
-    return (
-      <section className="blog-details">
-        <div className="blog-details-container">
-          <h2>Loading Blog...</h2>
-        </div>
-      </section>
-    );
+    return <ConstellationLoader isReady={false} />;
   }
 
   // ==========================
