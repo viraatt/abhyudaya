@@ -11,6 +11,7 @@ import ReactGA from "react-ga4";
 import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import PageLoader from "./components/PageLoader.jsx";
+import ForegroundNotificationToast from "./components/ForegroundNotificationToast.jsx";
 import { ToastProvider } from "./Admin/components/Toast.jsx";
 
 
@@ -103,6 +104,10 @@ const AdminTimeCapsules = lazyWithRetry(
   () => import("./Admin/pages/TimeCapsules.jsx"),
   "AdminTimeCapsules"
 );
+const AdminNotifications = lazyWithRetry(
+  () => import("./Admin/pages/Notifications.jsx"),
+  "AdminNotifications"
+);
 const AlumniArticles = lazyWithRetry(
   () => import("./Admin/pages/AlumniArticles.jsx"),
   "AlumniArticles"
@@ -177,7 +182,7 @@ export default function App() {
   return (
     <ToastProvider>
       <ScrollToTop />
-
+      <ForegroundNotificationToast />
 
       <Suspense fallback={<PageLoader />}>
         <ErrorBoundary key={location.pathname}>
@@ -446,6 +451,16 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
                   <AdminTimeCapsules />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Push Notifications */}
+            <Route
+              path="/admin/notifications"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <AdminNotifications />
                 </ProtectedRoute>
               }
             />

@@ -24,7 +24,9 @@ import {
   FiBookOpen,
   FiMenu,
   FiX,
+  FiRadio,
 } from "react-icons/fi";
+
 import abhyudayaLogo from "../../../assets/logo-120.png";
 
 export default function Sidebar() {
@@ -90,6 +92,7 @@ export default function Sidebar() {
       { name: "Event Registrations", path: "/admin/registrations", icon: <FiFileText /> },
       { name: "Time Capsules", path: "/admin/time-capsules", icon: <FiArchive /> },
       { name: "Announcements", path: "/admin/announcements", icon: <FiBell /> },
+      { name: "Push Notifications", path: "/admin/notifications", icon: <FiRadio /> },
       { name: "Students", path: "/admin/students", icon: <FiUsers /> },
       { name: "Registration Outreach", path: "/admin/registration-outreach", icon: <FiSend /> },
       {

@@ -64,6 +64,11 @@
   gap: 0.6rem;
 }
 
+.footer__notifications {
+  display: flex;
+  align-items: center;
+}
+
 .footer .footer__connect-label,
 .footer__connect-label {
   width: 100%;

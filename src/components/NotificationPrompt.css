@@ -1,0 +1,336 @@
+/* ─────────────────────────────────────────────────────────────
+   Abhyudaya Club — Premium Notification Subscription Card
+   ───────────────────────────────────────────────────────────── */
+
+.push-prompt {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 9990;
+  width: 340px;
+  max-width: calc(100vw - 3rem);
+  background: rgba(13, 18, 36, 0.95);
+  border: 1px solid rgba(251, 244, 232, 0.12);
+  border-radius: 12px;
+  padding: 1rem 1.15rem 1.1rem;
+  box-shadow:
+    0 12px 32px -4px rgba(6, 9, 20, 0.65),
+    0 2px 8px -2px rgba(0, 0, 0, 0.4),
+    0 1px 0 0 rgba(251, 244, 232, 0.08) inset;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--dawn, #fbf4e8);
+  font-family: var(--font-body, -apple-system, BlinkMacSystemFont, sans-serif);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: auto;
+  box-sizing: border-box;
+  animation: push-prompt-fade-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* ── Entrance Animation ── */
+@keyframes push-prompt-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Exit Animation (closing) ── */
+.push-prompt--closing {
+  animation: push-prompt-fade-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none;
+}
+
+@keyframes push-prompt-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* ── Header ── */
+.push-prompt__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.push-prompt__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.push-prompt__icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(238, 184, 74, 0.1);
+  border: 1px solid rgba(238, 184, 74, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sun, #eeb84a);
+  flex-shrink: 0;
+}
+
+/* One subtle bell entrance animation (runs once, stops) */
+.push-prompt__icon-bell {
+  display: inline-flex;
+  transform-origin: top center;
+  animation: push-bell-swing 0.85s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.25s 1 both;
+}
+
+@keyframes push-bell-swing {
+  0% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(11deg); }
+  60% { transform: rotate(-6deg); }
+  80% { transform: rotate(3deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.push-prompt__headings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.push-prompt__tag {
+  font-family: var(--font-utility, "Space Grotesk", sans-serif);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sun, #eeb84a);
+  line-height: 1.2;
+}
+
+.push-prompt__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dawn, #fbf4e8);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Close Button (✕) ── */
+.push-prompt__close {
+  background: transparent;
+  border: none;
+  color: rgba(242, 232, 215, 0.5);
+  cursor: pointer;
+  padding: 0.25rem;
+  margin: -0.2rem -0.2rem 0 0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  line-height: 1;
+}
+
+.push-prompt__close:hover {
+  color: var(--dawn, #fbf4e8);
+  background: rgba(251, 244, 232, 0.08);
+}
+
+.push-prompt__close:active {
+  transform: scale(0.92);
+}
+
+/* ── Description ── */
+.push-prompt__desc {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(242, 232, 215, 0.72);
+  margin: 0;
+}
+
+/* ── Action Buttons ── */
+.push-prompt__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.push-prompt__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--font-body, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.5rem 0.85rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s ease,
+    filter 0.18s ease;
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
+/* Primary Button (Enable) */
+.push-prompt__btn--primary {
+  background: var(--sun, #eeb84a);
+  color: var(--night, #0d1224);
+  border: 1px solid rgba(238, 184, 74, 0.8);
+  flex: 1;
+}
+
+.push-prompt__btn--primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.push-prompt__btn--primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  filter: brightness(0.96);
+}
+
+.push-prompt__btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dismiss Button (Maybe Later) */
+.push-prompt__btn--dismiss {
+  background: transparent;
+  border: 1px solid rgba(251, 244, 232, 0.14);
+  color: rgba(242, 232, 215, 0.7);
+  flex: 0 0 auto;
+}
+
+.push-prompt__btn--dismiss:hover {
+  background: rgba(251, 244, 232, 0.06);
+  color: var(--dawn, #fbf4e8);
+  border-color: rgba(251, 244, 232, 0.24);
+}
+
+.push-prompt__btn--dismiss:active {
+  transform: scale(0.97);
+}
+
+/* ── Inline Feedback Alerts ── */
+.push-prompt__alert {
+  font-size: 0.76rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.push-prompt__alert--success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  color: #86efac;
+}
+
+.push-prompt__alert--error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #fca5a5;
+}
+
+/* ── Loading Spinner ── */
+.push-prompt__spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: push-spinner 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes push-spinner {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .push-prompt {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .push-prompt--closing {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  .push-prompt__icon-bell {
+    animation: none !important;
+  }
+  .push-prompt__btn {
+    transition: none !important;
+    transform: none !important;
+  }
+  .push-prompt__close {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ── Responsive Tablet & Mobile Adaptations ── */
+
+/* Tablet (768px) */
+@media (max-width: 768px) {
+  .push-prompt {
+    bottom: 1.25rem;
+    left: 1.25rem;
+    width: 320px;
+    max-width: calc(100vw - 2.5rem);
+  }
+}
+
+/* Mobile Devices (<= 480px / 390px) */
+@media (max-width: 480px) {
+  .push-prompt {
+    left: 1rem;
+    right: 1rem;
+    bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+    width: auto;
+    max-width: calc(100vw - 2rem);
+    padding: 0.95rem 1rem 1rem;
+    border-radius: 12px;
+  }
+
+  .push-prompt__desc {
+    font-size: 0.76rem;
+  }
+
+  .push-prompt__actions {
+    gap: 0.5rem;
+  }
+
+  .push-prompt__btn {
+    min-height: 42px; /* Touch-friendly hit target */
+    font-size: 0.8rem;
+    padding: 0.55rem 0.9rem;
+  }
+}

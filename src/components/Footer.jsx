@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { navLinks, socials, club } from '../data/club.js'
 import logo from '../assets/logo-120.png'
+import NotificationBell from './NotificationBell.jsx'
 import './Footer.css'
 
 export default function Footer() {
@@ -61,6 +62,10 @@ export default function Footer() {
             <a href={`mailto:${socials.email}`} className="footer__pill footer__pill--email">
               {socials.email}
             </a>
+          </div>
+
+          <div className="footer__notifications">
+            <NotificationBell />
           </div>
         </div>
 

@@ -441,6 +441,24 @@ service cloud.firestore {
     match /certificateCounters/{counterId} {
       allow read, write: if isAdmin(['super_admin', 'event_admin']);
     }
+
+    // ============================================================
+    // BROWSER PUSH NOTIFICATIONS
+    // Subscriptions: clients can register their FCM token.
+    // Read: restricted to admins (protects user tokens).
+    // History: restricted to admins.
+    // ============================================================
+    match /notification_subscriptions/{subId} {
+      allow read: if isAdmin(['super_admin', 'event_admin']);
+      allow create, update: if request.resource.data.token is string
+                            && request.resource.data.token.size() > 10;
+      allow delete: if true;
+    }
+
+    match /notifications/{notifId} {
+      allow read, write: if isAdmin(['super_admin', 'event_admin']);
+    }
   }
 }
+
 

@@ -20,4 +20,22 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-export default app;
+// Safe Firebase Messaging loader
+let messagingInstance = null;
+export const getMessagingInstance = async () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const { getMessaging, isSupported } = await import("firebase/messaging");
+    const supported = await isSupported();
+    if (!supported) return null;
+    if (!messagingInstance) {
+      messagingInstance = getMessaging(app);
+    }
+    return messagingInstance;
+  } catch (err) {
+    console.warn("[Firebase] Messaging not supported in this environment:", err);
+    return null;
+  }
+};
+
+export default app;

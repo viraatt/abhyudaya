@@ -23,6 +23,7 @@ import * as createRegistration from "./registrations/create.js";
 import * as timeCapsuleCreate from "./time-capsule/create.js";
 import * as timeCapsuleVerify from "./time-capsule/verify.js";
 import * as notifyCron from "./time-capsule/notify-cron.js";
+import * as adminSendNotification from "./admin/send-notification.js";
 
 /**
  * Route table — register every new endpoint here (single place).
@@ -32,6 +33,7 @@ const ROUTES = [
   { path: "/api/admin/time-capsules", handler: adminTimeCapsules.default },
   { path: "/api/admin/generate-certificates", handler: adminGenerateCertificates.default },
   { path: "/api/admin/proxy-asset", handler: adminProxyAsset.default },
+  { path: "/api/admin/send-notification", handler: adminSendNotification.default },
   { path: "/api/razorpay/create-order", handler: createOrder.default },
   { path: "/api/razorpay/verify-payment", handler: verifyPayment.default },
   { path: "/api/registrations/create", handler: createRegistration.default },
