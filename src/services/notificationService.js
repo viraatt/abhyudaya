@@ -21,7 +21,7 @@ export async function isPushSupported() {
 }
 
 /**
- * Gets the current notification permission state.
+ * Gets the current notification permission state directly from the browser API.
  * Returns: "unsupported" | "granted" | "denied" | "default"
  */
 export function getNotificationPermission() {
@@ -29,6 +29,51 @@ export function getNotificationPermission() {
     return "unsupported";
   }
   return Notification.permission;
+}
+
+/**
+ * Listens for live browser permission changes (e.g. when the user changes
+ * site permissions in the browser address bar lock icon or site settings).
+ *
+ * @param {Function} callback - Called with ("default" | "granted" | "denied")
+ * @returns {Function} Cleanup function to remove listeners
+ */
+export function onPermissionChange(callback) {
+  if (typeof window === "undefined") return () => {};
+
+  let permissionStatus = null;
+
+  // 1. Monitor via Permissions API if available
+  if (navigator.permissions && navigator.permissions.query) {
+    navigator.permissions
+      .query({ name: "notifications" })
+      .then((status) => {
+        permissionStatus = status;
+        permissionStatus.onchange = () => {
+          if (typeof callback === "function" && "Notification" in window) {
+            callback(Notification.permission);
+          }
+        };
+      })
+      .catch(() => {
+        // Permissions API query not supported in some browsers
+      });
+  }
+
+  // 2. Monitor window focus (fires when returning from browser settings tab)
+  const handleWindowFocus = () => {
+    if (typeof callback === "function" && "Notification" in window) {
+      callback(Notification.permission);
+    }
+  };
+  window.addEventListener("focus", handleWindowFocus);
+
+  return () => {
+    if (permissionStatus) {
+      permissionStatus.onchange = null;
+    }
+    window.removeEventListener("focus", handleWindowFocus);
+  };
 }
 
 /**
@@ -41,6 +86,11 @@ export function getStoredPushToken() {
 
 /**
  * Subscribes the current device to FCM push notifications.
+ * Strictly adheres to browser permission states:
+ * - If already "denied", never calls Notification.requestPermission().
+ * - If "default", prompts the user.
+ * - Distinguishes between dismissed prompts and permanent denials.
+ * - Only reports success if permission is granted AND FCM token is stored.
  *
  * @param {object|null} currentUser - Optional logged-in user profile
  * @returns {Promise<{ success: boolean, token?: string, error?: string, permission?: string }>}
@@ -48,73 +98,221 @@ export function getStoredPushToken() {
 export async function subscribeToPushNotifications(currentUser = null) {
   try {
     if (typeof window === "undefined" || !("Notification" in window)) {
-      return { success: false, error: "Push notifications are not supported by your browser." };
-    }
-
-    // 1. Request permission
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
       return {
         success: false,
-        permission,
-        error: permission === "denied"
-          ? "Notification permission was blocked. Please enable notifications in your browser site settings."
-          : "Notification permission was dismissed."
+        permission: "unsupported",
+        error: "Push notifications are not supported by your browser.",
       };
     }
 
-    // 2. Register service worker
-    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
-      scope: "/",
-    });
-    await navigator.serviceWorker.ready;
+    const currentPermission = Notification.permission;
 
-    // 3. Get messaging instance
-    const messaging = await getMessagingInstance();
-    if (!messaging) {
-      return { success: false, error: "Firebase Cloud Messaging could not be initialized." };
+    // If permission is already blocked, DO NOT repeatedly invoke requestPermission()
+    if (currentPermission === "denied") {
+      return {
+        success: false,
+        permission: "denied",
+        error:
+          "Notifications are blocked in your browser settings. To enable them, click the lock icon in your address bar and set Notifications to 'Allow'.",
+      };
     }
 
-    // 4. Retrieve FCM device token
-    const { getToken } = await import("firebase/messaging");
-    const rawVapid = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-    const vapidKey = rawVapid && rawVapid.trim().length > 0 ? rawVapid.trim() : undefined;
+    let resolvedPermission = currentPermission;
 
-    const token = await getToken(messaging, {
-      vapidKey,
-      serviceWorkerRegistration: registration,
-    });
-
-    if (!token) {
-      return { success: false, error: "Unable to retrieve registration token from messaging provider." };
+    // Trigger browser prompt only if currently "default"
+    if (currentPermission === "default") {
+      try {
+        resolvedPermission = await Notification.requestPermission();
+      } catch (err) {
+        console.warn("[Push Notifications] requestPermission error:", err);
+        resolvedPermission = Notification.permission;
+      }
     }
 
-    // 5. Store / update subscription record in Firestore
-    const subscriptionRef = doc(db, "notification_subscriptions", token);
-    await setDoc(
-      subscriptionRef,
-      {
-        token,
-        userId: currentUser?.uid || null,
-        userEmail: currentUser?.email || null,
-        userAgent: navigator.userAgent,
-        platform: navigator.platform || "unknown",
-        active: true,
-        subscribedAt: serverTimestamp(),
-        lastActiveAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    // Handle user choice
+    if (resolvedPermission === "denied") {
+      return {
+        success: false,
+        permission: "denied",
+        error:
+          "Notifications were blocked. To enable them, click the lock icon in your browser address bar and set Notifications to 'Allow'.",
+      };
+    }
 
-    // 6. Save in local storage
-    localStorage.setItem(STORAGE_KEY, token);
+    if (resolvedPermission === "default") {
+      return {
+        success: false,
+        permission: "default",
+        error:
+          "The notification prompt was closed. Click 'Enable Notifications' whenever you are ready to allow updates.",
+      };
+    }
 
-    return { success: true, token, permission: "granted" };
+    // Permission is "granted". Now register with Firebase Cloud Messaging.
+    // Important: Do not claim notifications are enabled unless FCM succeeds.
+    try {
+      // 1. Validate VAPID key BEFORE calling getToken() to prevent
+      //    "Registration failed – push service error" from browser PushManager.
+      //    Modern browsers require a valid applicationServerKey (VAPID public key).
+      const rawVapid = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      const vapidKey = rawVapid && rawVapid.trim().length > 10 ? rawVapid.trim() : null;
+
+      if (!vapidKey) {
+        console.error(
+          "[Push Notifications] VAPID key is missing or empty. " +
+          "Add VITE_FIREBASE_VAPID_KEY to .env.local (Firebase Console → Project Settings → Cloud Messaging → Web Push certificates → Generate key pair)."
+        );
+        return {
+          success: false,
+          permission: "granted",
+          error:
+            "Notification setup is incomplete: the web push certificate (VAPID key) is not configured. " +
+            "Please contact the site administrator.",
+        };
+      }
+
+      // 2. Register service worker and wait for it to become active
+      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+        scope: "/",
+      });
+
+      // Wait for active controller — handles both fresh installs and updates
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Service worker activation timed out.")), 10000);
+
+        if (registration.active) {
+          clearTimeout(timeout);
+          resolve(registration);
+          return;
+        }
+
+        const target = registration.installing || registration.waiting;
+        if (!target) {
+          clearTimeout(timeout);
+          resolve(registration);
+          return;
+        }
+
+        target.addEventListener("statechange", function onStateChange(e) {
+          if (e.target.state === "activated") {
+            target.removeEventListener("statechange", onStateChange);
+            clearTimeout(timeout);
+            resolve(registration);
+          } else if (e.target.state === "redundant") {
+            target.removeEventListener("statechange", onStateChange);
+            clearTimeout(timeout);
+            reject(new Error("Service worker became redundant before activating."));
+          }
+        });
+      });
+
+      // 3. Initialize messaging
+      const messaging = await getMessagingInstance();
+      if (!messaging) {
+        return {
+          success: false,
+          permission: "granted",
+          error: "Permission granted, but Firebase Cloud Messaging could not be initialized in this browser.",
+        };
+      }
+
+      // 4. Retrieve FCM token with validated VAPID key
+      const { getToken } = await import("firebase/messaging");
+
+      let token;
+      try {
+        token = await getToken(messaging, {
+          vapidKey,
+          serviceWorkerRegistration: registration,
+        });
+      } catch (tokenErr) {
+        console.error("[Push Notifications] getToken() error:", tokenErr);
+
+        // Provide specific, actionable guidance for common failure modes
+        const msg = tokenErr.message || "";
+        let friendlyError;
+
+        if (msg.includes("push service error") || msg.includes("Registration failed")) {
+          // Check for Brave browser (blocks Google push service by default)
+          const isBrave = typeof navigator.brave === "object" && typeof navigator.brave.isBrave === "function";
+          if (isBrave) {
+            friendlyError =
+              "Push notifications require Google's push service, which Brave blocks by default. " +
+              "Go to brave://settings/privacy and enable \"Use Google services for push messaging\", then try again.";
+          } else if (!window.isSecureContext) {
+            friendlyError =
+              "Push notifications require a secure (HTTPS) connection or localhost. " +
+              "Please access the site over HTTPS.";
+          } else {
+            friendlyError =
+              "The browser's push service could not be reached. This can happen in incognito/private mode, " +
+              "when third-party cookies are blocked, or when the browser blocks Google's push service. " +
+              "Try in a regular browser window with standard privacy settings.";
+          }
+        } else if (msg.includes("applicationServerKey") || msg.includes("VAPID")) {
+          friendlyError =
+            "The web push certificate is invalid. Please regenerate the VAPID key in Firebase Console " +
+            "(Project Settings → Cloud Messaging → Web Push certificates).";
+        } else if (msg.includes("network") || msg.includes("fetch")) {
+          friendlyError = "Network error while contacting the push service. Check your connection and try again.";
+        } else {
+          friendlyError = "Could not complete push registration (" + msg + "). Try again in a standard browser window.";
+        }
+
+        return {
+          success: false,
+          permission: "granted",
+          error: friendlyError,
+        };
+      }
+
+      if (!token) {
+        return {
+          success: false,
+          permission: "granted",
+          error: "Permission granted, but failed to retrieve a messaging token. Please check your connection.",
+        };
+      }
+
+      // 5. Save subscription record to Firestore
+      const subscriptionRef = doc(db, "notification_subscriptions", token);
+      await setDoc(
+        subscriptionRef,
+        {
+          token,
+          userId: currentUser?.uid || null,
+          userEmail: currentUser?.email || null,
+          userAgent: navigator.userAgent,
+          platform: navigator.platform || "unknown",
+          active: true,
+          subscribedAt: serverTimestamp(),
+          lastActiveAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      // 6. Store in local storage (never log the full token)
+      localStorage.setItem(STORAGE_KEY, token);
+      console.log("[Push Notifications] Successfully subscribed. Token stored locally.");
+
+      return { success: true, token, permission: "granted" };
+    } catch (fcmErr) {
+      console.error("[Push Notifications] FCM subscription setup error:", fcmErr);
+      return {
+        success: false,
+        permission: "granted",
+        error:
+          "Permission was granted, but subscription setup failed (" +
+          (fcmErr.message || "unexpected error") +
+          "). Please try again.",
+      };
+    }
   } catch (err) {
-    console.error("[Push Notifications] Subscription error:", err);
+    console.error("[Push Notifications] Subscription exception:", err);
     return {
       success: false,
-      error: err.message || "Failed to enable notifications. Please check your network connection.",
+      permission: getNotificationPermission(),
+      error: err.message || "An unexpected error occurred while enabling notifications.",
     };
   }
 }
@@ -128,7 +326,7 @@ export async function unsubscribeFromPushNotifications() {
   try {
     const token = getStoredPushToken();
 
-    // 1. Mark as inactive or remove from Firestore
+    // 1. Mark as inactive in Firestore
     if (token) {
       try {
         const subscriptionRef = doc(db, "notification_subscriptions", token);
@@ -137,7 +335,6 @@ export async function unsubscribeFromPushNotifications() {
           unsubscribedAt: serverTimestamp(),
         });
       } catch (err) {
-        // If doc doesn't exist or permission denied, fallback to delete or continue
         console.warn("[Push Notifications] Failed to update Firestore subscription status:", err);
       }
     }

@@ -1,18 +1,18 @@
 /* ─────────────────────────────────────────────────────────────
-   Abhyudaya Club — Premium Notification Subscription Card
+   Abhyudaya Club — Floating Push Notification Card
    ───────────────────────────────────────────────────────────── */
 
 .push-prompt {
   position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
-  z-index: 9990;
-  width: 340px;
-  max-width: calc(100vw - 3rem);
-  background: rgba(13, 18, 36, 0.95);
+  bottom: 24px;
+  left: 24px;
+  z-index: 9995;
+  width: min(360px, calc(100vw - 32px));
+  height: auto;
+  background: rgba(13, 18, 36, 0.96);
   border: 1px solid rgba(251, 244, 232, 0.12);
   border-radius: 12px;
-  padding: 1rem 1.15rem 1.1rem;
+  padding: 0.95rem 1.1rem 1.05rem;
   box-shadow:
     0 12px 32px -4px rgba(6, 9, 20, 0.65),
     0 2px 8px -2px rgba(0, 0, 0, 0.4),
@@ -23,9 +23,10 @@
   font-family: var(--font-body, -apple-system, BlinkMacSystemFont, sans-serif);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.7rem;
   pointer-events: auto;
   box-sizing: border-box;
+  overflow: hidden;
   animation: push-prompt-fade-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
@@ -87,7 +88,7 @@
   flex-shrink: 0;
 }
 
-/* One subtle bell entrance animation (runs once, stops) */
+/* One subtle bell entrance animation (runs once on appear, then stops) */
 .push-prompt__icon-bell {
   display: inline-flex;
   transform-origin: top center;
@@ -145,6 +146,7 @@
   justify-content: center;
   transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .push-prompt__close:hover {
@@ -160,7 +162,7 @@
 .push-prompt__desc {
   font-size: 0.78rem;
   line-height: 1.45;
-  color: rgba(242, 232, 215, 0.72);
+  color: rgba(242, 232, 215, 0.75);
   margin: 0;
 }
 
@@ -169,7 +171,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.15rem;
+  margin-top: 0.1rem;
 }
 
 .push-prompt__btn {
@@ -197,8 +199,8 @@
 .push-prompt__btn--primary {
   background: var(--sun, #eeb84a);
   color: var(--night, #0d1224);
-  border: 1px solid rgba(238, 184, 74, 0.8);
-  flex: 1;
+  border: 1px solid rgba(238, 184, 74, 0.85);
+  flex: 1 1 auto;
 }
 
 .push-prompt__btn--primary:hover:not(:disabled) {
@@ -222,6 +224,7 @@
   border: 1px solid rgba(251, 244, 232, 0.14);
   color: rgba(242, 232, 215, 0.7);
   flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .push-prompt__btn--dismiss:hover {
@@ -296,41 +299,54 @@
   }
 }
 
-/* ── Responsive Tablet & Mobile Adaptations ── */
-
-/* Tablet (768px) */
-@media (max-width: 768px) {
+/* ── Mobile Viewports (Below 600px) ── */
+@media (max-width: 600px) {
   .push-prompt {
-    bottom: 1.25rem;
-    left: 1.25rem;
-    width: 320px;
-    max-width: calc(100vw - 2.5rem);
-  }
-}
-
-/* Mobile Devices (<= 480px / 390px) */
-@media (max-width: 480px) {
-  .push-prompt {
-    left: 1rem;
-    right: 1rem;
-    bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     width: auto;
-    max-width: calc(100vw - 2rem);
-    padding: 0.95rem 1rem 1rem;
-    border-radius: 12px;
+    max-width: calc(100vw - 24px);
+    padding: 0.85rem 0.95rem 0.95rem;
+    gap: 0.6rem;
+  }
+
+  .push-prompt__title {
+    font-size: 0.85rem;
   }
 
   .push-prompt__desc {
-    font-size: 0.76rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
   }
 
   .push-prompt__actions {
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .push-prompt__btn {
-    min-height: 42px; /* Touch-friendly hit target */
-    font-size: 0.8rem;
-    padding: 0.55rem 0.9rem;
+    min-height: 38px;
+    font-size: 0.78rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* ── Ultra-narrow Screens (<= 340px / 320px) ── */
+@media (max-width: 340px) {
+  .push-prompt {
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    max-width: calc(100vw - 16px);
+    padding: 0.75rem 0.85rem 0.85rem;
+  }
+
+  .push-prompt__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .push-prompt__btn--dismiss {
+    width: 100%;
   }
 }

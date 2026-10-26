@@ -1,10 +1,12 @@
-import { useEffect, useState, useRef } from "react";
-import { FiBell, FiX, FiCheck } from "react-icons/fi";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { FiBell, FiBellOff, FiX, FiCheck } from "react-icons/fi";
 import {
   isPushSupported,
   getNotificationPermission,
   getStoredPushToken,
   subscribeToPushNotifications,
+  onPermissionChange,
 } from "../services/notificationService";
 import { useAuth } from "../context/AuthContext";
 import "./NotificationPrompt.css";
@@ -17,12 +19,22 @@ const EXIT_ANIMATION_DURATION_MS = 220; // Matches CSS exit animation duration
 export default function NotificationPrompt() {
   const { currentUser } = useAuth();
   const [visible, setVisible] = useState(false);
+  const [permission, setPermission] = useState(() => getNotificationPermission());
   const [isClosing, setIsClosing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const timerRef = useRef(null);
   const exitTimerRef = useRef(null);
+
+  const closeWithAnimation = useCallback((callback) => {
+    setIsClosing(true);
+    exitTimerRef.current = setTimeout(() => {
+      setVisible(false);
+      setIsClosing(false);
+      if (typeof callback === "function") callback();
+    }, EXIT_ANIMATION_DURATION_MS);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -47,17 +59,18 @@ export default function NotificationPrompt() {
       }
 
       // 2. Check current notification permission
-      const permission = getNotificationPermission();
-      console.log("[Push Prompt] Current permission state:", permission);
+      const currentPerm = getNotificationPermission();
+      setPermission(currentPerm);
+      console.log("[Push Prompt] Current permission state:", currentPerm);
 
-      if (permission === "denied") {
+      if (currentPerm === "denied") {
         console.log("[Push Prompt] Visibility decision: Hidden (Permission previously blocked by user)");
         return;
       }
 
       // 3. Check existing subscription status
       const existingToken = getStoredPushToken();
-      const isSubscribed = Boolean(existingToken) && permission === "granted";
+      const isSubscribed = Boolean(existingToken) && currentPerm === "granted";
       console.log("[Push Prompt] Subscription status:", isSubscribed ? "Subscribed" : "Not subscribed");
 
       if (isSubscribed) {
@@ -95,8 +108,24 @@ export default function NotificationPrompt() {
 
     evaluateEligibility();
 
+    // Listen for live browser permission changes (e.g. user toggles in address bar)
+    const unsub = onPermissionChange((newPerm) => {
+      if (!mounted) return;
+      console.log("[Push Prompt] Live permission change detected:", newPerm);
+      setPermission(newPerm);
+
+      if (newPerm === "granted") {
+        setError(null);
+        const token = getStoredPushToken();
+        if (token) {
+          closeWithAnimation();
+        }
+      }
+    });
+
     return () => {
       mounted = false;
+      unsub();
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -104,16 +133,7 @@ export default function NotificationPrompt() {
         clearTimeout(exitTimerRef.current);
       }
     };
-  }, []);
-
-  const closeWithAnimation = (callback) => {
-    setIsClosing(true);
-    exitTimerRef.current = setTimeout(() => {
-      setVisible(false);
-      setIsClosing(false);
-      if (typeof callback === "function") callback();
-    }, EXIT_ANIMATION_DURATION_MS);
-  };
+  }, [closeWithAnimation]);
 
   const handleDismiss = () => {
     const expiry = Date.now() + DISMISSAL_DURATION_MS;
@@ -128,10 +148,13 @@ export default function NotificationPrompt() {
   const handleEnable = async () => {
     setLoading(true);
     setError(null);
-    console.log("[Push Prompt] User clicked 'Enable Notifications'. Requesting browser permission...");
+    console.log("[Push Prompt] User clicked 'Enable Notifications'. Checking permission state...");
 
     try {
       const res = await subscribeToPushNotifications(currentUser);
+      const updatedPerm = res.permission || getNotificationPermission();
+      setPermission(updatedPerm);
+
       if (res.success) {
         console.log("[Push Prompt] Successfully subscribed to push notifications");
         setSuccess(true);
@@ -139,12 +162,8 @@ export default function NotificationPrompt() {
           closeWithAnimation();
         }, 1600);
       } else {
-        console.log("[Push Prompt] Subscription unsuccessful:", res.error);
-        if (res.permission === "denied") {
-          setError("Notifications blocked. You can enable them in browser site settings.");
-        } else {
-          setError(res.error || "Unable to enable notifications.");
-        }
+        console.log("[Push Prompt] Subscription unsuccessful:", res.error, "Permission:", updatedPerm);
+        setError(res.error || "Unable to enable notifications.");
       }
     } catch (err) {
       console.error("[Push Prompt] Error enabling notifications:", err);
@@ -154,11 +173,13 @@ export default function NotificationPrompt() {
     }
   };
 
-  if (!visible) {
+  if (!visible || typeof document === "undefined") {
     return null;
   }
 
-  return (
+  const isBlocked = permission === "denied";
+
+  return createPortal(
     <div
       className={`push-prompt ${isClosing ? "push-prompt--closing" : ""}`}
       role="dialog"
@@ -168,12 +189,18 @@ export default function NotificationPrompt() {
       <div className="push-prompt__header">
         <div className="push-prompt__brand">
           <div className="push-prompt__icon-wrap" aria-hidden="true">
-            <span className="push-prompt__icon-bell">
-              <FiBell size={16} />
-            </span>
+            {isBlocked ? (
+              <FiBellOff size={16} />
+            ) : (
+              <span className="push-prompt__icon-bell">
+                <FiBell size={16} />
+              </span>
+            )}
           </div>
           <div className="push-prompt__headings">
-            <span className="push-prompt__tag">Stay Connected</span>
+            <span className="push-prompt__tag">
+              {isBlocked ? "Permission Blocked" : "Stay Connected"}
+            </span>
             <h4 id="push-prompt-title" className="push-prompt__title">
               Abhyudaya Club Updates
             </h4>
@@ -191,10 +218,12 @@ export default function NotificationPrompt() {
       </div>
 
       <p id="push-prompt-desc" className="push-prompt__desc">
-        Get instant browser notifications for upcoming events, workshops, certificates, and important club announcements.
+        {isBlocked
+          ? "Notifications are blocked in your browser settings. To enable them, click the lock icon in your address bar and set Notifications to 'Allow'."
+          : "Get instant browser notifications for upcoming events, workshops, certificates, and important club announcements."}
       </p>
 
-      {error && (
+      {error && !isBlocked && (
         <div className="push-prompt__alert push-prompt__alert--error" role="alert">
           {error}
         </div>
@@ -204,6 +233,16 @@ export default function NotificationPrompt() {
         <div className="push-prompt__alert push-prompt__alert--success" role="status">
           <FiCheck size={14} style={{ flexShrink: 0 }} />
           <span>You&apos;re subscribed! You will now receive club updates.</span>
+        </div>
+      ) : isBlocked ? (
+        <div className="push-prompt__actions">
+          <button
+            type="button"
+            className="push-prompt__btn push-prompt__btn--primary"
+            onClick={handleDismiss}
+          >
+            Got It
+          </button>
         </div>
       ) : (
         <div className="push-prompt__actions">
@@ -235,6 +274,7 @@ export default function NotificationPrompt() {
           </button>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

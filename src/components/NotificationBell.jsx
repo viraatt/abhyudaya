@@ -6,6 +6,7 @@ import {
   getStoredPushToken,
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications,
+  onPermissionChange,
 } from "../services/notificationService";
 import { useAuth } from "../context/AuthContext";
 import "./NotificationBell.css";
@@ -13,7 +14,7 @@ import "./NotificationBell.css";
 export default function NotificationBell({ minimal = false }) {
   const { currentUser } = useAuth();
   const [supported, setSupported] = useState(true);
-  const [permission, setPermission] = useState("default");
+  const [permission, setPermission] = useState(() => getNotificationPermission());
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -35,8 +36,21 @@ export default function NotificationBell({ minimal = false }) {
     }
 
     checkState();
+
+    // Listen for live browser permission changes (e.g. user toggles in address bar)
+    const unsub = onPermissionChange((newPerm) => {
+      if (!mounted) return;
+      setPermission(newPerm);
+      const token = getStoredPushToken();
+      setIsSubscribed(Boolean(token) && newPerm === "granted");
+      if (newPerm === "granted") {
+        setFeedback(null);
+      }
+    });
+
     return () => {
       mounted = false;
+      unsub();
     };
   }, []);
 
@@ -54,15 +68,29 @@ export default function NotificationBell({ minimal = false }) {
           setFeedback({ type: "error", message: res.error || "Failed to turn off." });
         }
       } else {
+        const currentPerm = getNotificationPermission();
+        if (currentPerm === "denied") {
+          setPermission("denied");
+          setFeedback({
+            type: "error",
+            message:
+              "Notifications are blocked in your browser settings. To enable them, click the lock icon in your address bar and set Notifications to 'Allow'.",
+          });
+          return;
+        }
+
         const res = await subscribeToPushNotifications(currentUser);
+        const updatedPerm = res.permission || getNotificationPermission();
+        setPermission(updatedPerm);
+
         if (res.success) {
           setIsSubscribed(true);
-          setPermission("granted");
           setFeedback({ type: "success", message: "Push notifications enabled!" });
         } else {
-          const perm = getNotificationPermission();
-          setPermission(perm);
-          setFeedback({ type: "error", message: res.error || "Permission required." });
+          setFeedback({
+            type: "error",
+            message: res.error || "Notification permission was not granted.",
+          });
         }
       }
     } catch (err) {
@@ -87,7 +115,7 @@ export default function NotificationBell({ minimal = false }) {
         disabled={loading || isBlocked}
         title={
           isBlocked
-            ? "Notifications blocked in browser settings"
+            ? "Notifications blocked in browser settings (click lock icon in address bar to allow)"
             : isSubscribed
             ? "Disable push notifications"
             : "Enable push notifications"
@@ -126,7 +154,7 @@ export default function NotificationBell({ minimal = false }) {
               className="push-widget__status-dot"
               title={
                 isBlocked
-                  ? "Notifications blocked"
+                  ? "Notifications blocked in browser settings"
                   : isSubscribed
                   ? "Notifications active"
                   : "Notifications inactive"
@@ -138,7 +166,7 @@ export default function NotificationBell({ minimal = false }) {
 
       <p className="push-widget__desc">
         {isBlocked
-          ? "Notifications are blocked by your browser settings. To enable, allow notifications for this site."
+          ? "Notifications are blocked by your browser settings. To enable them, click the lock icon in your browser address bar and set Notifications to 'Allow'."
           : isSubscribed
           ? "You will receive instant alerts for new events, workshops, and club notices."
           : "Get real-time browser alerts for upcoming events, workshops, and announcements."}

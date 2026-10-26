@@ -4,6 +4,15 @@
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
+// Immediate activation on install and updates
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 // Initialize Firebase inside the Service Worker using public web credentials
 firebase.initializeApp({
   apiKey: "AIzaSyBaTTNrVGmzJmObIkZ3t8qWfdH0WuF8i3k",
@@ -55,7 +64,6 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const rawUrl = event.notification.data?.url || "/";
-  // Convert relative url to absolute if necessary
   const targetUrl = new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
