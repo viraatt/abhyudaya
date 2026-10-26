@@ -290,11 +290,11 @@ export default function Contact() {
           <div className="contact-hero__content">
 
             <h1 className="contact-hero__title">
-              {"Got a question? We've got answers. (Hopefully.)"}
+              {"Have a Question? Contact Us."}
             </h1>
 
             <p className="contact-hero__lede">
-              {"Got an idea, spotted a bug, or just want to say hi? Drop us a message. No formalities required."}
+              {"Have a question, suggestion, or feedback? Send us a message. We'll be happy to hear from you."}
             </p>
 
             {/* Terminal Interface Console */}
