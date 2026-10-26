@@ -629,12 +629,7 @@ export default function Contact() {
               </button>
             </form>
 
-            <div className="contact-card-footer">
-              <span className="footer-terminal-char" aria-hidden="true">{"//"}</span>
-              <p className="contact-card-footer-note">
-                Made with curiosity, caffeine, and at least one unresolved Git conflict.
-              </p>
-            </div>
+
           </main>
         </div>
       </section>

@@ -12,7 +12,7 @@ import Layout from "./components/Layout.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 import PageLoader from "./components/PageLoader.jsx";
 import { ToastProvider } from "./Admin/components/Toast.jsx";
-import TimeCapsulePopup from "./components/TimeCapsulePopup.jsx";
+
 
 import ProtectedRoute from "./Admin/pages/components/ProtectedRoute.jsx";
 import ErrorBoundary from "./Admin/components/ErrorBoundary.jsx";
@@ -178,8 +178,6 @@ export default function App() {
     <ToastProvider>
       <ScrollToTop />
 
-      {/* Time Capsule promotional popup — shown once per 7 days on public pages */}
-      <TimeCapsulePopup />
 
       <Suspense fallback={<PageLoader />}>
         <ErrorBoundary key={location.pathname}>
