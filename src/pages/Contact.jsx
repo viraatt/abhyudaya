@@ -357,7 +357,6 @@ export default function Contact() {
             <div className="contact-info__block contact-channels-card reveal">
               <div className="contact-channel-item">
                 <h2 className="contact-email-heading">Got a question? Email us.</h2>
-                <p className="contact-email-desc">We actually read our emails. Usually between classes.</p>
                 <p className="contact-eyebrow" style={{ marginTop: "10px" }}>DROP US A MAIL</p>
                 <a
                   href={`mailto:${socials.email}`}
