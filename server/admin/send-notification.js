@@ -3,7 +3,24 @@ import { getMessaging } from "firebase-admin/messaging";
 import { getFirebaseAdmin, checkRateLimit } from "../time-capsule/utils.js";
 import { authenticateAdminRequest, logAdminAction } from "../time-capsule/admin-auth.js";
 
-const ALLOWED_ADMIN_ROLES = ["super_admin", "event_admin"];
+const ALLOWED_ADMIN_ROLES = ["super_admin", "event_admin", "blog_admin"];
+
+/**
+ * Validates destination link URL to prevent malicious redirection or protocol smuggling.
+ */
+function isValidDestination(url) {
+  if (typeof url !== "string") return false;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.length > 500) return false;
+  if (trimmed.startsWith("/")) return true;
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Serverless API handler for sending and managing browser push notifications.
@@ -33,6 +50,7 @@ export default async function handler(req, res) {
     });
   }
 
+  const userRole = authResult.adminUser?.role || "";
   const { db, Timestamp } = getFirebaseAdmin();
   const method = (req.method || "GET").toUpperCase();
 
@@ -47,13 +65,20 @@ export default async function handler(req, res) {
         .where("active", "==", true)
         .get();
 
-      const totalActiveSubscribers = activeSubsSnapshot.size;
+      let activeSubscribers = 0;
+      let authenticatedSubscribers = 0;
 
-      // 2. Get recent notification logs (last 20)
+      activeSubsSnapshot.docs.forEach((doc) => {
+        activeSubscribers++;
+        const d = doc.data();
+        if (d.userId) authenticatedSubscribers++;
+      });
+
+      // 2. Get recent notification logs (last 50)
       const historySnapshot = await db
         .collection("notifications")
         .orderBy("sentAt", "desc")
-        .limit(20)
+        .limit(50)
         .get();
 
       const history = historySnapshot.docs.map((doc) => {
@@ -68,7 +93,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         stats: {
-          activeSubscribers: totalActiveSubscribers,
+          activeSubscribers,
+          authenticatedSubscribers,
         },
         history,
       });
@@ -82,16 +108,27 @@ export default async function handler(req, res) {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // POST: Dispatch FCM Push Notifications to active subscribers
+  // POST: Dispatch FCM Push Notifications
   // ─────────────────────────────────────────────────────────────
   if (method === "POST") {
     try {
-      const { title, body, link, icon } = req.body || {};
+      const {
+        title,
+        body,
+        link,
+        icon,
+        contentType = "general",
+        contentId = null,
+        actionLabel = null,
+        targetAudience = "all",
+        idempotencyKey = null,
+        testToken = null,
+      } = req.body || {};
 
-      // Validate inputs
+      // 1. Validate inputs
       const cleanTitle = typeof title === "string" ? title.trim() : "";
       const cleanBody = typeof body === "string" ? body.trim() : "";
-      const cleanLink = typeof link === "string" && link.trim().length > 0 ? link.trim() : "/";
+      const rawLink = typeof link === "string" && link.trim().length > 0 ? link.trim() : "/";
 
       if (!cleanTitle || cleanTitle.length > 120) {
         return res.status(400).json({
@@ -107,11 +144,131 @@ export default async function handler(req, res) {
         });
       }
 
-      // Fetch active subscribers from Firestore
-      const subscribersSnapshot = await db
-        .collection("notification_subscriptions")
-        .where("active", "==", true)
-        .get();
+      if (!isValidDestination(rawLink)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid destination URL. Must be a relative path (e.g. /events) or a valid HTTP(S) URL.",
+        });
+      }
+      const cleanLink = rawLink;
+
+      const validContentTypes = ["general", "blog", "event", "announcement"];
+      const cleanContentType = validContentTypes.includes(contentType) ? contentType : "general";
+      const cleanContentId = typeof contentId === "string" ? contentId.slice(0, 100) : null;
+      const cleanActionLabel =
+        typeof actionLabel === "string" && actionLabel.trim().length > 0
+          ? actionLabel.trim().slice(0, 30)
+          : null;
+      const cleanAudience = targetAudience === "authenticated" ? "authenticated" : "all";
+
+      // 2. Authoritative Domain Role Authorization:
+      // - super_admin: can broadcast all types
+      // - event_admin: can broadcast 'event' or 'announcement'
+      // - blog_admin: can broadcast 'blog'
+      if (userRole !== "super_admin") {
+        if (userRole === "event_admin" && !["event", "announcement"].includes(cleanContentType)) {
+          return res.status(403).json({
+            success: false,
+            error: "Event Administrators can only broadcast Event and Announcement notifications.",
+          });
+        }
+        if (userRole === "blog_admin" && cleanContentType !== "blog") {
+          return res.status(403).json({
+            success: false,
+            error: "Blog Administrators can only broadcast Blog notifications.",
+          });
+        }
+      }
+
+      // 3. Idempotency Check: Prevent duplicate broadcasts
+      const cleanIdempotencyKey =
+        typeof idempotencyKey === "string" && idempotencyKey.trim().length > 0
+          ? idempotencyKey.trim().slice(0, 128)
+          : null;
+
+      if (cleanIdempotencyKey) {
+        const existingSnapshot = await db
+          .collection("notifications")
+          .where("idempotencyKey", "==", cleanIdempotencyKey)
+          .limit(1)
+          .get();
+
+        if (!existingSnapshot.empty) {
+          const prevData = existingSnapshot.docs[0].data();
+          return res.status(200).json({
+            success: true,
+            duplicate: true,
+            message: "A notification with this idempotency key was already broadcasted.",
+            totalRecipients: prevData.totalRecipients || 0,
+            successCount: prevData.successCount || 0,
+            failureCount: prevData.failureCount || 0,
+            id: existingSnapshot.docs[0].id,
+          });
+        }
+      }
+
+      // Initialize Firebase Admin Messaging
+      const { app } = getFirebaseAdmin();
+      const messaging = getMessaging(app);
+
+      // 4. Test Notification Flow (Single Token)
+      if (testToken) {
+        const cleanTestToken = typeof testToken === "string" ? testToken.trim() : "";
+        if (cleanTestToken.length < 50) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid test token provided.",
+          });
+        }
+
+        const singlePayload = {
+          token: cleanTestToken,
+          notification: {
+            title: `[TEST] ${cleanTitle}`,
+            body: cleanBody,
+          },
+          data: {
+            title: `[TEST] ${cleanTitle}`,
+            body: cleanBody,
+            link: cleanLink,
+            url: cleanLink,
+            contentType: cleanContentType,
+          },
+          webpush: {
+            fcmOptions: {
+              link: cleanLink,
+            },
+            notification: {
+              title: `[TEST] ${cleanTitle}`,
+              body: cleanBody,
+              icon: icon || "/abhyudaya-logo.png",
+              badge: "/favicon.png",
+            },
+          },
+        };
+
+        try {
+          await messaging.send(singlePayload);
+          return res.status(200).json({
+            success: true,
+            isTest: true,
+            message: "Test notification delivered to your browser device successfully!",
+            totalRecipients: 1,
+            successCount: 1,
+            failureCount: 0,
+          });
+        } catch (testErr) {
+          return res.status(500).json({
+            success: false,
+            isTest: true,
+            error: `Failed to deliver test notification: ${testErr.message}`,
+          });
+        }
+      }
+
+      // 5. Broadcast Flow: Fetch active subscribers from Firestore
+      let queryRef = db.collection("notification_subscriptions").where("active", "==", true);
+      const subscribersSnapshot = await queryRef.get();
 
       if (subscribersSnapshot.empty) {
         return res.status(200).json({
@@ -123,10 +280,13 @@ export default async function handler(req, res) {
         });
       }
 
-      // Deduplicate tokens
+      // Deduplicate tokens and apply audience filtering
       const tokenDocMap = new Map();
       subscribersSnapshot.docs.forEach((doc) => {
         const data = doc.data();
+        if (cleanAudience === "authenticated" && !data.userId) {
+          return;
+        }
         const token = data.token || doc.id;
         if (token && typeof token === "string" && !tokenDocMap.has(token)) {
           tokenDocMap.set(token, doc.id);
@@ -136,9 +296,15 @@ export default async function handler(req, res) {
       const allTokens = Array.from(tokenDocMap.keys());
       const totalRecipients = allTokens.length;
 
-      // Initialize Firebase Admin Messaging
-      const { app } = getFirebaseAdmin();
-      const messaging = getMessaging(app);
+      if (totalRecipients === 0) {
+        return res.status(200).json({
+          success: true,
+          message: `No active subscribers matched audience filter: ${cleanAudience}.`,
+          totalRecipients: 0,
+          successCount: 0,
+          failureCount: 0,
+        });
+      }
 
       let totalSuccess = 0;
       let totalFailure = 0;
@@ -160,6 +326,9 @@ export default async function handler(req, res) {
             body: cleanBody,
             link: cleanLink,
             url: cleanLink,
+            contentType: cleanContentType,
+            contentId: cleanContentId || "",
+            actionLabel: cleanActionLabel || "",
           },
           webpush: {
             fcmOptions: {
@@ -178,7 +347,7 @@ export default async function handler(req, res) {
         totalSuccess += batchResponse.successCount;
         totalFailure += batchResponse.failureCount;
 
-        // Check for invalid / expired registration tokens
+        // Collect expired or unregistered registration tokens
         batchResponse.responses.forEach((resp, idx) => {
           if (!resp.success && resp.error) {
             const errorCode = resp.error.code;
@@ -196,7 +365,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Prune or deactivate invalid tokens in background
+      // 6. Prune or deactivate invalid tokens in background
       if (invalidTokensToClean.length > 0) {
         const batch = db.batch();
         invalidTokensToClean.slice(0, 500).forEach((docId) => {
@@ -208,11 +377,16 @@ export default async function handler(req, res) {
         });
       }
 
-      // Save notification record to history log
+      // 7. Save notification record to history log
       const logRecord = {
         title: cleanTitle,
         body: cleanBody,
         link: cleanLink,
+        contentType: cleanContentType,
+        contentId: cleanContentId,
+        actionLabel: cleanActionLabel,
+        targetAudience: cleanAudience,
+        idempotencyKey: cleanIdempotencyKey,
         sentBy: authResult.adminUser?.email || "admin",
         sentByUid: authResult.adminUser?.uid || null,
         sentAt: Timestamp.now(),
@@ -221,7 +395,7 @@ export default async function handler(req, res) {
         failureCount: totalFailure,
       };
 
-      await db.collection("notifications").add(logRecord);
+      const docRef = await db.collection("notifications").add(logRecord);
 
       // Audit log
       await logAdminAction(
@@ -230,6 +404,8 @@ export default async function handler(req, res) {
         "PUSH_NOTIFICATION_BROADCAST",
         {
           title: cleanTitle,
+          contentType: cleanContentType,
+          contentId: cleanContentId,
           totalRecipients,
           successCount: totalSuccess,
           failureCount: totalFailure,
@@ -238,6 +414,7 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
+        id: docRef.id,
         message: `Notification broadcast dispatched: ${totalSuccess} sent, ${totalFailure} failed.`,
         totalRecipients,
         successCount: totalSuccess,

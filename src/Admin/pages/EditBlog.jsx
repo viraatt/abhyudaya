@@ -30,6 +30,8 @@ import "./addBlog.css";
 import { uploadImage } from "./services/imageUpload";
 import { updateBlogService, updateBlogStatusService } from "./services/blogService";
 import { resolveAuthorName } from "../../utils/authorHelper";
+import PublishNotificationModal from "../components/PublishNotificationModal";
+import { getBlogNotificationPrefill } from "../../services/notifyStudioService";
 
 function EditBlog() {
   const { id } = useParams();
@@ -65,6 +67,8 @@ function EditBlog() {
   const [saving, setSaving] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
   const [submittingApproval, setSubmittingApproval] = useState(false);
+  const [notifyAfterPublish, setNotifyAfterPublish] = useState(false);
+  const [notificationModalData, setNotificationModalData] = useState(null);
 
   // Fetch Blog / Alumni Article Data
   useEffect(() => {
@@ -329,6 +333,17 @@ function EditBlog() {
           ? "🚀 Blog Post Published!"
           : "💾 Changes Saved Successfully!"
       );
+
+      if (notifyAfterPublish && targetStatus === "Published") {
+        setNotificationModalData(
+          getBlogNotificationPrefill({
+            id,
+            slug: slug.trim(),
+            title: title.trim(),
+            excerpt: contentExcerpt.trim(),
+          })
+        );
+      }
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Failed to save blog post.");
@@ -506,6 +521,17 @@ function EditBlog() {
                           {saving ? "Saving..." : "💾 Save Draft"}
                         </button>
 
+                        <label className="notify-checkbox-label" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#c9a84c", cursor: "pointer", userSelect: "none" }}>
+                          <input
+                            type="checkbox"
+                            id="notify-after-publish-edit"
+                            checked={notifyAfterPublish}
+                            onChange={(e) => setNotifyAfterPublish(e.target.checked)}
+                            style={{ accentColor: "#c9a84c", width: 14, height: 14 }}
+                          />
+                          🔔 Notify on Publish
+                        </label>
+
                         <button
                           type="button"
                           className="publish-btn"
@@ -527,6 +553,17 @@ function EditBlog() {
                         >
                           {unpublishing ? "Unpublishing..." : "↩ Unpublish to Draft"}
                         </button>
+
+                        <label className="notify-checkbox-label" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#c9a84c", cursor: "pointer", userSelect: "none" }}>
+                          <input
+                            type="checkbox"
+                            id="notify-on-update"
+                            checked={notifyAfterPublish}
+                            onChange={(e) => setNotifyAfterPublish(e.target.checked)}
+                            style={{ accentColor: "#c9a84c", width: 14, height: 14 }}
+                          />
+                          🔔 Notify subscribers
+                        </label>
 
                         <button
                           type="button"
@@ -778,6 +815,14 @@ function EditBlog() {
             />
           </div>
         </div>
+      )}
+
+      {/* Publish Notification Modal */}
+      {notificationModalData && (
+        <PublishNotificationModal
+          prefill={notificationModalData}
+          onClose={() => setNotificationModalData(null)}
+        />
       )}
     </div>
   );

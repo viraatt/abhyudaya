@@ -108,6 +108,9 @@ function ImageUploadField({ label, value, uploading, onFileChange, onRemove }) {
 export default function EventForm({ initialData, onSubmit, saving, pageTitle, pageSubtitle }) {
   const isEdit = Boolean(initialData);
 
+  /* ── Notify after publish ── */
+  const [notifyAfterPublish, setNotifyAfterPublish] = useState(false);
+
   /* ── Basic Info ── */
   const [title, setTitle]           = useState(initialData?.title || "");
   const [slugManual, setSlugManual] = useState(initialData?.slug || "");
@@ -372,6 +375,8 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
       countdownTarget: countdownEnabled
         ? (useCustomCountdownTarget && countdownTarget ? countdownTarget : (eventStartDate || countdownTarget || ""))
         : "",
+      // Notify Studio
+      notifyAfterPublish: notifyAfterPublish && submitStatus === "Published",
     };
   }, [
     title, derivedSlug, category, tagline, shortDesc, longDesc,
@@ -1461,6 +1466,26 @@ export default function EventForm({ initialData, onSubmit, saving, pageTitle, pa
                   <div className="ae-toggle-thumb" />
                 </div>
               </div>
+            </div>
+
+            {/* Notify after publish checkbox */}
+            <div className="ae-field" style={{ marginTop: 8 }}>
+              <label
+                htmlFor="evt-notify-after-publish"
+                style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  fontSize: "13px", color: "#c9a84c", cursor: "pointer", userSelect: "none",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  id="evt-notify-after-publish"
+                  checked={notifyAfterPublish}
+                  onChange={(e) => setNotifyAfterPublish(e.target.checked)}
+                  style={{ accentColor: "#c9a84c", width: 14, height: 14 }}
+                />
+                🔔 Notify subscribers on Publish
+              </label>
             </div>
 
             {/* Buttons */}

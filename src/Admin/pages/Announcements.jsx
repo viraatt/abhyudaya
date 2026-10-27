@@ -10,6 +10,8 @@ import {
   deleteAnnouncement,
 } from "../../Firebase/announcementService";
 import { uploadToCloudinary } from "../../utils/cloudinary";
+import PublishNotificationModal from "../components/PublishNotificationModal";
+import { getAnnouncementNotificationPrefill } from "../../services/notifyStudioService";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
@@ -88,6 +90,10 @@ export default function Announcements() {
   const [deleting, setDeleting] = useState(false);
 
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Notify Studio
+  const [notifyAfterPublish, setNotifyAfterPublish] = useState(false);
+  const [notificationModalData, setNotificationModalData] = useState(null);
 
   // Clean up object URLs on unmount
   useEffect(() => {
@@ -187,6 +193,7 @@ export default function Announcements() {
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setNotifyAfterPublish(false);
     if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -267,8 +274,20 @@ export default function Announcements() {
         await updateAnnouncement(editingId, payload);
         setSuccessMsg("Announcement updated.");
       } else {
-        await createAnnouncement(payload, currentUser?.email || "");
+        const newAnn = await createAnnouncement(payload, currentUser?.email || "");
         setSuccessMsg("Announcement created.");
+
+        // Offer push notification if published on creation
+        if (notifyAfterPublish && payload.published) {
+          const annId = newAnn?.id || newAnn;
+          setNotificationModalData(
+            getAnnouncementNotificationPrefill({
+              id: annId,
+              title: payload.title,
+              message: payload.message,
+            })
+          );
+        }
       }
 
       if (previewUrl && previewUrl.startsWith("blob:")) {
@@ -735,6 +754,28 @@ export default function Announcements() {
                   </button>
                 </div>
               </div>
+
+              {/* Notify on publish — only for new announcements being published */}
+              {!editingId && (
+                <div className="ann-field">
+                  <label
+                    htmlFor="ann-notify-publish"
+                    style={{
+                      display: "flex", alignItems: "center", gap: "8px",
+                      fontSize: "13px", color: "#c9a84c", cursor: "pointer", userSelect: "none",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      id="ann-notify-publish"
+                      checked={notifyAfterPublish}
+                      onChange={(e) => setNotifyAfterPublish(e.target.checked)}
+                      style={{ accentColor: "#c9a84c", width: 14, height: 14 }}
+                    />
+                    🔔 Send push notification when published
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="ann-modal-actions">
@@ -793,6 +834,14 @@ export default function Announcements() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Publish Notification Modal */}
+      {notificationModalData && (
+        <PublishNotificationModal
+          prefill={notificationModalData}
+          onClose={() => setNotificationModalData(null)}
+        />
       )}
     </div>
   );

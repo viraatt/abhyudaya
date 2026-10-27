@@ -445,14 +445,76 @@ service cloud.firestore {
     // ============================================================
     // BROWSER PUSH NOTIFICATIONS
     // Subscriptions: clients can register their FCM token.
-    // Read: restricted to admins (protects user tokens).
-    // History: restricted to admins.
+    // - Create: any client (anonymous or authenticated) can register an FCM token.
+    //   Must pass a valid token string (>= 50 chars), active boolean, and only allowed fields.
+    //   Authenticated users cannot spoof another user's userId.
+    // - Update: allows resubscribing or unsubscribing (active: false).
+    //   Token is immutable. Existing userId cannot be hijacked.
+    // - Read: restricted to admins and the owning authenticated user.
+    // - Delete: restricted to admins and the owning authenticated user.
+    //   (Anonymous users cannot delete documents; app unsubscribes via updateDoc).
     // ============================================================
     match /notification_subscriptions/{subId} {
-      allow read: if isAdmin(['super_admin', 'event_admin']);
-      allow create, update: if request.resource.data.token is string
-                            && request.resource.data.token.size() > 10;
-      allow delete: if true;
+      allow read: if isAdmin(['super_admin', 'event_admin'])
+        || (request.auth != null && resource.data.get('userId', null) != null && resource.data.userId == request.auth.uid);
+
+      allow create: if
+        // Must contain required fields and no unexpected fields
+        request.resource.data.keys().hasAll(['token', 'active'])
+        && request.resource.data.keys().hasOnly([
+          'token', 'userId', 'userEmail', 'userAgent',
+          'platform', 'active', 'subscribedAt', 'lastActiveAt',
+          'unsubscribedAt'
+        ])
+        // Token must be a valid FCM token string (FCM tokens are >= 50 chars)
+        && request.resource.data.token is string
+        && request.resource.data.token.size() >= 50
+        && request.resource.data.token.size() <= 1024
+        // Status must be boolean
+        && request.resource.data.active is bool
+        // Optional string fields validation using .get()
+        && (request.resource.data.get('userId', null) == null || (request.resource.data.userId is string && request.resource.data.userId.size() <= 128))
+        && (request.resource.data.get('userEmail', null) == null || (request.resource.data.userEmail is string && request.resource.data.userEmail.size() <= 256))
+        && (request.resource.data.get('userAgent', null) == null || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 1024))
+        && (request.resource.data.get('platform', null) == null || (request.resource.data.platform is string && request.resource.data.platform.size() <= 128))
+        // UserId ownership on create:
+        // Anonymous visitor must set userId: null or omit it
+        // Authenticated user can set their own UID or null
+        && (request.auth == null
+            ? request.resource.data.get('userId', null) == null
+            : (request.resource.data.get('userId', null) == request.auth.uid || request.resource.data.get('userId', null) == null));
+
+      allow update: if
+        isAdmin(['super_admin', 'event_admin'])
+        || (
+          // Validate updated document payload
+          request.resource.data.keys().hasAll(['token', 'active'])
+          && request.resource.data.keys().hasOnly([
+            'token', 'userId', 'userEmail', 'userAgent',
+            'platform', 'active', 'subscribedAt', 'lastActiveAt',
+            'unsubscribedAt'
+          ])
+          && request.resource.data.token is string
+          && request.resource.data.token.size() >= 50
+          && request.resource.data.token.size() <= 1024
+          && request.resource.data.active is bool
+          // Token is immutable on update
+          && request.resource.data.token == resource.data.token
+          // Optional string fields validation
+          && (request.resource.data.get('userId', null) == null || (request.resource.data.userId is string && request.resource.data.userId.size() <= 128))
+          && (request.resource.data.get('userEmail', null) == null || (request.resource.data.userEmail is string && request.resource.data.userEmail.size() <= 256))
+          && (request.resource.data.get('userAgent', null) == null || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 1024))
+          && (request.resource.data.get('platform', null) == null || (request.resource.data.platform is string && request.resource.data.platform.size() <= 128))
+          // Ownership preservation on update:
+          // If already owned by a user, only that user can update it and userId cannot change.
+          // If previously anonymous (userId == null), can remain null or be claimed by current auth user.
+          && (resource.data.get('userId', null) != null
+              ? (request.auth != null && request.auth.uid == resource.data.userId && request.resource.data.get('userId', null) == resource.data.userId)
+              : (request.resource.data.get('userId', null) == null || (request.auth != null && request.resource.data.userId == request.auth.uid)))
+        );
+
+      allow delete: if isAdmin(['super_admin', 'event_admin'])
+        || (request.auth != null && resource.data.get('userId', null) != null && resource.data.userId == request.auth.uid);
     }
 
     match /notifications/{notifId} {

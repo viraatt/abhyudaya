@@ -39,6 +39,8 @@ import "./addBlog.css";
 
 import { publishBlog, updateBlogService } from "./services/blogService";
 import { uploadImage } from "./services/imageUpload";
+import PublishNotificationModal from "../components/PublishNotificationModal";
+import { getBlogNotificationPrefill } from "../../services/notifyStudioService";
 
 
 function AddBlog() {
@@ -235,6 +237,8 @@ function AddBlog() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [submittingApproval, setSubmittingApproval] = useState(false);
+  const [notifyAfterPublish, setNotifyAfterPublish] = useState(false);
+  const [notificationModalData, setNotificationModalData] = useState(null);
 
   // Created Doc Ref for Autosave & Manual Saves
   const createdDocIdRef = useRef(null);
@@ -487,10 +491,15 @@ function AddBlog() {
         content: contentJson,
       };
 
+      let publishedBlogId = createdDocIdRef.current;
+      let publishedBlogSlug = slug.trim();
+
       if (createdDocIdRef.current) {
         await updateBlogService(createdDocIdRef.current, blogData);
       } else {
-        await publishBlog(blogData);
+        const result = await publishBlog(blogData);
+        publishedBlogId = result.id;
+        publishedBlogSlug = result.slug;
       }
 
       toast.success(
@@ -498,7 +507,19 @@ function AddBlog() {
           ? "Blog published successfully!"
           : "Blog post saved!"
       );
-      navigate("/admin/blogs");
+
+      if (notifyAfterPublish && targetStatus === "Published") {
+        setNotificationModalData(
+          getBlogNotificationPrefill({
+            id: publishedBlogId,
+            slug: publishedBlogSlug,
+            title: title.trim(),
+            excerpt: contentExcerpt.trim(),
+          })
+        );
+      } else {
+        navigate("/admin/blogs");
+      }
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Failed to publish blog.");
@@ -602,6 +623,31 @@ function AddBlog() {
                       </>
                     )}
                   </button>
+                )}
+
+                {!isAlumniUser && (
+                  <label
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: "0.82rem",
+                      color: "#cbd5e1",
+                      cursor: "pointer",
+                      padding: "6px 10px",
+                      background: "rgba(255, 255, 255, 0.05)",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                    }}
+                    title="Send a push notification to subscribers upon successful publishing"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={notifyAfterPublish}
+                      onChange={(e) => setNotifyAfterPublish(e.target.checked)}
+                    />
+                    <span>🔔 Push notify subscribers</span>
+                  </label>
                 )}
               </div>
             </div>
@@ -822,6 +868,20 @@ function AddBlog() {
           </div>
         </div>
       )}
+
+      {/* Post-Publish Push Notification Modal */}
+      <PublishNotificationModal
+        isOpen={Boolean(notificationModalData)}
+        onClose={() => {
+          setNotificationModalData(null);
+          navigate("/admin/blogs");
+        }}
+        initialData={notificationModalData}
+        contentTypeLabel="Blog Post"
+        onSuccess={() => {
+          toast.success("Push notification broadcast dispatched!");
+        }}
+      />
     </div>
   );
 }
