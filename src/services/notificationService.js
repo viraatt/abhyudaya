@@ -1,5 +1,5 @@
 import { doc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db, getMessagingInstance } from "../Firebase/firebase";
+import { auth, db, getMessagingInstance } from "../Firebase/firebase";
 
 const STORAGE_KEY = "abhyudaya_push_token";
 
@@ -119,10 +119,9 @@ function tokenToDocId(token) {
  * - Distinguishes between dismissed prompts and permanent denials.
  * - Only reports success if permission is granted AND FCM token is stored.
  *
- * @param {object|null} currentUser - Optional logged-in user profile
  * @returns {Promise<{ success: boolean, token?: string, error?: string, permission?: string }>}
  */
-export async function subscribeToPushNotifications(currentUser = null) {
+export async function subscribeToPushNotifications() {
   try {
     if (typeof window === "undefined" || !("Notification" in window)) {
       return {
@@ -307,31 +306,33 @@ export async function subscribeToPushNotifications(currentUser = null) {
       //    characters in FCM tokens (e.g. slashes) that would corrupt the path.
       const docId = tokenToDocId(token);
       const subscriptionRef = doc(db, "notification_subscriptions", docId);
+      const authenticatedUser = auth.currentUser;
+      const subscriptionData = {
+        token,
+        userId: authenticatedUser?.uid || null,
+        userEmail: authenticatedUser?.email || null,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform || "unknown",
+        active: true,
+        subscribedAt: serverTimestamp(),
+        lastActiveAt: serverTimestamp(),
+      };
       try {
-        await setDoc(
-          subscriptionRef,
-          {
-            token,
-            userId: currentUser?.uid || null,
-            userEmail: currentUser?.email || null,
-            userAgent: navigator.userAgent,
-            platform: navigator.platform || "unknown",
-            active: true,
-            subscribedAt: serverTimestamp(),
-            lastActiveAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
+        await setDoc(subscriptionRef, subscriptionData, { merge: true });
       } catch (firestoreErr) {
-        console.error("[Push Notifications] Firestore write failed:", firestoreErr);
+        console.error("[Push Notifications] Firestore subscription write failed:", {
+          operation: "setDoc(notification_subscriptions/{subId}, merge: true)",
+          fieldNames: Object.keys(subscriptionData),
+          projectId: db.app.options.projectId,
+          authenticated: Boolean(authenticatedUser),
+          errorCode: firestoreErr.code || "unknown",
+        });
         // Token is valid — store it locally so notifications still work in the
         // foreground even if the database record could not be saved.
         localStorage.setItem(STORAGE_KEY, token);
 
         const fsMsg = firestoreErr.message || "";
-        const isPermDenied =
-          fsMsg.includes("Missing or insufficient permissions") ||
-          firestoreErr.code === "permission-denied";
+        const isPermDenied = firestoreErr.code === "permission-denied";
 
         return {
           success: false,

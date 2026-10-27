@@ -8,11 +8,9 @@ import {
   unsubscribeFromPushNotifications,
   onPermissionChange,
 } from "../services/notificationService";
-import { useAuth } from "../context/AuthContext";
 import "./NotificationBell.css";
 
 export default function NotificationBell({ minimal = false }) {
-  const { currentUser } = useAuth();
   const [supported, setSupported] = useState(true);
   const [permission, setPermission] = useState(() => getNotificationPermission());
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -79,7 +77,7 @@ export default function NotificationBell({ minimal = false }) {
           return;
         }
 
-        const res = await subscribeToPushNotifications(currentUser);
+        const res = await subscribeToPushNotifications();
         const updatedPerm = res.permission || getNotificationPermission();
         setPermission(updatedPerm);
 

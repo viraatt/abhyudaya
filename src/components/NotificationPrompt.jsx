@@ -8,7 +8,6 @@ import {
   subscribeToPushNotifications,
   onPermissionChange,
 } from "../services/notificationService";
-import { useAuth } from "../context/AuthContext";
 import "./NotificationPrompt.css";
 
 const DISMISSAL_STORAGE_KEY = "abhyudaya_push_dismissed_until";
@@ -17,7 +16,6 @@ const DISPLAY_DELAY_MS = 4000; // 4 seconds delay after page load
 const EXIT_ANIMATION_DURATION_MS = 220; // Matches CSS exit animation duration
 
 export default function NotificationPrompt() {
-  const { currentUser } = useAuth();
   const [visible, setVisible] = useState(false);
   const [permission, setPermission] = useState(() => getNotificationPermission());
   const [isClosing, setIsClosing] = useState(false);
@@ -151,7 +149,7 @@ export default function NotificationPrompt() {
     console.log("[Push Prompt] User clicked 'Enable Notifications'. Checking permission state...");
 
     try {
-      const res = await subscribeToPushNotifications(currentUser);
+      const res = await subscribeToPushNotifications();
       const updatedPerm = res.permission || getNotificationPermission();
       setPermission(updatedPerm);
 
