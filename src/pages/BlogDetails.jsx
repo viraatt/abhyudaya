@@ -41,9 +41,11 @@ import BlogPostingSchema from "../components/seo/schemas/BlogPostingSchema";
 import BreadcrumbSchema from "../components/seo/schemas/BreadcrumbSchema";
 import LatestBlogsSidebar from "../components/blog/LatestBlogsSidebar";
 import { markPrerenderReady } from "../utils/prerender.js";
+import { sanitizeArticleHtml } from "../utils/sanitizeHtml.js";
 
 async function renderBlogContent(content) {
   if (!content) return "";
+  let html = "";
   if (typeof content === "object") {
     try {
       const [
@@ -61,7 +63,7 @@ async function renderBlogContent(content) {
         import("@tiptap/extension-text-align"),
         import("@tiptap/extension-image"),
       ]);
-      return generateHTML(content, [
+      html = generateHTML(content, [
         StarterKit.configure({ link: false, underline: false }),
         Underline,
         LinkExtension,
@@ -72,16 +74,17 @@ async function renderBlogContent(content) {
       console.error("Error generating HTML from Tiptap JSON:", e);
       return "";
     }
-  }
-  if (typeof content === "string" && content.trim().startsWith("{")) {
+  } else if (typeof content === "string" && content.trim().startsWith("{")) {
     try {
       const json = JSON.parse(content);
       return await renderBlogContent(json);
     } catch {
-      return content;
+      html = content;
     }
+  } else {
+    html = typeof content === "string" ? content : "";
   }
-  return content; // Legacy HTML string fallback
+  return sanitizeArticleHtml(html);
 }
 
 
@@ -700,7 +703,7 @@ export default function BlogDetails() {
           {/* Blog Content */}
           <div
             className="details-content"
-            dangerouslySetInnerHTML={{ __html: renderedContent }}
+            dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(renderedContent) }}
           />
 
 

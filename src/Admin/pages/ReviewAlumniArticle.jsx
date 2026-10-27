@@ -29,6 +29,7 @@ import {
   deleteAlumniSubmission,
   SUBMISSION_STATUSES,
 } from "../../Firebase/alumniArticleService";
+import { sanitizeArticleHtml } from "../../utils/sanitizeHtml";
 
 import "./style/admin.css";
 import "./ReviewAlumniArticle.css";
@@ -351,7 +352,7 @@ export default function ReviewAlumniArticle() {
                         if (typeof content === "string" && content.trim().startsWith("<")) {
                           return (
                             <div
-                              dangerouslySetInnerHTML={{ __html: content }}
+                              dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(content) }}
                               style={{ lineHeight: 1.7 }}
                             />
                           );

@@ -7,6 +7,9 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 // Firebase Admin is initialized lazily so a missing service-account
 // env var never crashes the shared serverless function at cold start.
 let _db = null;
+export function setDb(dbInstance) {
+  _db = dbInstance;
+}
 function getDb() {
   if (!_db) {
     if (!getApps().length) {
@@ -151,6 +154,17 @@ export default async function handler(req, res) {
           ? input.customAnswers
           : {};
 
+      // Authoritatively determine payment requirements from Firestore event document
+      const isPaidEvent = Boolean(event.isPaid);
+      let feeAmount = 0;
+
+      if (isPaidEvent) {
+        feeAmount = Number(event.feeAmount);
+        if (!Number.isFinite(feeAmount) || feeAmount <= 0) {
+          throw new Error("INVALID_FEE_CONFIGURATION");
+        }
+      }
+
       transaction.set(ref, {
         eventId,
         eventTitle: event.title || String(input.eventTitle || "").trim(),
@@ -165,10 +179,10 @@ export default async function handler(req, res) {
         phone,
         customAnswers,
         registrationId,
-        registrationStatus: input.isPaid ? "payment_pending" : "registered",
-        isPaid: Boolean(input.isPaid),
-        amount: event.isPaid ? Number(event.feeAmount) || 0 : 0,
-        paymentStatus: input.isPaid ? "pending" : "free",
+        registrationStatus: isPaidEvent ? "payment_pending" : "registered",
+        isPaid: isPaidEvent,
+        amount: feeAmount,
+        paymentStatus: isPaidEvent ? "pending" : "free",
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
@@ -185,6 +199,7 @@ export default async function handler(req, res) {
       REGISTRATION_CLOSED: "Registrations are currently closed for this event.",
       ALREADY_REGISTERED: "You are already registered for this event with this email.",
       EVENT_FULL: "This event has reached its maximum participant capacity.",
+      INVALID_FEE_CONFIGURATION: "This event has an invalid registration fee configuration. Please contact the organizers.",
     };
 
     const message = messages[error.message] || "Unable to complete registration. Please try again.";

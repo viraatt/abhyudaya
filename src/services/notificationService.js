@@ -85,6 +85,33 @@ export function getStoredPushToken() {
 }
 
 /**
+ * Derives a safe, stable Firestore document ID from an FCM token.
+ *
+ * FCM tokens are long opaque strings (commonly 140-200+ characters) that
+ * may contain characters that cause issues when used directly as Firestore
+ * document IDs (forward slashes, leading dots, etc.).  Firestore document
+ * IDs also have a 1,500-byte UTF-8 limit.
+ *
+ * Strategy: djb2-style numeric hash → base-36 string → prefix with "sub_"
+ * producing a short (≤ 16 chars), collision-resistant, URL-safe id.
+ *
+ * @param {string} token - The raw FCM token.
+ * @returns {string} Safe Firestore document ID.
+ */
+function tokenToDocId(token) {
+  // djb2 hash over every char of the token
+  let hash = 5381;
+  for (let i = 0; i < token.length; i++) {
+    hash = ((hash << 5) + hash) ^ token.charCodeAt(i);
+    // Keep within 32-bit signed integer range to stay predictable
+    hash = hash | 0;
+  }
+  // Convert to unsigned then base-36 to keep it compact and alphanumeric-safe
+  const unsigned = hash >>> 0;
+  return "sub_" + unsigned.toString(36);
+}
+
+/**
  * Subscribes the current device to FCM push notifications.
  * Strictly adheres to browser permission states:
  * - If already "denied", never calls Notification.requestPermission().
@@ -274,22 +301,49 @@ export async function subscribeToPushNotifications(currentUser = null) {
         };
       }
 
-      // 5. Save subscription record to Firestore
-      const subscriptionRef = doc(db, "notification_subscriptions", token);
-      await setDoc(
-        subscriptionRef,
-        {
-          token,
-          userId: currentUser?.uid || null,
-          userEmail: currentUser?.email || null,
-          userAgent: navigator.userAgent,
-          platform: navigator.platform || "unknown",
-          active: true,
-          subscribedAt: serverTimestamp(),
-          lastActiveAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+      // 5. Save subscription record to Firestore.
+      //    Use a stable, hash-derived document ID instead of the raw token so
+      //    we avoid the 1,500-byte Firestore document-ID limit and any special
+      //    characters in FCM tokens (e.g. slashes) that would corrupt the path.
+      const docId = tokenToDocId(token);
+      const subscriptionRef = doc(db, "notification_subscriptions", docId);
+      try {
+        await setDoc(
+          subscriptionRef,
+          {
+            token,
+            userId: currentUser?.uid || null,
+            userEmail: currentUser?.email || null,
+            userAgent: navigator.userAgent,
+            platform: navigator.platform || "unknown",
+            active: true,
+            subscribedAt: serverTimestamp(),
+            lastActiveAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (firestoreErr) {
+        console.error("[Push Notifications] Firestore write failed:", firestoreErr);
+        // Token is valid — store it locally so notifications still work in the
+        // foreground even if the database record could not be saved.
+        localStorage.setItem(STORAGE_KEY, token);
+
+        const fsMsg = firestoreErr.message || "";
+        const isPermDenied =
+          fsMsg.includes("Missing or insufficient permissions") ||
+          firestoreErr.code === "permission-denied";
+
+        return {
+          success: false,
+          permission: "granted",
+          error: isPermDenied
+            ? "Notifications are enabled in your browser, but saving your subscription to the database failed (Firestore permission denied). " +
+              "This is a server-side configuration issue — please ask the site administrator to deploy the updated Firestore security rules."
+            : "Notifications are enabled in your browser, but saving your subscription to the server failed (" +
+              fsMsg +
+              "). Please try again later.",
+        };
+      }
 
       // 6. Store in local storage (never log the full token)
       localStorage.setItem(STORAGE_KEY, token);
@@ -297,12 +351,12 @@ export async function subscribeToPushNotifications(currentUser = null) {
 
       return { success: true, token, permission: "granted" };
     } catch (fcmErr) {
-      console.error("[Push Notifications] FCM subscription setup error:", fcmErr);
+      console.error("[Push Notifications] FCM token generation error:", fcmErr);
       return {
         success: false,
         permission: "granted",
         error:
-          "Permission was granted, but subscription setup failed (" +
+          "Permission was granted, but generating the push token failed (" +
           (fcmErr.message || "unexpected error") +
           "). Please try again.",
       };
@@ -329,7 +383,9 @@ export async function unsubscribeFromPushNotifications() {
     // 1. Mark as inactive in Firestore
     if (token) {
       try {
-        const subscriptionRef = doc(db, "notification_subscriptions", token);
+        // Use the same hash-derived ID that was used during subscription.
+        const docId = tokenToDocId(token);
+        const subscriptionRef = doc(db, "notification_subscriptions", docId);
         await updateDoc(subscriptionRef, {
           active: false,
           unsubscribedAt: serverTimestamp(),
