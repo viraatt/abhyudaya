@@ -24,6 +24,7 @@ import * as timeCapsuleCreate from "./time-capsule/create.js";
 import * as timeCapsuleVerify from "./time-capsule/verify.js";
 import * as notifyCron from "./time-capsule/notify-cron.js";
 import * as adminSendNotification from "./admin/send-notification.js";
+import * as pollVote from "./polls/vote.js";
 
 /**
  * Route table — register every new endpoint here (single place).
@@ -40,6 +41,7 @@ const ROUTES = [
   { path: "/api/time-capsule/create", handler: timeCapsuleCreate.default },
   { path: "/api/time-capsule/verify", handler: timeCapsuleVerify.default },
   { path: "/api/time-capsule/notify-cron", handler: notifyCron.default },
+  { path: "/api/polls/vote", handler: pollVote.default },
 ];
 
 /**

@@ -47,6 +47,8 @@ const VerifyCertificate = lazyWithRetry(
 );
 const TimeCapsule = lazyWithRetry(() => import("./pages/TimeCapsule.jsx"), "TimeCapsule");
 const TimeCapsuleOpen = lazyWithRetry(() => import("./pages/TimeCapsuleOpen.jsx"), "TimeCapsuleOpen");
+const Polls = lazyWithRetry(() => import("./pages/Polls/Polls.jsx"), "Polls");
+const PollDetails = lazyWithRetry(() => import("./pages/Polls/PollDetails.jsx"), "PollDetails");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.jsx"), "NotFound");
 
 // ─────────────────────────────────────────────────────────────
@@ -115,6 +117,22 @@ const AlumniArticles = lazyWithRetry(
 const ReviewAlumniArticle = lazyWithRetry(
   () => import("./Admin/pages/ReviewAlumniArticle.jsx"),
   "ReviewAlumniArticle"
+);
+const AdminPolls = lazyWithRetry(
+  () => import("./Admin/pages/Polls/PollManager.jsx"),
+  "AdminPolls"
+);
+const CreatePoll = lazyWithRetry(
+  () => import("./Admin/pages/Polls/CreatePoll.jsx"),
+  "CreatePoll"
+);
+const EditPoll = lazyWithRetry(
+  () => import("./Admin/pages/Polls/EditPoll.jsx"),
+  "EditPoll"
+);
+const PollAnalytics = lazyWithRetry(
+  () => import("./Admin/pages/Polls/PollAnalytics.jsx"),
+  "PollAnalytics"
 );
 
 
@@ -455,6 +473,52 @@ export default function App() {
               }
             />
 
+            {/* Poll Management */}
+            <Route
+              path="/admin/polls"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <AdminPolls />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/polls/create"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <CreatePoll />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/polls/edit/:id"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <EditPoll />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/polls/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <PollAnalytics />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/polls/analytics/:id"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin", "event_admin"]}>
+                  <PollAnalytics />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Push Notifications */}
             <Route
               path="/admin/notifications"
@@ -536,6 +600,10 @@ export default function App() {
                 path="/announcements"
                 element={<Announcements />}
               />
+
+              {/* Campus Polls & Live Voting */}
+              <Route path="/polls" element={<Polls />} />
+              <Route path="/polls/:id" element={<PollDetails />} />
 
               <Route path="/register" element={<RegisterEvent />} />
               <Route

@@ -520,6 +520,49 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read, write: if isAdmin(['super_admin', 'event_admin']);
     }
+
+    // ============================================================
+    // POLLS & LIVE VOTING SYSTEM
+    // Public: read active, scheduled, closed, or published polls.
+    // Admins (super_admin, event_admin): full CRUD on polls.
+    // Votes Subcollection (/polls/{pollId}/votes/{userId}):
+    // - Voter Privacy: only the voter themselves or admins can read their vote.
+    // - Authenticated vote creation: only the authenticated voter (UID matching doc ID).
+    // - Duplicate vote prevention: cannot overwrite an existing vote document.
+    // - Votes are immutable: no client-side update allowed.
+    // ============================================================
+    match /polls/{pollId} {
+      allow read: if isAdmin(['super_admin', 'event_admin'])
+        || resource.data.status in ['active', 'scheduled', 'closed', 'published'];
+
+      allow create, delete: if isAdmin(['super_admin', 'event_admin']);
+
+      allow update: if isAdmin(['super_admin', 'event_admin'])
+        || (
+          request.auth != null
+          && resource.data.status == 'active'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'options', 'totalVotes', 'totalParticipants', 'updatedAt'
+          ])
+        );
+
+      match /votes/{userId} {
+        // Only the voter themselves or admin can see their individual vote
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin(['super_admin', 'event_admin']));
+
+        // Only authenticated user matching document ID can submit, exactly once
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(userId))
+          && request.resource.data.keys().hasOnly(['userId', 'userEmail', 'userName', 'selectedOptions', 'submittedAt', 'pollId'])
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.selectedOptions is list
+          && request.resource.data.selectedOptions.size() > 0;
+
+        allow update: if false;
+        allow delete: if isAdmin(['super_admin', 'event_admin']);
+      }
+    }
   }
 }
 

@@ -58,7 +58,15 @@ export function AuthProvider({ children }) {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-          setCurrentUser(null);
+          // Regular authenticated user / student (not an admin)
+          setCurrentUser({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || (user.email ? user.email.split("@")[0] : "Student"),
+            photoURL: user.photoURL || null,
+            role: null,
+            isAnonymous: Boolean(user.isAnonymous),
+          });
           return;
         }
 
@@ -67,12 +75,21 @@ export function AuthProvider({ children }) {
         setCurrentUser({
           uid: user.uid,
           email: user.email,
+          displayName: user.displayName || (user.email ? user.email.split("@")[0] : "Admin"),
+          photoURL: user.photoURL || null,
           ...data,
           role,
         });
       } catch (error) {
         console.error("[AuthContext] error:", error);
-        setCurrentUser(null);
+        // Fallback to basic user object if Firestore read had an error
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || (user.email ? user.email.split("@")[0] : "Student"),
+          photoURL: user.photoURL || null,
+          role: null,
+        });
       }
     });
 

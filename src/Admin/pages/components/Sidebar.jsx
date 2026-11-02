@@ -25,6 +25,7 @@ import {
   FiMenu,
   FiX,
   FiRadio,
+  FiCheckSquare,
 } from "react-icons/fi";
 
 import abhyudayaLogo from "../../../assets/logo-120.png";
@@ -91,6 +92,19 @@ export default function Sidebar() {
       { name: "Certificates", path: "/admin/certificates", icon: <FiAward /> },
       { name: "Event Registrations", path: "/admin/registrations", icon: <FiFileText /> },
       { name: "Time Capsules", path: "/admin/time-capsules", icon: <FiArchive /> },
+      {
+        name: "Poll Management",
+        path: "/admin/polls",
+        icon: <FiCheckSquare />,
+        subItems: [
+          { name: "All Polls", path: "/admin/polls" },
+          { name: "Create Poll", path: "/admin/polls/create" },
+          { name: "Active Polls", path: "/admin/polls?status=active" },
+          { name: "Scheduled Polls", path: "/admin/polls?status=scheduled" },
+          { name: "Closed Polls", path: "/admin/polls?status=closed" },
+          { name: "Poll Analytics", path: "/admin/polls/analytics" },
+        ],
+      },
       { name: "Announcements", path: "/admin/announcements", icon: <FiBell /> },
       { name: "Push Notifications", path: "/admin/notifications", icon: <FiRadio /> },
       { name: "Students", path: "/admin/students", icon: <FiUsers /> },
@@ -152,6 +166,19 @@ export default function Sidebar() {
       { name: "Events", path: "/admin/events", icon: <FiCalendar /> },
       { name: "Certificates", path: "/admin/certificates", icon: <FiAward /> },
       { name: "Time Capsules", path: "/admin/time-capsules", icon: <FiArchive /> },
+      {
+        name: "Poll Management",
+        path: "/admin/polls",
+        icon: <FiCheckSquare />,
+        subItems: [
+          { name: "All Polls", path: "/admin/polls" },
+          { name: "Create Poll", path: "/admin/polls/create" },
+          { name: "Active Polls", path: "/admin/polls?status=active" },
+          { name: "Scheduled Polls", path: "/admin/polls?status=scheduled" },
+          { name: "Closed Polls", path: "/admin/polls?status=closed" },
+          { name: "Poll Analytics", path: "/admin/polls/analytics" },
+        ],
+      },
       { name: "Announcements", path: "/admin/announcements", icon: <FiBell /> },
       { name: "Students", path: "/admin/students", icon: <FiUsers /> },
       { name: "Registration Outreach", path: "/admin/registration-outreach", icon: <FiSend /> },

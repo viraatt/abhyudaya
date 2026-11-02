@@ -1,0 +1,298 @@
+/* =========================================================
+   PollAnalytics.css - Premium Admin Poll Analytics Dashboard
+   ========================================================= */
+
+.poll-analytics-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg, #fbf4e8);
+}
+
+.poll-analytics-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 32px 36px 60px;
+  max-width: 1400px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .poll-analytics-content {
+    margin-left: 0;
+    padding: 80px 16px 40px;
+  }
+}
+
+.analytics-selector-bar {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.analytics-poll-select {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  min-width: 320px;
+  cursor: pointer;
+}
+
+.analytics-poll-select:focus {
+  border-color: #c48b18;
+}
+
+/* Metric Cards */
+.analytics-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.analytics-metric-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 22px 24px;
+  border: 1px solid var(--border, #e2e8f0);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.analytics-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.analytics-icon-participants {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.analytics-icon-votes {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.analytics-icon-winner {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.analytics-icon-status {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.analytics-metric-data {
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-metric-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.analytics-metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.analytics-metric-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+/* Visual Breakdown Area */
+.analytics-main-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1024px) {
+  .analytics-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analytics-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 26px 28px;
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: 0 4px 25px rgba(15, 23, 42, 0.04);
+}
+
+.analytics-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Options Distribution Bars */
+.analytics-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.analytics-option-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analytics-option-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.analytics-option-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.analytics-winner-badge {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.analytics-option-stats {
+  font-size: 13.5px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.analytics-progress-track {
+  width: 100%;
+  height: 12px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.analytics-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c48b18, #f59e0b);
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.analytics-progress-fill.winner {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+/* Metadata & Timeline Sidebar */
+.analytics-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.analytics-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.analytics-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c48b18;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.analytics-timeline-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.analytics-timeline-val {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Vote Audit Log Table */
+.analytics-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+.analytics-table th {
+  background: #f8fafc;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.analytics-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.analytics-table tr:last-child td {
+  border-bottom: none;
+}

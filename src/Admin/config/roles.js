@@ -29,6 +29,7 @@ export const PERMISSIONS = {
     reviews: true,
     timeCapsules: true,
     notifications: true,
+    polls: true,
   },
 
   [ROLES.BLOG_ADMIN]: {
@@ -44,6 +45,7 @@ export const PERMISSIONS = {
     reviews: false,
     timeCapsules: false,
     notifications: false,
+    polls: false,
   },
 
   [ROLES.EVENT_ADMIN]: {
@@ -58,6 +60,7 @@ export const PERMISSIONS = {
     reviews: false,
     timeCapsules: true,
     notifications: false,
+    polls: true,
   },
 
   [ROLES.ALUMNI]: {
@@ -73,6 +76,7 @@ export const PERMISSIONS = {
     reviews: false,
     timeCapsules: false,
     notifications: false,
+    polls: false,
     writeArticle: true,
     myArticles: true,
   },
